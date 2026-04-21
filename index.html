@@ -1,0 +1,3390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Content Shoot Booking</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ── LIGHT THEME ── */
+:root {
+  --bg:#eceef1; --surface:#e8eaed; --surface-raised:#f0f2f5; --white:#fff;
+  --accent:#1a1a1a; --accent2:#3a7bd5; --green:#22c55e; --red:#ef4444; --orange:#f59e0b;
+  --text:#1a1a1a; --text-muted:#8a8f9a; --border:rgba(255,255,255,0.85);
+  --shadow-out:5px 5px 12px rgba(170,176,190,.5),-3px -3px 8px rgba(255,255,255,.92);
+  --shadow-in:inset 3px 3px 7px rgba(170,176,190,.4),inset -2px -2px 6px rgba(255,255,255,.88);
+  --shadow-card:8px 8px 20px rgba(160,168,185,.4),-5px -5px 14px rgba(255,255,255,.95);
+  --radius-sm:10px; --radius:14px; --radius-xl:26px;
+  --neon:#3a7bd5; --neon-glow:rgba(58,123,213,.28);
+  --input-valid-border:rgba(34,197,94,.55); --input-valid-glow:rgba(34,197,94,.18);
+  --dropdown-bg:#fff; --dropdown-border:rgba(0,0,0,.08);
+  --modal-bg:var(--surface-raised);
+  --toggle-bg:#e2e5ea; --toggle-knob:#fff;
+}
+
+/* ── DARK THEME ── */
+[data-theme="dark"] {
+  --bg:#0f1117; --surface:#1a1d27; --surface-raised:#1f2330; --white:#1f2330;
+  --accent:#FC6E20; --accent2:#FC6E20; --green:#39ff14; --red:#ff4d6d; --orange:#ffd700;
+  --text:#e8edf5; --text-muted:#6b7280; --border:rgba(255,255,255,.07);
+  --shadow-out:5px 5px 16px rgba(0,0,0,.55),-2px -2px 6px rgba(255,255,255,.03);
+  --shadow-in:inset 3px 3px 10px rgba(0,0,0,.5),inset -2px -2px 4px rgba(255,255,255,.03);
+  --shadow-card:0 8px 32px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.04);
+  --neon:#FC6E20; --neon-glow:rgba(252,110,32,.22);
+  --input-valid-border:rgba(57,255,20,.5); --input-valid-glow:rgba(57,255,20,.12);
+  --dropdown-bg:#1f2330; --dropdown-border:rgba(255,255,255,.08);
+  --modal-bg:#1f2330;
+  --toggle-bg:#FC6E20; --toggle-knob:#0f1117;
+}
+
+/* ── BASE ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s}
+
+/* ── MICRO-ANIMATIONS ── */
+@keyframes sectionReveal{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{to{opacity:.4}}
+@keyframes btnPulse{0%,100%{box-shadow:0 0 0 0 var(--neon-glow)}50%{box-shadow:0 0 0 8px var(--neon-glow)}}
+@keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-6px)}30%{transform:translateX(6px)}45%{transform:translateX(-5px)}60%{transform:translateX(5px)}75%{transform:translateX(-3px)}90%{transform:translateX(3px)}}
+@keyframes modalIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes glowPop{0%{box-shadow:var(--shadow-in),0 0 0 0 var(--input-valid-glow)}60%{box-shadow:var(--shadow-in),0 0 0 6px var(--input-valid-glow)}100%{box-shadow:var(--shadow-in),0 0 0 3px var(--input-valid-glow)}}
+
+.card.revealed,.submit-area.revealed{animation:sectionReveal .35s cubic-bezier(.22,.68,0,1.2) both}
+.btn-pulse{animation:btnPulse 1.6s ease-in-out infinite}
+.shake{animation:shake .45s cubic-bezier(.36,.07,.19,.97) both}
+
+/* ── HEADER ── */
+.header{padding:44px 24px 34px;text-align:center}
+.header-logo{width:56px;height:56px;background:var(--white);border-radius:18px;box-shadow:var(--shadow-out);display:inline-flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:16px;transition:background .3s}
+.header h1{font-size:26px;font-weight:800;letter-spacing:-.5px;margin-bottom:5px;font-family:'Inter',sans-serif}
+.header-sub{font-size:13px;color:var(--text-muted);font-weight:500}
+
+/* ── RULES ── */
+.rules-bar{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:0 24px 30px}
+.rule-pill{display:inline-flex;align-items:center;gap:6px;background:var(--white);border-radius:50px;padding:6px 13px;font-size:11px;font-weight:600;color:var(--text-muted);box-shadow:var(--shadow-out);transition:background .3s}
+.rule-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+
+/* ── LAYOUT ── */
+.container{max-width:680px;margin:0 auto;padding:0 18px 100px}
+.card{background:var(--surface-raised);border-radius:var(--radius-xl);box-shadow:var(--shadow-card);padding:26px 26px 22px;margin-bottom:18px;border:1px solid var(--border);transition:background .3s,box-shadow .3s}
+.section-label{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.section-num{width:28px;height:28px;background:var(--accent);color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;transition:background .3s}
+.section-title{font-size:15px;font-weight:700;letter-spacing:-.2px;font-family:'Inter',sans-serif}
+.section-hint{font-size:11.5px;color:var(--text-muted);margin-left:auto;font-weight:500}
+
+/* ── FIELDS ── */
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+label{display:block;font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;letter-spacing:.06em;text-transform:uppercase;font-family:'Inter',sans-serif}
+label .req{color:var(--accent2);margin-left:2px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:500px){.two-col{grid-template-columns:1fr}}
+
+input[type="text"],input[type="email"],select,textarea{
+  width:100%;background:var(--surface);border:1px solid var(--border);
+  color:var(--text);padding:12px 14px;font-family:'Inter',sans-serif;font-size:14px;font-weight:500;
+  border-radius:var(--radius-sm);outline:none;box-shadow:var(--shadow-in);
+  transition:box-shadow .2s,border-color .2s,background .3s;-webkit-appearance:none
+}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--neon);
+  box-shadow:var(--shadow-in),0 0 0 3px var(--neon-glow)
+}
+input.valid-field,textarea.valid-field{
+  border-color:var(--input-valid-border)!important;
+  box-shadow:var(--shadow-in),0 0 0 3px var(--input-valid-glow)!important;
+  animation:glowPop .4s ease forwards
+}
+select{cursor:pointer}
+select option{background:var(--dropdown-bg);color:var(--text)}
+textarea{resize:vertical;min-height:80px;line-height:1.6}
+input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shadow:var(--shadow-in),0 0 0 3px rgba(239,68,68,.12)!important}
+
+/* ── COMBOBOX ── */
+.combobox-wrap{position:relative}
+.combobox-input{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:12px 40px 12px 14px;font-family:'Inter',sans-serif;font-size:14px;font-weight:500;border-radius:var(--radius-sm);outline:none;box-shadow:var(--shadow-in);transition:box-shadow .2s,border-color .2s,background .3s;cursor:text}
+.combobox-input:focus{border-color:var(--neon);box-shadow:var(--shadow-in),0 0 0 3px var(--neon-glow)}
+.combobox-input.valid-field{border-color:var(--input-valid-border)!important;box-shadow:var(--shadow-in),0 0 0 3px var(--input-valid-glow)!important}
+.combobox-input.invalid{border-color:rgba(239,68,68,.55)!important;box-shadow:var(--shadow-in),0 0 0 3px rgba(239,68,68,.12)!important}
+.combobox-arrow{position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:11px;color:var(--text-muted)}
+.combobox-dropdown{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--dropdown-bg);border:1px solid var(--dropdown-border);border-radius:var(--radius-sm);box-shadow:0 8px 24px rgba(0,0,0,.22);z-index:200;max-height:260px;overflow-y:auto;display:none;transition:background .3s}
+.combobox-dropdown.open{display:block}
+.combo-group-label{font-size:10px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;padding:10px 14px 4px;font-family:'Inter',sans-serif}
+.combo-option{padding:10px 14px;font-size:13.5px;font-weight:500;cursor:pointer;transition:background .12s}
+.combo-option:hover,.combo-option.focused{background:var(--surface)}
+.combo-option.selected-opt{font-weight:700;color:var(--accent)}
+.combo-no-results{padding:12px 14px;font-size:13px;color:var(--text-muted);font-style:italic}
+
+/* ── CALENDAR ── */
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.cal-month-label{font-size:16px;font-weight:800;letter-spacing:-.3px;font-family:'Inter',sans-serif}
+.cal-nav-btn{width:34px;height:34px;background:var(--surface);border:1px solid var(--border);border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:var(--shadow-out);transition:all .15s;color:var(--text-muted);font-family:'Inter',sans-serif}
+.cal-nav-btn:hover{color:var(--text);border-color:var(--neon)}
+.cal-nav-btn:disabled{opacity:.3;cursor:not-allowed}
+.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px}
+.cal-wd{text-align:center;font-size:10.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;padding:4px 0;font-family:'Inter',sans-serif}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-day{
+  aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;position:relative;
+  transition:all .15s;background:var(--surface);border:1px solid var(--border);
+  box-shadow:var(--shadow-out);gap:3px;font-family:'Inter',sans-serif
+}
+.cal-day:hover:not(.cal-disabled):not(.cal-selected){background:var(--surface-raised);border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
+.cal-day.cal-selected{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 0 3px var(--neon-glow),3px 3px 10px rgba(0,0,0,.25)}
+.cal-day.cal-today:not(.cal-selected){border-color:var(--neon);color:var(--accent2);font-weight:800}
+.cal-day.cal-disabled{opacity:.32;cursor:not-allowed;box-shadow:var(--shadow-in);background:var(--surface)}
+.cal-day.cal-empty{background:transparent;border-color:transparent;box-shadow:none;cursor:default}
+.cal-day.cal-other-month{opacity:.35}
+.avail-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.dot-green{background:var(--green)}
+.dot-yellow{background:var(--orange)}
+.dot-red{background:var(--red)}
+.cal-day.cal-selected .avail-dot{opacity:.7}
+
+/* ── DURATION PICKER ── */
+.duration-row{display:flex;gap:8px;flex-wrap:wrap}
+.dur-btn{flex:1;min-width:68px;background:var(--surface);border:1px solid var(--border);color:var(--text-muted);padding:12px 6px 10px;border-radius:var(--radius-sm);cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;text-align:center;box-shadow:var(--shadow-out);transition:all .16s}
+.dur-btn:hover:not(.disabled):not(.selected){color:var(--text);border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
+.dur-btn.selected{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 0 3px var(--neon-glow),3px 3px 8px rgba(0,0,0,.2);font-weight:800}
+.dur-btn.disabled{opacity:.32;cursor:not-allowed;box-shadow:var(--shadow-in)}
+.dur-sub{display:block;font-size:9px;font-weight:600;margin-top:3px;text-transform:uppercase;letter-spacing:.06em;opacity:.65}
+.dur-btn.selected .dur-sub{opacity:.85}
+
+/* ── SLOT GRID ── */
+.slots-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:14px}
+@media(max-width:480px){.slots-grid{grid-template-columns:repeat(2,1fr)}}
+.slot-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-muted);padding:13px 5px 11px;border-radius:var(--radius-sm);cursor:pointer;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;text-align:center;box-shadow:var(--shadow-out);transition:all .16s}
+.slot-btn:hover:not(.disabled):not(.selected){color:var(--text);border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
+.slot-btn.selected{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;box-shadow:0 0 0 3px var(--neon-glow),3px 3px 8px rgba(0,0,0,.2)}
+.slot-btn.disabled{opacity:.3;cursor:not-allowed;box-shadow:var(--shadow-in)}
+.slot-status{display:block;font-size:9px;font-weight:600;margin-top:3px;text-transform:uppercase;letter-spacing:.06em;opacity:.65}
+.slot-btn.selected .slot-status{opacity:.85}
+
+/* ── TIME PREVIEW ── */
+.time-preview{margin-top:12px;padding:11px 14px;background:var(--surface);border-radius:var(--radius-sm);box-shadow:var(--shadow-in);font-size:13px;font-weight:600;color:var(--text-muted);display:none;font-family:'Inter',sans-serif;transition:background .3s}
+.time-preview strong{color:var(--accent);font-weight:800}
+.remaining-bar{margin-top:8px;height:4px;background:rgba(128,128,128,.15);border-radius:99px;overflow:hidden}
+.remaining-bar-fill{height:100%;border-radius:99px;background:var(--green);transition:width .3s,background .3s}
+
+/* ── PACKAGES GRID ── */
+.packages-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+@media(min-width:520px){.packages-grid{grid-template-columns:repeat(3,1fr)}}
+.pkg-checkbox{display:none}
+.pkg-wrapper{position:relative;display:flex;flex-direction:column}
+.pkg-label{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 12px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--text-muted);box-shadow:var(--shadow-out);transition:all .16s;user-select:none;min-height:52px;font-family:'Inter',sans-serif}
+.pkg-label:hover{color:var(--text);border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
+.pkg-checkbox:checked + .pkg-label{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 0 3px var(--neon-glow),3px 3px 8px rgba(0,0,0,.18);font-weight:700}
+.pkg-icon{font-size:15px;flex-shrink:0}
+.pkg-label-text{flex:1;line-height:1.3}
+.pkg-check{width:17px;height:17px;border:1.5px solid rgba(128,128,128,.25);border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;background:rgba(128,128,128,.1);transition:all .16s}
+.pkg-checkbox:checked + .pkg-label .pkg-check{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.3);color:#fff}
+.pkg-deselect{display:none;position:absolute;top:-7px;right:-7px;width:20px;height:20px;background:var(--red);color:#fff;border-radius:50%;font-size:11px;font-weight:800;align-items:center;justify-content:center;cursor:pointer;z-index:10;box-shadow:0 2px 6px rgba(239,68,68,.4);border:none;line-height:1;transition:transform .15s}
+.pkg-deselect:hover{transform:scale(1.15)}
+.pkg-checkbox:checked ~ .pkg-deselect{display:flex}
+
+/* ── MODAL ── */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-backdrop.open{display:flex}
+.modal{background:var(--modal-bg);border-radius:var(--radius-xl);box-shadow:0 24px 60px rgba(0,0,0,.35);width:100%;max-width:560px;max-height:90vh;overflow-y:auto;padding:28px;position:relative;animation:modalIn .22s ease;border:1px solid var(--border);transition:background .3s}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.modal-title{font-size:16px;font-weight:800;letter-spacing:-.2px;font-family:'Inter',sans-serif}
+.modal-close{width:32px;height:32px;background:var(--surface);border:1px solid var(--border);border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--text-muted);box-shadow:var(--shadow-out);transition:all .15s}
+.modal-close:hover{color:var(--text);border-color:var(--neon)}
+.modal-done{width:100%;margin-top:20px;background:var(--accent);color:#fff;border:none;padding:14px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;border-radius:var(--radius-sm);cursor:pointer;box-shadow:0 0 0 0 var(--neon-glow);transition:opacity .2s,box-shadow .2s}
+.modal-done:hover{opacity:.87;box-shadow:0 0 0 4px var(--neon-glow)}
+
+/* ── PACKAGE SUMMARY BADGE ── */
+.pkg-filled-badge{display:none;font-size:10px;font-weight:700;color:var(--green);margin-top:4px}
+.pkg-filled-badge.show{display:block}
+
+/* ── ENTRY CARDS ── */
+.entry-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;position:relative;box-shadow:var(--shadow-in);transition:background .3s}
+.entry-card:last-of-type{margin-bottom:0}
+.entry-remove{position:absolute;top:10px;right:10px;background:var(--surface-raised);border:1px solid var(--border);color:var(--text-muted);width:26px;height:26px;padding:0;border-radius:7px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-out);transition:all .15s}
+.entry-remove:hover{color:var(--red);border-color:var(--red)}
+.add-entry-btn{width:100%;margin-top:10px;padding:10px;background:var(--surface-raised);border:1.5px dashed rgba(128,128,128,.22);border-radius:var(--radius-sm);cursor:pointer;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;color:var(--text-muted);transition:all .15s}
+.add-entry-btn:hover{color:var(--text);border-color:var(--neon)}
+
+/* ── TOGGLE GROUP ── */
+.toggle-group{display:flex;gap:6px;flex-wrap:wrap}
+.tog-input{display:none}
+.tog-label{padding:7px 13px;border-radius:20px;cursor:pointer;font-size:12px;font-weight:600;background:var(--surface);border:1px solid var(--border);color:var(--text-muted);box-shadow:var(--shadow-out);transition:all .15s;user-select:none;font-family:'Inter',sans-serif}
+.tog-input:checked + .tog-label{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 0 2px var(--neon-glow),2px 2px 6px rgba(0,0,0,.16)}
+
+/* ── HEADSHOTS ── */
+.headshot-person{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.headshot-person input{flex:1}
+.remove-person{background:var(--surface-raised);border:1px solid var(--border);color:var(--text-muted);width:42px;height:42px;padding:0;border-radius:var(--radius-sm);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-out);transition:all .15s}
+.remove-person:hover{color:var(--red);border-color:var(--red)}
+
+/* ── ALERTS ── */
+.alert{padding:12px 15px;border-radius:var(--radius-sm);font-size:13px;line-height:1.5;margin-bottom:14px;display:none;font-weight:500}
+.alert.visible{display:flex;align-items:flex-start;gap:9px}
+.alert.error{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.22);color:#f87171}
+.alert.info{background:rgba(58,123,213,.07);border:1px solid rgba(58,123,213,.22);color:var(--accent2)}
+.alert.warning{background:rgba(245,158,11,.09);border:1px solid rgba(245,158,11,.28);color:var(--orange)}
+
+/* ── SUBMIT ── */
+.submit-area{margin-top:6px}
+#field-error-summary{display:none;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.22);color:#f87171;border-radius:var(--radius-sm);padding:13px 16px;font-size:13px;margin-bottom:12px;line-height:1.7;font-weight:500}
+#field-error-summary.visible{display:block}
+.submit-btn{width:100%;background:var(--accent);color:#fff;border:none;padding:16px;font-family:'Inter',sans-serif;font-size:15px;font-weight:800;border-radius:var(--radius);cursor:pointer;box-shadow:0 0 0 0 var(--neon-glow);transition:opacity .2s,transform .1s,box-shadow .3s;letter-spacing:.01em}
+.submit-btn:hover{opacity:.88;box-shadow:0 0 0 5px var(--neon-glow)}
+.submit-btn:active{transform:scale(.993)}
+.submit-btn:disabled{opacity:.42;cursor:not-allowed}
+
+/* ── RESET BUTTON ── */
+.reset-btn{width:100%;background:var(--red);color:#fff;border:none;padding:13px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;border-radius:var(--radius-sm);cursor:pointer;box-shadow:3px 3px 10px rgba(239,68,68,.35);transition:all .18s;letter-spacing:.01em}
+.reset-btn:hover{opacity:.88;box-shadow:0 0 0 4px rgba(239,68,68,.2),3px 3px 10px rgba(239,68,68,.35)}
+
+/* ── SUCCESS ── */
+#success-screen{display:none;text-align:center;padding:56px 24px 80px}
+#success-screen.visible{display:block}
+.success-icon-wrap{width:76px;height:76px;background:var(--white);border-radius:22px;box-shadow:var(--shadow-card);display:inline-flex;align-items:center;justify-content:center;font-size:34px;margin-bottom:20px;transition:background .3s}
+.success-title{font-size:24px;font-weight:800;letter-spacing:-.4px;margin-bottom:7px;font-family:'Inter',sans-serif}
+.success-detail{color:var(--text-muted);font-size:13.5px;line-height:1.6;max-width:380px;margin:0 auto;font-weight:500}
+.booking-summary{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-xl);box-shadow:var(--shadow-card);padding:22px 26px;margin:26px auto;max-width:460px;text-align:left;transition:background .3s}
+.summary-row{display:flex;justify-content:space-between;align-items:flex-start;padding:9px 0;border-bottom:1px solid rgba(128,128,128,.1);font-size:13px;gap:14px}
+.summary-row:last-child{border-bottom:none;padding-bottom:0}
+.summary-row:first-child{padding-top:0}
+.summary-row .key{color:var(--text-muted);font-weight:600;white-space:nowrap}
+.summary-row .val{color:var(--text);font-weight:700;text-align:right}
+.book-another-btn{display:inline-flex;align-items:center;gap:7px;margin-top:18px;background:var(--white);border:1px solid var(--border);color:var(--text);padding:13px 28px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;border-radius:var(--radius);cursor:pointer;box-shadow:var(--shadow-out);transition:all .2s}
+.book-another-btn:hover{border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 3px var(--neon-glow)}
+
+/* ── CALENDAR DIVIDER ── */
+.cal-divider{border:none;border-top:1px solid rgba(128,128,128,.12);margin:20px 0}
+
+/* ── CALENDAR DOT LEGEND ── */
+.cal-legend{display:flex;gap:14px;margin-top:14px;flex-wrap:wrap}
+.cal-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--text-muted)}
+.cal-legend-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* ── EDIT DATE CHIP ── */
+
+
+/* ── PHONE COUNTRY CODE ── */
+.phone-wrap{display:flex;gap:8px;align-items:stretch}
+.country-select-wrap{position:relative;flex-shrink:0}
+.country-select-btn{height:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 10px;font-size:13px;box-shadow:var(--shadow-in);cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;color:var(--text);font-family:'Inter',sans-serif;font-weight:600;min-width:80px;transition:all .2s}
+.country-select-btn .arrow{font-size:9px;color:var(--text-muted);margin-left:2px}
+.country-dropdown{position:absolute;top:calc(100% + 4px);left:0;min-width:260px;background:var(--dropdown-bg);border:1px solid var(--dropdown-border);border-radius:var(--radius-sm);box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:300;overflow:hidden;display:none;transition:background .3s}
+.country-dropdown.open{display:block}
+.country-search{width:100%;padding:10px 12px;border:none;border-bottom:1px solid var(--border);font-family:'Inter',sans-serif;font-size:13px;outline:none;background:var(--surface-raised);color:var(--text)}
+.country-list-scroll{max-height:266px;overflow-y:auto}
+.country-opt{padding:10px 14px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .1s;min-height:38px}
+.country-opt:hover,.country-opt.focused{background:var(--surface)}
+.country-opt .code{font-weight:700;color:var(--text);min-width:38px;flex-shrink:0}
+.country-opt .cname{color:var(--text-muted);font-size:12px;font-weight:500}
+.phone-input{flex:1;min-width:0}
+
+/* ── AUTOSAVE INDICATOR ── */
+.autosave-bar{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;color:var(--text-muted);padding:6px 0;margin-bottom:8px}
+.autosave-dot{width:7px;height:7px;border-radius:50%;background:var(--text-muted);transition:background .3s}
+.autosave-dot.saved{background:var(--green)}
+.autosave-dot.saving{background:var(--orange);animation:pulse .6s infinite alternate}
+
+/* ── STATS DASHBOARD ── */
+.stats-dashboard{background:var(--surface-raised);border-radius:var(--radius-xl);box-shadow:var(--shadow-card);padding:24px 20px 20px;margin-bottom:18px;border:1px solid var(--border);transition:background .3s}
+.stats-dashboard-title{font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:18px;text-align:center;font-family:'Inter',sans-serif}
+.stats-rings{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:500px){.stats-rings{grid-template-columns:repeat(2,1fr)}}
+.stat-ring-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+.stat-ring-svg{width:72px;height:72px;flex-shrink:0}
+.stat-ring-track{fill:none;stroke:rgba(128,128,128,.12);stroke-width:7}
+.stat-ring-fill{fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset .6s cubic-bezier(.34,1.56,.64,1),stroke .4s}
+.stat-ring-val{font-size:17px;font-weight:800;letter-spacing:-.5px;transition:all .4s;font-family:'Inter',sans-serif}
+.stat-ring-label{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);text-align:center;line-height:1.3;max-width:64px;font-family:'Inter',sans-serif}
+.stat-ring-sub{font-size:9px;font-weight:600;color:var(--text-muted);text-align:center;line-height:1.3;max-width:64px;margin-top:-4px}
+
+/* ── RESET CONFIRM MODAL ── */
+.reset-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);z-index:600;display:none;align-items:center;justify-content:center;padding:24px}
+.reset-modal-backdrop.open{display:flex}
+.reset-modal{background:var(--modal-bg);border-radius:var(--radius-xl);box-shadow:0 28px 64px rgba(0,0,0,.35);width:100%;max-width:380px;padding:32px 28px 26px;text-align:center;animation:modalIn .2s ease;border:1px solid var(--border);transition:background .3s}
+.reset-modal-icon{font-size:36px;margin-bottom:14px;line-height:1}
+.reset-modal-title{font-size:18px;font-weight:800;letter-spacing:-.3px;margin-bottom:10px;color:var(--text);font-family:'Inter',sans-serif}
+.reset-modal-body{font-size:13.5px;font-weight:500;color:var(--text-muted);line-height:1.6;margin-bottom:24px}
+.reset-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.reset-modal-no{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:13px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;border-radius:var(--radius-sm);cursor:pointer;box-shadow:var(--shadow-out);transition:all .15s}
+.reset-modal-no:hover{border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
+.reset-modal-yes{background:var(--red);border:none;color:#fff;padding:13px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;border-radius:var(--radius-sm);cursor:pointer;box-shadow:3px 3px 10px rgba(239,68,68,.35);transition:all .15s}
+.reset-modal-yes:hover{opacity:.88;box-shadow:3px 3px 14px rgba(239,68,68,.45)}
+
+/* ── DARK MODE TOGGLE ── */
+.theme-toggle{position:fixed;bottom:24px;left:24px;z-index:400;display:flex;align-items:center;gap:10px;background:var(--surface-raised);border:1px solid var(--border);border-radius:50px;padding:8px 14px 8px 10px;box-shadow:var(--shadow-card);cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:var(--text-muted);transition:all .25s;user-select:none}
+.theme-toggle:hover{border-color:var(--neon);box-shadow:var(--shadow-card),0 0 0 3px var(--neon-glow);color:var(--text)}
+.theme-toggle-track{width:36px;height:20px;background:var(--toggle-bg);border-radius:99px;position:relative;transition:background .3s;flex-shrink:0}
+.theme-toggle-knob{position:absolute;top:3px;left:3px;width:14px;height:14px;background:var(--toggle-knob);border-radius:50%;transition:transform .3s,background .3s;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+[data-theme="dark"] .theme-toggle-knob{transform:translateX(16px)}
+.theme-toggle-icon{font-size:14px;line-height:1}
+
+/* ════════════════════════════════════════════════
+   ADMIN DASHBOARD
+════════════════════════════════════════════════ */
+
+/* Back door button — bottom right, discreet */
+.backdoor-btn{position:fixed;bottom:24px;right:24px;z-index:400;background:var(--surface-raised);border:1px solid var(--border);border-radius:50px;padding:8px 14px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:var(--text-muted);cursor:pointer;box-shadow:var(--shadow-out);transition:all .2s;letter-spacing:.04em;text-transform:uppercase;opacity:.55}
+.backdoor-btn:hover{opacity:1;border-color:var(--neon);color:var(--text);box-shadow:var(--shadow-out),0 0 0 3px var(--neon-glow)}
+
+/* Admin wrapper */
+#admin-view{display:none;min-height:100vh}
+#admin-view.active{display:block}
+
+/* Admin header */
+.admin-header{padding:32px 20px 20px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border);margin-bottom:0;position:sticky;top:0;background:var(--bg);z-index:100;transition:background .3s}
+.admin-header-back{width:40px;height:40px;background:var(--surface);border:1px solid var(--border);border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;box-shadow:var(--shadow-out);transition:all .15s;flex-shrink:0}
+.admin-header-back:hover{border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
+.admin-header-info{flex:1}
+.admin-header-title{font-size:20px;font-weight:800;letter-spacing:-.4px;font-family:'Inter',sans-serif}
+.admin-header-sub{font-size:12px;color:var(--text-muted);font-weight:500;margin-top:2px}
+.admin-badge{background:var(--accent);color:#fff;font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px;letter-spacing:.04em;font-family:'Inter',sans-serif}
+
+/* Admin tabs */
+.admin-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 20px;background:var(--bg);transition:background .3s}
+.admin-tab{flex:1;padding:14px 0 12px;text-align:center;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .18s;user-select:none;-webkit-tap-highlight-color:transparent}
+.admin-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.admin-tab:hover:not(.active){color:var(--text)}
+
+/* Admin container */
+.admin-container{max-width:680px;margin:0 auto;padding:20px 16px 120px}
+
+/* Stat strip */
+.admin-stat-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.admin-stat{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius);padding:16px 14px;text-align:center;box-shadow:var(--shadow-card);transition:background .3s}
+.admin-stat-val{font-size:26px;font-weight:900;letter-spacing:-.8px;font-family:'Inter',sans-serif;color:var(--accent)}
+.admin-stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-top:3px;font-family:'Inter',sans-serif}
+
+/* Admin calendar */
+.admin-cal-card{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-xl);box-shadow:var(--shadow-card);padding:22px 18px 18px;margin-bottom:20px;transition:background .3s}
+/* reuse .cal-nav, .cal-weekdays, .cal-grid, .cal-day from booking form */
+/* admin booking dot — bigger, easier to see */
+.admin-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.admin-dot-confirmed{background:#22c55e}
+.admin-dot-pending{background:#f59e0b}
+[data-theme="dark"] .admin-dot-confirmed{background:#39ff14}
+[data-theme="dark"] .admin-dot-pending{background:#ffd700}
+
+/* Booking detail drawer */
+.booking-drawer{overflow:hidden;max-height:0;transition:max-height .35s cubic-bezier(.4,0,.2,1),opacity .25s;opacity:0;margin-top:8px}
+.booking-drawer.open{max-height:600px;opacity:1}
+.booking-drawer-inner{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:4px}
+.drawer-row{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(128,128,128,.1);font-size:13px;gap:10px}
+.drawer-row:last-child{border-bottom:none;padding-bottom:0}
+.drawer-row:first-child{padding-top:0}
+.drawer-key{color:var(--text-muted);font-weight:600;font-size:12px;white-space:nowrap;flex-shrink:0}
+.drawer-val{color:var(--text);font-weight:700;text-align:right;font-size:13px;word-break:break-word}
+.drawer-pkgs{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end;margin-top:2px}
+.drawer-pkg-tag{background:var(--surface-raised);border:1px solid var(--border);border-radius:20px;padding:3px 9px;font-size:11px;font-weight:600;color:var(--text-muted)}
+
+/* Booking list (upcoming) */
+.booking-card{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-xl);padding:18px 18px 16px;margin-bottom:12px;box-shadow:var(--shadow-card);transition:all .2s;cursor:default;-webkit-tap-highlight-color:transparent}
+.booking-card.past{opacity:.5}
+.booking-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
+.booking-card-date{font-size:13px;font-weight:800;color:var(--accent);font-family:'Inter',sans-serif;line-height:1.2}
+.booking-card-dow{font-size:11px;font-weight:600;color:var(--text-muted);margin-top:1px}
+.booking-card-status{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding:4px 10px;border-radius:20px;flex-shrink:0;font-family:'Inter',sans-serif}
+.status-upcoming{background:rgba(34,197,94,.12);color:#16a34a;border:1px solid rgba(34,197,94,.2)}
+.status-today{background:rgba(252,110,32,.13);color:#FC6E20;border:1px solid rgba(252,110,32,.25)}
+.status-past{background:rgba(128,128,128,.1);color:var(--text-muted);border:1px solid rgba(128,128,128,.15)}
+[data-theme="dark"] .status-upcoming{background:rgba(57,255,20,.1);color:#39ff14;border-color:rgba(57,255,20,.2)}
+[data-theme="dark"] .status-today{background:rgba(252,110,32,.15);color:#FC6E20;border-color:rgba(252,110,32,.3)}
+.booking-card-store{font-size:15px;font-weight:800;letter-spacing:-.2px;margin-bottom:4px;font-family:'Inter',sans-serif}
+.booking-card-time{font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:10px}
+.booking-card-pkgs{display:flex;flex-wrap:wrap;gap:5px}
+.pkg-tag{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--text-muted)}
+.booking-card-booker{font-size:11.5px;color:var(--text-muted);font-weight:500;margin-top:10px;padding-top:10px;border-top:1px solid rgba(128,128,128,.1)}
+
+/* Empty state */
+.admin-empty{text-align:center;padding:48px 24px;color:var(--text-muted)}
+.admin-empty-icon{font-size:40px;margin-bottom:14px;opacity:.5}
+.admin-empty-title{font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text)}
+.admin-empty-sub{font-size:13px;line-height:1.6}
+
+/* Section header inside admin */
+.admin-section-head{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:12px;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:8px}
+.admin-section-head::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* Month selector chips on admin cal */
+.admin-cal-legend{display:flex;gap:12px;margin-top:12px;flex-wrap:wrap}
+.admin-cal-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--text-muted)}
+
+/* ── BOOKING DETAIL MODAL ── */
+.bdetail-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(7px);z-index:700;display:none;align-items:flex-end;justify-content:center;padding:0}
+.bdetail-backdrop.open{display:flex}
+.bdetail-sheet{background:var(--surface-raised);border-radius:28px 28px 0 0;width:100%;max-width:680px;max-height:92vh;display:flex;flex-direction:column;animation:sheetUp .28s cubic-bezier(.22,.68,0,1.1) both;border-top:1px solid var(--border)}
+.bdetail-scroll{flex:1;overflow-y:auto;padding-bottom:16px}
+.bdetail-footer{padding:12px 22px 28px;border-top:1px solid var(--border);background:var(--surface-raised);flex-shrink:0;transition:background .3s}
+@keyframes sheetUp{from{transform:translateY(100%);opacity:.6}to{transform:translateY(0);opacity:1}}
+.bdetail-handle{width:40px;height:4px;background:rgba(128,128,128,.3);border-radius:99px;margin:14px auto 0}
+.bdetail-header{padding:18px 22px 14px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface-raised);z-index:1;transition:background .3s}
+.bdetail-close{position:absolute;top:16px;right:18px;width:34px;height:34px;background:var(--surface);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:var(--text-muted);box-shadow:var(--shadow-out);transition:all .15s}
+.bdetail-close:hover{color:var(--text);border-color:var(--neon)}
+.bdetail-store{font-size:20px;font-weight:900;letter-spacing:-.4px;font-family:'Inter',sans-serif;padding-right:44px}
+.bdetail-meta{font-size:13px;color:var(--text-muted);font-weight:500;margin-top:3px}
+.bdetail-body{padding:0 22px}
+.bdetail-section{margin-top:22px}
+.bdetail-section-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:10px;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:8px}
+.bdetail-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.bdetail-row{display:flex;justify-content:space-between;align-items:flex-start;padding:9px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:14px}
+.bdetail-row:last-child{border-bottom:none}
+.bdetail-key{font-size:12px;font-weight:600;color:var(--text-muted);white-space:nowrap;flex-shrink:0;padding-top:1px}
+.bdetail-val{font-size:13.5px;font-weight:700;color:var(--text);text-align:right;word-break:break-word}
+.bdetail-tags{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end}
+.bdetail-tag{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 11px;font-size:11.5px;font-weight:600;color:var(--text-muted)}
+.bdetail-tag-accent{background:rgba(252,110,32,.1);border-color:rgba(252,110,32,.25);color:#FC6E20}
+[data-theme="dark"] .bdetail-tag-accent{background:rgba(252,110,32,.15);color:#FC6E20}
+/* Package detail blocks */
+.pkg-detail-block{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;transition:background .3s}
+.pkg-detail-block:last-child{margin-bottom:0}
+.pkg-detail-block-title{font-size:13px;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:7px;font-family:'Inter',sans-serif}
+.pkg-detail-inner-row{display:flex;justify-content:space-between;align-items:flex-start;padding:5px 0;border-bottom:1px solid rgba(128,128,128,.07);gap:12px;font-size:12.5px}
+.pkg-detail-inner-row:last-child{border-bottom:none}
+.pkg-detail-inner-key{color:var(--text-muted);font-weight:600;flex-shrink:0}
+.pkg-detail-inner-val{color:var(--text);font-weight:600;text-align:right;word-break:break-word}
+.pkg-entry-card{background:var(--surface-raised);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-top:8px}
+.pkg-entry-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin-bottom:6px;font-family:'Inter',sans-serif}
+.bdetail-notes{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px 16px;font-size:13.5px;font-weight:500;color:var(--text);line-height:1.6;font-style:italic;margin-top:0}
+/* Tap affordance on cards */
+.booking-card{cursor:pointer}
+.booking-card:active{opacity:.8;transform:scale(.99)}
+.booking-drawer-inner{cursor:pointer;transition:border-color .15s}
+.booking-drawer-inner:hover{border-color:var(--neon)}
+.tap-hint{font-size:10.5px;color:var(--text-muted);font-weight:600;margin-top:8px;display:flex;align-items:center;gap:4px;opacity:.7}
+
+
+/* ── CANCEL/DELETE BOOKING BUTTON ── */
+.bdetail-cancel-btn{width:100%;margin-top:8px;background:transparent;border:1.5px solid rgba(239,68,68,.4);color:var(--red);padding:14px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;border-radius:var(--radius-sm);cursor:pointer;transition:all .18s;letter-spacing:.01em}
+.bdetail-cancel-btn:hover{background:rgba(239,68,68,.08);border-color:var(--red);box-shadow:0 0 0 3px rgba(239,68,68,.1)}
+
+/* ── TIME BUDGET BAR (packages section) ── */
+.pkg-budget-wrap{margin-bottom:16px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow-in)}
+.pkg-budget-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.pkg-budget-label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;font-family:'Inter',sans-serif}
+.pkg-budget-counter{font-size:11px;font-weight:800;font-family:'Inter',sans-serif;color:var(--text)}
+.pkg-budget-bar{height:6px;background:rgba(128,128,128,.15);border-radius:99px;overflow:hidden}
+.pkg-budget-fill{height:100%;border-radius:99px;background:var(--green);transition:width .3s,background .3s}
+.pkg-budget-hint{font-size:11px;color:var(--text-muted);margin-top:6px;font-weight:500;line-height:1.4}
+
+/* ── LOCKED PACKAGE ── */
+.pkg-label.pkg-time-locked{opacity:.38;cursor:not-allowed;pointer-events:none}
+.pkg-wrapper.pkg-time-locked-wrap .pkg-label{opacity:.38;cursor:not-allowed;pointer-events:none}
+.pkg-wrapper.pkg-time-locked-wrap{position:relative}
+.pkg-lock-badge{display:none;position:absolute;top:-5px;left:-5px;background:var(--orange);color:#fff;font-size:8px;font-weight:800;padding:2px 6px;border-radius:20px;letter-spacing:.04em;text-transform:uppercase;z-index:5;font-family:'Inter',sans-serif;pointer-events:none}
+.pkg-wrapper.pkg-time-locked-wrap .pkg-lock-badge{display:block}
+
+
+/* ── CALENDAR EXPORT BUTTONS ── */
+.cal-export-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;margin-bottom:4px}
+.cal-export-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:var(--radius-sm);font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;cursor:pointer;border:1.5px solid;transition:all .18s;text-decoration:none;white-space:nowrap}
+.cal-export-btn-outlook{background:var(--surface-raised);border-color:rgba(0,114,198,.35);color:#0072c6}
+.cal-export-btn-outlook:hover{background:rgba(0,114,198,.08);border-color:#0072c6;box-shadow:0 0 0 3px rgba(0,114,198,.12)}
+.cal-export-btn-google{background:var(--surface-raised);border-color:rgba(66,133,244,.35);color:#4285f4}
+.cal-export-btn-google:hover{background:rgba(66,133,244,.08);border-color:#4285f4;box-shadow:0 0 0 3px rgba(66,133,244,.12)}
+[data-theme="dark"] .cal-export-btn-outlook{color:#60b8ff;border-color:rgba(96,184,255,.3)}
+[data-theme="dark"] .cal-export-btn-outlook:hover{background:rgba(96,184,255,.08);border-color:#60b8ff}
+[data-theme="dark"] .cal-export-btn-google{color:#8ab4f8;border-color:rgba(138,180,248,.3)}
+[data-theme="dark"] .cal-export-btn-google:hover{background:rgba(138,180,248,.08);border-color:#8ab4f8}
+
+
+/* ── RESCHEDULE MODAL ── */
+.reschedule-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);z-index:850;display:none;align-items:center;justify-content:center;padding:20px}
+.reschedule-backdrop.open{display:flex}
+.reschedule-modal{background:var(--surface-raised);border-radius:var(--radius-xl);box-shadow:0 32px 80px rgba(0,0,0,.4);width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:28px;border:1px solid var(--border);animation:modalIn .22s ease;transition:background .3s}
+.reschedule-title{font-size:17px;font-weight:800;letter-spacing:-.3px;margin-bottom:4px;font-family:'Inter',sans-serif}
+.reschedule-sub{font-size:12.5px;color:var(--text-muted);font-weight:500;margin-bottom:20px}
+.reschedule-slot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.reschedule-slot-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-muted);padding:11px 6px;border-radius:var(--radius-sm);cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;text-align:center;box-shadow:var(--shadow-out);transition:all .16s}
+.reschedule-slot-btn:hover:not(.disabled){color:var(--text);border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
+.reschedule-slot-btn.selected{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 0 3px var(--neon-glow)}
+.reschedule-slot-btn.disabled{opacity:.3;cursor:not-allowed;box-shadow:var(--shadow-in)}
+.reschedule-slot-sub{display:block;font-size:9px;font-weight:600;margin-top:2px;text-transform:uppercase;letter-spacing:.05em;opacity:.65}
+.reschedule-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
+.reschedule-cancel-btn{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:13px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;border-radius:var(--radius-sm);cursor:pointer;box-shadow:var(--shadow-out);transition:all .15s}
+.reschedule-confirm-btn{background:var(--accent);border:none;color:#fff;padding:13px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;border-radius:var(--radius-sm);cursor:pointer;box-shadow:3px 3px 10px rgba(252,110,32,.3);transition:all .15s;opacity:.45;pointer-events:none}
+.reschedule-confirm-btn.ready{opacity:1;pointer-events:auto}
+.reschedule-confirm-btn.ready:hover{opacity:.88}
+.reschedule-error{color:var(--red);font-size:12px;font-weight:600;margin-top:8px;min-height:18px}
+
+/* ── BDETAIL FOOTER — two-button layout ── */
+.bdetail-footer-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.bdetail-reschedule-btn{background:var(--surface);border:1.5px solid var(--border);color:var(--text);padding:13px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;border-radius:var(--radius-sm);cursor:pointer;transition:all .18s;letter-spacing:.01em;box-shadow:var(--shadow-out)}
+.bdetail-reschedule-btn:hover{border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 3px var(--neon-glow)}
+
+</style>
+</head>
+<body>
+
+<!-- ══ MODAL BACKDROP ══ -->
+<div class="modal-backdrop" id="modal-backdrop" onclick="closeModalOnBackdrop(event)">
+  <div class="modal" id="modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Details</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div id="modal-body"></div>
+    <button class="modal-done" onclick="closeModal()">✓ Done</button>
+  </div>
+</div>
+
+<div class="header">
+  <div class="header-logo">📷</div>
+  <h1>Content Shoot Booking</h1>
+  <div class="header-sub">Private portal · Authorized marketing strategists only</div>
+</div>
+
+<div class="rules-bar">
+  <div class="rule-pill"><span class="rule-dot"></span>72hr advance notice</div>
+  <div class="rule-pill"><span class="rule-dot"></span>Mon–Fri only</div>
+  <div class="rule-pill"><span class="rule-dot"></span>Wed starts 12 PM</div>
+  <div class="rule-pill"><span class="rule-dot"></span>Max 6 shoots/week</div>
+</div>
+
+<div class="container">
+<div id="main-form">
+
+<!-- 01 DATE & TIME (with calendar) -->
+<div class="card">
+  <div class="section-label"><div class="section-num">01</div><div class="section-title">Date & Time</div></div>
+
+  <!-- Calendar -->
+  <div class="cal-nav">
+    <button class="cal-nav-btn" id="cal-prev" onclick="calPrev()">‹</button>
+    <div class="cal-month-label" id="cal-month-label"></div>
+    <button class="cal-nav-btn" id="cal-next" onclick="calNext()">›</button>
+  </div>
+  <div class="cal-weekdays">
+    <div class="cal-wd">Sun</div><div class="cal-wd">Mon</div><div class="cal-wd">Tue</div>
+    <div class="cal-wd">Wed</div><div class="cal-wd">Thu</div><div class="cal-wd">Fri</div><div class="cal-wd">Sat</div>
+  </div>
+  <div class="cal-grid" id="cal-grid"></div>
+
+  <div id="date-alert" class="alert error" style="margin-top:14px"><span id="date-alert-msg"></span></div>
+
+  <hr class="cal-divider" style="margin:20px 0">
+
+  <!-- Duration — always visible -->
+  <div id="duration-field">
+    <div class="field" style="margin-bottom:18px">
+      <label style="margin-bottom:10px">Session Duration <span class="req">*</span></label>
+      <div class="duration-row" id="duration-row"></div>
+    </div>
+
+    <!-- Start time — always visible, slots empty until date+duration chosen -->
+    <div id="slot-field">
+      <label style="margin-bottom:10px">Start Time <span class="req">*</span></label>
+      <div id="zone-info" class="alert info"></div>
+      <div class="slots-grid" id="slots-grid">
+        <p style="color:var(--text-muted);font-size:13px;grid-column:1/-1;padding:10px 0">Select a date and duration to see available slots.</p>
+      </div>
+      <div class="time-preview" id="time-preview">
+        Session: <strong id="preview-range">—</strong>
+        <div class="remaining-bar"><div class="remaining-bar-fill" id="remaining-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- dot legend — below the slot grid, with breathing room -->
+  <div class="cal-legend" style="margin-top:20px">
+    <div class="cal-legend-item"><span class="cal-legend-dot dot-green"></span>Available</div>
+    <div class="cal-legend-item"><span class="cal-legend-dot dot-yellow"></span>Filling up</div>
+    <div class="cal-legend-item"><span class="cal-legend-dot dot-red"></span>Full</div>
+  </div>
+
+</div>
+
+<!-- 02 YOUR INFO -->
+<div class="card" id="info-section" style="display:none">
+  <div class="section-label"><div class="section-num">02</div><div class="section-title">Your Info</div></div>
+  <div class="two-col">
+    <div class="field"><label>Your Name <span class="req">*</span></label><input type="text" id="strategist-name" placeholder="Full name"></div>
+    <div class="field"><label>Your Email <span class="req">*</span></label><input type="email" id="strategist-email" placeholder="you@agency.com"></div>
+  </div>
+</div>
+
+<!-- 03 DEALERSHIP -->
+<div class="card" id="dealership-section" style="display:none">
+  <div class="section-label"><div class="section-num">03</div><div class="section-title">Dealership</div></div>
+  <div id="dealership-alert" class="alert error"><span id="dealership-alert-msg"></span></div>
+  <div class="field">
+    <label>Select Dealership <span class="req">*</span></label>
+    <div class="combobox-wrap">
+      <input type="text" class="combobox-input" id="dealer-input" placeholder="Type to search or click to browse…" autocomplete="off" oninput="comboFilter()" onfocus="comboOpen()" onblur="comboBlur()">
+      <span class="combobox-arrow">▾</span>
+      <div class="combobox-dropdown" id="dealer-dropdown"></div>
+    </div>
+    <input type="hidden" id="dealership-select">
+  </div>
+  <div class="two-col">
+    <div class="field"><label>On-Site Contact Name <span class="req">*</span></label><input type="text" id="onsite-contact" placeholder="Who will meet us?"></div>
+    <div class="field">
+      <label>Contact Phone <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:var(--text-muted)">(optional)</span></label>
+      <div class="phone-wrap">
+        <div class="country-select-wrap">
+          <button type="button" class="country-select-btn" id="country-btn" onclick="toggleCountryDropdown()">
+            <span id="country-flag">🇨🇦</span><span id="country-code">+1</span><span class="arrow">▾</span>
+          </button>
+          <div class="country-dropdown" id="country-dropdown">
+            <input class="country-search" type="text" placeholder="Search country…" oninput="filterCountries(this.value)" id="country-search-input">
+            <div class="country-list-scroll"><div id="country-list"></div></div>
+          </div>
+        </div>
+        <input type="text" class="phone-input" id="onsite-phone" placeholder="e.g. 416-555-0100" oninput="formatPhone(this)">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 04 CONTENT PACKAGES -->
+<div class="card" id="content-section" style="display:none">
+  <div class="section-label"><div class="section-num">04</div><div class="section-title">Content Packages</div><div class="section-hint">Tap to select · tap again to edit details</div></div>
+  <div class="pkg-budget-wrap" id="pkg-budget-wrap" style="display:none">
+    <div class="pkg-budget-header">
+      <span class="pkg-budget-label">⏱ Time Budget</span>
+      <span class="pkg-budget-counter" id="pkg-budget-counter">0 / 0 min used</span>
+    </div>
+    <div class="pkg-budget-bar"><div class="pkg-budget-fill" id="pkg-budget-fill" style="width:0%"></div></div>
+    <div class="pkg-budget-hint" id="pkg-budget-hint">Select a session duration first.</div>
+  </div>
+  <div id="packages-grid" class="packages-grid"></div>
+</div>
+
+<!-- 05 ADDITIONAL NOTES -->
+<div class="card" id="notes-section" style="display:none">
+  <div class="section-label"><div class="section-num">05</div><div class="section-title">Additional Notes</div><div class="section-hint">Optional</div></div>
+  <textarea id="additional-notes" placeholder="Parking info, access codes, anything else I should know…"></textarea>
+</div>
+
+<!-- BOOKING STATS DASHBOARD -->
+<div class="stats-dashboard" id="stats-dashboard" style="display:none">
+  <div class="stats-dashboard-title">Your Booking at a Glance</div>
+  <div class="stats-rings">
+    <div class="stat-ring-wrap">
+      <svg class="stat-ring-svg" viewBox="0 0 72 72">
+        <circle class="stat-ring-track" cx="36" cy="36" r="30"/>
+        <circle class="stat-ring-fill" id="ring-pieces-fill" cx="36" cy="36" r="30" stroke="#3a7bd5" stroke-dasharray="188.5" stroke-dashoffset="188.5" transform="rotate(-90 36 36)"/>
+        <text x="36" y="34" text-anchor="middle" dominant-baseline="middle" font-family="Inter,sans-serif" font-size="14" font-weight="800" fill="var(--text)" id="ring-pieces-val">0</text>
+        <text x="36" y="46" text-anchor="middle" dominant-baseline="middle" font-family="Inter,sans-serif" font-size="7" font-weight="700" fill="var(--text-muted)">PIECES</text>
+      </svg>
+      <div class="stat-ring-label">Content Pieces</div>
+      <div class="stat-ring-sub" id="ring-pieces-sub">—</div>
+    </div>
+    <div class="stat-ring-wrap">
+      <svg class="stat-ring-svg" viewBox="0 0 72 72">
+        <circle class="stat-ring-track" cx="36" cy="36" r="30"/>
+        <circle class="stat-ring-fill" id="ring-dur-fill" cx="36" cy="36" r="30" stroke="#22c55e" stroke-dasharray="188.5" stroke-dashoffset="188.5" transform="rotate(-90 36 36)"/>
+        <text x="36" y="34" text-anchor="middle" dominant-baseline="middle" font-family="Inter,sans-serif" font-size="11" font-weight="800" fill="var(--text)" id="ring-dur-val">—</text>
+        <text x="36" y="46" text-anchor="middle" dominant-baseline="middle" font-family="Inter,sans-serif" font-size="7" font-weight="700" fill="var(--text-muted)">DURATION</text>
+      </svg>
+      <div class="stat-ring-label">Shoot Time</div>
+      <div class="stat-ring-sub" id="ring-dur-sub">—</div>
+    </div>
+    <div class="stat-ring-wrap">
+      <svg class="stat-ring-svg" viewBox="0 0 72 72">
+        <circle class="stat-ring-track" cx="36" cy="36" r="30"/>
+        <circle class="stat-ring-fill" id="ring-pkgs-fill" cx="36" cy="36" r="30" stroke="#f59e0b" stroke-dasharray="188.5" stroke-dashoffset="188.5" transform="rotate(-90 36 36)"/>
+        <text x="36" y="34" text-anchor="middle" dominant-baseline="middle" font-family="Inter,sans-serif" font-size="14" font-weight="800" fill="var(--text)" id="ring-pkgs-val">0</text>
+        <text x="36" y="46" text-anchor="middle" dominant-baseline="middle" font-family="Inter,sans-serif" font-size="7" font-weight="700" fill="var(--text-muted)">PACKAGES</text>
+      </svg>
+      <div class="stat-ring-label">Package Types</div>
+      <div class="stat-ring-sub" id="ring-pkgs-sub">of 10 available</div>
+    </div>
+    <div class="stat-ring-wrap">
+      <svg class="stat-ring-svg" viewBox="0 0 72 72">
+        <circle class="stat-ring-track" cx="36" cy="36" r="30"/>
+        <circle class="stat-ring-fill" id="ring-loc-fill" cx="36" cy="36" r="30" stroke="#a855f7" stroke-dasharray="188.5" stroke-dashoffset="188.5" transform="rotate(-90 36 36)"/>
+        <!-- map pin icon, centred -->
+        <g id="ring-loc-icon" transform="translate(36,36)">
+          <path d="M0-13c-5,0-9,4-9,9c0,7,9,17,9,17s9-10,9-17c0-5-4-9-9-9z" fill="var(--text-muted)" id="ring-loc-pin"/>
+          <circle cx="0" cy="-4" r="3.2" fill="white"/>
+        </g>
+      </svg>
+      <div class="stat-ring-label">Location</div>
+      <div class="stat-ring-sub" id="ring-loc-sub" style="max-width:80px;word-break:break-word;white-space:normal;text-align:center">Not selected</div>
+    </div>
+  </div>
+</div>
+
+<!-- SUBMIT -->
+<div class="submit-area" id="submit-area" style="display:none">
+  <div class="autosave-bar" id="autosave-bar">
+    <span class="autosave-dot" id="autosave-dot"></span>
+    <span id="autosave-label">Auto-save on</span>
+  </div>
+  <div id="field-error-summary"></div>
+  <button class="submit-btn" id="submit-btn" onclick="handleSubmit()">Confirm Booking</button>
+  <div style="margin-top:10px">
+    <button class="reset-btn" onclick="promptReset()">Reset Form</button>
+  </div>
+</div>
+
+<!-- RESET CONFIRM MODAL -->
+<div class="reset-modal-backdrop" id="reset-modal-backdrop">
+  <div class="reset-modal">
+    <div class="reset-modal-icon">⚠️</div>
+    <div class="reset-modal-title">Reset everything?</div>
+    <div class="reset-modal-body">This will clear all your selections — date, time, dealership, packages, and notes. This can't be undone.</div>
+    <div class="reset-modal-actions">
+      <button class="reset-modal-no" onclick="closeResetModal()">No, keep editing</button>
+      <button class="reset-modal-yes" onclick="confirmReset()">Yes, erase everything</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- SUCCESS -->
+<div id="success-screen">
+  <div class="success-icon-wrap">✓</div>
+  <div class="success-title">Booking Confirmed</div>
+  <p class="success-detail">Your shoot has been added to the calendar. You'll receive a confirmation shortly.</p>
+  <div class="booking-summary" id="booking-summary"></div>
+  <div class="cal-export-row">
+    <button class="cal-export-btn cal-export-btn-outlook" onclick="exportToOutlook()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l10-4V8L7 4zm0 0L3 6v12l4-2V4z" opacity=".3"/><path d="M3 6l4-2v16l-4-2V6zm14 2l3 1v10l-3 1V8zm-10 2.5a2.5 2.5 0 1 0 5 0 2.5 2.5 0 0 0-5 0z"/></svg>
+      Add to Outlook
+    </button>
+    <button class="cal-export-btn cal-export-btn-google" onclick="exportToGoogle()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V9h14v11z" opacity=".8"/><path d="M7 11h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zm-8 4h2v2H7zm4 0h2v2h-2z"/></svg>
+      Add to Google
+    </button>
+  </div>
+  <button class="book-another-btn" onclick="resetForAnotherBooking()">+ Book Another Store</button>
+  <p class="success-detail" style="font-size:12.5px;margin-top:22px;">Need changes? Contact the photographer directly.</p>
+</div>
+</div><!-- /container -->
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   CONFIG
+═══════════════════════════════════════════════════════ */
+const GOOGLE_API_KEY   = 'YOUR_API_KEY_HERE';
+const GOOGLE_CLIENT_ID = 'YOUR_CLIENT_ID_HERE';
+const CALENDAR_ID      = 'YOUR_CALENDAR_ID_HERE';
+const WEEKLY_CAP       = 6;
+
+/* ── ZONES ── */
+const ZONES = {
+  woodbridge:  { name:'Woodbridge Auto Mall',  maxPerDay:4, stores:['VW Martin Grove','Alta Infiniti','Honda 7','Woodbridge Toyota','Prima Mazda','Woodbridge Nissan'] },
+  maple:       { name:'Maple Auto Mall',        maxPerDay:3, stores:['Mercedes-Benz Maple','Mercedes-Benz Maple (Van Centre)','Maple Honda','Maple Toyota','Lexus of Vaughan','Maple Nissan','Maple Hyundai','Genesis Maple','Maple Acura','Maple VW'] },
+  stouffville: { name:'Stouffville Auto Mall',  maxPerDay:4, stores:['Nissan Stouffville','VW Stouffville','Hyundai Stouffville'] },
+  fullday:     { name:'Full-Day Location',      maxPerDay:1, stores:['Richmond Hill Nissan','Mercedes-Benz Newmarket','Jaguar Land Rover Brampton','Mercedes-Benz Mississauga','VW Mississauga','Erin Mills Acura','Mercedes-Benz Toronto Queensway'] },
+};
+const STORE_ZONE = {};
+const ALL_STORES = [];
+Object.entries(ZONES).forEach(([k,z])=>z.stores.forEach(s=>{STORE_ZONE[s]=k;ALL_STORES.push({name:s,zone:k});}));
+ALL_STORES.sort((a,b)=>a.name.localeCompare(b.name));
+
+/* ── PACKAGES ── */
+const PACKAGES = [
+  { id:'ethnic',     label:'Ethnic Videos',         icon:'🌍' },
+  { id:'salesvideo', label:'Sales Video',            icon:'🎬' },
+  { id:'walkaround', label:'Walkaround',             icon:'🚗' },
+  { id:'service',    label:'Service Video',          icon:'🔧' },
+  { id:'headshots',  label:'Headshots',              icon:'📸' },
+  { id:'gmb',        label:'Photo Session',          icon:'📷' },
+  { id:'salesrep',   label:'Sales Rep. Intro Video', icon:'🎤' },
+  { id:'lifestyle',  label:'Lifestyle Content',      icon:'✨' },
+  { id:'social',     label:'Social Media Content',   icon:'📱' },
+];
+
+/* ── PACKAGE TIME COSTS (minutes needed per package) ── */
+const PACKAGE_MINS = {
+  ethnic:     30,  // 30 min per video entry
+  walkaround: 60,  // 60 min per vehicle entry
+  service:    30,  // service bay, interview
+  headshots:  45,  // flat 45 min for all headshots
+  gmb:        45,  // photo tour of facility
+  salesvideo: 30,  // per vehicle entry
+  lifestyle:  45,  // staging, multiple setups
+  social:     30,  // per reel concept
+  salesrep:   20,  // per rep intro clip
+};
+
+function getPkgTimeCost(id){
+  const d = packageData[id];
+  const base = PACKAGE_MINS[id] || 30;
+  // multiply by entry count where applicable
+  if(['ethnic','social','walkaround','salesvideo','salesrep'].includes(id)){
+    const count = d?.entries?.length || 1;
+    return base * count;
+  }
+  if(id === 'headshots'){
+    return base; // flat 45 min regardless of person count
+  }
+  return base;
+}
+
+function getTotalPkgMins(){
+  return PACKAGES.filter(p => document.getElementById('pkg-'+p.id)?.checked)
+    .reduce((sum, p) => sum + getPkgTimeCost(p.id), 0);
+}
+
+function updatePkgBudget(){
+  const budgetWrap = document.getElementById('pkg-budget-wrap');
+  const fill = document.getElementById('pkg-budget-fill');
+  const counter = document.getElementById('pkg-budget-counter');
+  const hint = document.getElementById('pkg-budget-hint');
+  if(!budgetWrap) return;
+
+  if(!selectedDuration){
+    budgetWrap.style.display = 'none';
+    return;
+  }
+
+  budgetWrap.style.display = 'block';
+  const used = getTotalPkgMins();
+  const cap = selectedDuration;
+  const pct = Math.min(100, Math.round((used / cap) * 100));
+  const remaining = cap - used;
+
+  fill.style.width = pct + '%';
+  fill.style.background = pct >= 100 ? 'var(--red)' : pct >= 80 ? 'var(--orange)' : 'var(--green)';
+  counter.textContent = used + ' / ' + cap + ' min used';
+  counter.style.color = pct >= 100 ? 'var(--red)' : pct >= 80 ? 'var(--orange)' : 'var(--text)';
+
+  if(pct >= 100){
+    hint.textContent = '⚠ Session is fully booked. Deselect a package or choose a longer duration.';
+    hint.style.color = 'var(--red)';
+  } else if(pct >= 80){
+    hint.textContent = remaining + ' min remaining — tight but doable.';
+    hint.style.color = 'var(--orange)';
+  } else {
+    hint.textContent = remaining + ' min remaining for more content.';
+    hint.style.color = 'var(--text-muted)';
+  }
+
+  // Lock/unlock packages that can't fit
+  PACKAGES.forEach(p => {
+    const wrap = document.querySelector(`.pkg-wrapper:has(#pkg-${p.id})`);
+    const cb = document.getElementById('pkg-' + p.id);
+    if(!wrap || !cb) return;
+    if(cb.checked) {
+      // already selected — always unlocked (they can deselect it)
+      wrap.classList.remove('pkg-time-locked-wrap');
+      return;
+    }
+    const cost = getPkgTimeCost(p.id); // cost if they were to add it
+    const wouldExceed = (used + cost) > cap;
+    wrap.classList.toggle('pkg-time-locked-wrap', wouldExceed);
+    // Set tooltip on label
+    const lbl = document.getElementById('label-' + p.id);
+    if(lbl){
+      if(wouldExceed) {
+        lbl.title = 'Needs ~' + cost + ' min · only ' + remaining + ' min left';
+      } else {
+        lbl.title = '';
+      }
+    }
+    // Badge text
+    let badge = wrap.querySelector('.pkg-lock-badge');
+    if(!badge){
+      badge = document.createElement('span');
+      badge.className = 'pkg-lock-badge';
+      wrap.appendChild(badge);
+    }
+    badge.textContent = '~' + cost + 'm';
+  });
+}
+
+/* ── DURATIONS ── */
+const DAY_START    = 10*60;
+const DAY_START_WED= 12*60;
+const DAY_END      = 16*60;
+const DAY_TOTAL    = DAY_END - DAY_START;
+
+const DURATIONS = [
+  {label:'30 min',mins:30, sub:'quick'},
+  {label:'1 hr',  mins:60, sub:'standard'},
+  {label:'2 hr',  mins:120,sub:'extended'},
+  {label:'4 hr',  mins:240,sub:'half day'},
+  {label:'All Day',mins:360,sub:'full day'},
+];
+
+/* ── CANADIAN HOLIDAYS (Ontario) ── */
+function getHolidays(year) {
+  const h = new Set();
+  const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  // Fixed
+  h.add(`${year}-01-01`); // New Year's
+  h.add(`${year}-07-01`); // Canada Day
+  h.add(`${year}-11-11`); // Remembrance Day
+  h.add(`${year}-12-25`); // Christmas
+  h.add(`${year}-12-26`); // Boxing Day
+  // Family Day — 3rd Monday of February
+  h.add(fmt(nthWeekday(year,2,1,3)));
+  // Good Friday — 2 days before Easter
+  const easter = getEaster(year);
+  const gf = new Date(easter); gf.setDate(gf.getDate()-2); h.add(fmt(gf));
+  const em = new Date(easter); em.setDate(em.getDate()+1); h.add(fmt(em)); // Easter Monday
+  // Victoria Day — last Monday before May 25
+  h.add(fmt(victoriaDay(year)));
+  // Labour Day — 1st Monday September
+  h.add(fmt(nthWeekday(year,9,1,1)));
+  // Thanksgiving — 2nd Monday October
+  h.add(fmt(nthWeekday(year,10,1,2)));
+  return h;
+}
+function nthWeekday(year,month,dow,n){
+  let d=new Date(year,month-1,1),c=0;
+  while(d.getDay()!==dow) d.setDate(d.getDate()+1);
+  for(let i=1;i<n;i++) d.setDate(d.getDate()+7);
+  return d;
+}
+function victoriaDay(year){
+  let d=new Date(year,4,24);
+  while(d.getDay()!==1) d.setDate(d.getDate()-1);
+  return d;
+}
+function getEaster(y){
+  const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,
+        f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,
+        i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,
+        m=Math.floor((a+11*h+22*l)/451),
+        month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;
+  return new Date(y,month-1,day);
+}
+
+/* ── STATE ── */
+let selectedDate     = null;
+let selectedDuration = null;
+let selectedSlot     = null;
+let existingBookings = []; // {date,startMin,endMin,zone,store}
+let calYear, calMonth;
+let holidayCache = {};
+
+/* ── INIT ── */
+document.addEventListener('DOMContentLoaded',()=>{
+  const now = new Date();
+  calYear  = now.getFullYear();
+  calMonth = now.getMonth();
+  holidayCache[calYear]   = getHolidays(calYear);
+  holidayCache[calYear+1] = getHolidays(calYear+1);
+  renderCalendar();
+  renderDurationPicker(); // always show duration picker
+  buildPackages();
+  buildDealerDropdown();
+  buildCountryList();
+  initAutosave();
+  loadAutosave();
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.country-select-wrap')) closeCountryDropdown();
+  });
+});
+
+/* ═══════════════════════════════════════════════════════
+   CALENDAR
+═══════════════════════════════════════════════════════ */
+function renderCalendar(){
+  const now   = new Date();
+  const label = new Date(calYear,calMonth,1).toLocaleDateString('en-CA',{month:'long',year:'numeric'});
+  document.getElementById('cal-month-label').textContent = label;
+  // disable prev if we're at current month
+  document.getElementById('cal-prev').disabled = (calYear===now.getFullYear() && calMonth===now.getMonth());
+
+  const grid  = document.getElementById('cal-grid');
+  grid.innerHTML='';
+
+  const firstDay  = new Date(calYear,calMonth,1).getDay(); // 0=Sun
+  const daysInMonth = new Date(calYear,calMonth+1,0).getDate();
+
+  // blank cells
+  for(let i=0;i<firstDay;i++){
+    const e=document.createElement('div'); e.className='cal-day cal-empty'; grid.appendChild(e);
+  }
+
+  const holidays = holidayCache[calYear] || getHolidays(calYear);
+  const todayStr = dateStr(now);
+  const minDate  = new Date(now.getTime() + 72*60*60*1000);
+
+  for(let d=1;d<=daysInMonth;d++){
+    const dt   = new Date(calYear,calMonth,d);
+    const dstr = dateStr(dt);
+    const dow  = dt.getDay(); // 0=Sun,6=Sat
+    const isWeekend  = dow===0||dow===6;
+    const isHoliday  = holidays.has(dstr);
+    const isTooSoon  = dt < minDate;
+    const weekFull   = isWeekFull(dstr);
+    const dayFull    = isDayFull(dstr);
+
+    const cell = document.createElement('div');
+    cell.className = 'cal-day';
+    if(dstr===todayStr) cell.classList.add('cal-today');
+    if(dstr===selectedDate) cell.classList.add('cal-selected');
+
+    const disabled = isWeekend||isHoliday||isTooSoon||weekFull||dayFull;
+    if(disabled){
+      cell.classList.add('cal-disabled');
+    } else {
+      cell.onclick=()=>selectCalDay(dstr,cell);
+    }
+
+    // availability dot
+    let dotClass='';
+    if(!isWeekend&&!isHoliday&&!isTooSoon){
+      const usedMins = getUsedMinutesForDate(dstr);
+      const weekCount = getWeekBookingCount(dstr);
+      if(dayFull||weekFull) dotClass='dot-red';
+      else if(usedMins>180||weekCount>=4) dotClass='dot-yellow';
+      else dotClass='dot-green';
+    }
+
+    cell.innerHTML = `<span>${d}</span>${dotClass?`<span class="avail-dot ${dotClass}"></span>`:''}`;
+    grid.appendChild(cell);
+  }
+}
+
+function calPrev(){
+  calMonth--;
+  if(calMonth<0){calMonth=11;calYear--;}
+  holidayCache[calYear]=holidayCache[calYear]||getHolidays(calYear);
+  renderCalendar();
+}
+function calNext(){
+  calMonth++;
+  if(calMonth>11){calMonth=0;calYear++;}
+  holidayCache[calYear]=holidayCache[calYear]||getHolidays(calYear);
+  renderCalendar();
+}
+
+function selectCalDay(dstr,cell){// Fetch Google Calendar busy times for selected date
+fetchGoogleBusy(dstr);
+  document.querySelectorAll('.cal-day.cal-selected').forEach(c=>c.classList.remove('cal-selected'));
+  cell.classList.add('cal-selected');
+  selectedDate     = dstr;
+  selectedDuration = null;
+  selectedSlot     = null;
+  hideAlert('date-alert');
+
+  document.getElementById('time-preview').style.display='none';
+  renderDurationPicker();
+  renderSlots();
+
+  setTimeout(()=>document.getElementById('duration-field').scrollIntoView({behavior:'smooth',block:'nearest'}),50);
+}
+
+async function createCalendarEvent(summary, description, startDateTime, endDateTime, attendeeEmail) {
+  const store = document.getElementById('dealership-select')?.value;
+  const contact = document.getElementById('onsite-contact')?.value?.trim();
+  const notes = document.getElementById('additional-notes')?.value?.trim();
+  const name = document.getElementById('strategist-name')?.value?.trim();
+
+  const res = await fetch(`/.netlify/functions/get-busy?date=${dateStr}`, {
+  method: 'GET'
+
+  const data = await res.json();
+  if (!res.ok || data.error) throw new Error(data.error || 'Booking failed');
+  return data;
+}
+
+function dateStr(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+
+/* ── WEEK / DAY HELPERS ── */
+function getWeekStart(dstr){
+  const d=new Date(dstr+'T12:00:00');
+  const day=d.getDay(); // Sun=0
+  const diff=d.getDate()-day+(day===0?-6:1); // Mon
+  const mon=new Date(d); mon.setDate(diff);
+  return dateStr(mon);
+}
+function getWeekBookingCount(dstr){
+  const ws=getWeekStart(dstr);
+  const we=new Date(ws+'T12:00:00'); we.setDate(we.getDate()+6);
+  const weStr=dateStr(we);
+  return existingBookings.filter(b=>b.date>=ws&&b.date<=weStr).length;
+}
+function isWeekFull(dstr){ return getWeekBookingCount(dstr)>=WEEKLY_CAP; }
+function isDayFull(dstr){
+  const dayBookings=existingBookings.filter(b=>b.date===dstr);
+  if(!dayBookings.length) return false;
+  const zone=dayBookings[0].zone;
+  const bookingCount=dayBookings.length;
+  if(zone==='fullday') return true;
+  // check time remaining vs minimum slot (30 min)
+  const usedMins=getUsedMinutesForDate(dstr);
+  const dow=new Date(dstr+'T12:00:00').getDay();
+  const dayStart=dow===3?DAY_START_WED:DAY_START;
+  const avail=DAY_END-dayStart-usedMins;
+  if(avail<30) return true;
+  if(bookingCount>=ZONES[zone].maxPerDay) return true;
+  return false;
+}
+function getUsedMinutesForDate(date){ return existingBookings.filter(b=>b.date===date).reduce((s,b)=>s+(b.endMin-b.startMin),0); }
+
+/* ── DURATION PICKER ── */
+function renderDurationPicker(){
+  const row=document.getElementById('duration-row');
+  row.innerHTML='';
+  // If no date selected yet, show all buttons as selectable placeholders
+  if(!selectedDate){
+    DURATIONS.forEach(dur=>{
+      const btn=document.createElement('button');
+      btn.type='button'; btn.className='dur-btn';
+      btn.innerHTML=`${dur.label}<span class="dur-sub">${dur.sub}</span>`;
+      btn.onclick=()=>{
+        if(!selectedDate){
+          // flash a hint — no date picked yet
+          document.getElementById('cal-grid').style.outline='2px solid rgba(58,123,213,.35)';
+          setTimeout(()=>document.getElementById('cal-grid').style.outline='',1200);
+          return;
+        }
+        selectDuration(dur.mins,btn);
+      };
+      row.appendChild(btn);
+    });
+    return;
+  }
+  const dow=new Date(selectedDate+'T12:00:00').getDay();
+  const dayStart=dow===3?DAY_START_WED:DAY_START;
+  const dayWindow=DAY_END-dayStart;
+  const usedMins=getUsedMinutesForDate(selectedDate);
+  const freeMins=dayWindow-usedMins;
+  const isFullDayBooked=existingBookings.filter(b=>b.date===selectedDate).some(b=>b.zone==='fullday');
+  DURATIONS.forEach(dur=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.className='dur-btn';
+    const fits=dur.mins<=freeMins&&!isFullDayBooked;
+    if(!fits) btn.classList.add('disabled');
+    btn.innerHTML=`${dur.label}<span class="dur-sub">${dur.sub}</span>`;
+    if(fits) btn.onclick=()=>selectDuration(dur.mins,btn);
+    row.appendChild(btn);
+  });
+}
+
+function selectDuration(mins,btn){
+  document.querySelectorAll('.dur-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedDuration=mins; selectedSlot=null;
+  document.getElementById('time-preview').style.display='none';
+  renderSlots();
+  updatePkgBudget();
+  updateStats();
+  scheduleAutosave();
+}
+
+/* ── SLOT GRID ── */
+function renderSlots(){
+  const grid=document.getElementById('slots-grid');
+  grid.innerHTML='';
+  if(!selectedDate){
+    grid.innerHTML='<p style="color:var(--text-muted);font-size:13px;grid-column:1/-1;padding:10px 0">Select a date on the calendar above to see available slots.</p>';
+    return;
+  }
+  if(!selectedDuration){
+    grid.innerHTML='<p style="color:var(--text-muted);font-size:13px;grid-column:1/-1;padding:10px 0">Pick a duration above to see available slots.</p>';
+    return;
+  }
+  const dayBookings=existingBookings.filter(b=>b.date===selectedDate);
+  const lockedZone=dayBookings.length?dayBookings[0].zone:null;
+  const dow=new Date(selectedDate+'T12:00:00').getDay();
+  const dayStart=dow===3?DAY_START_WED:DAY_START;
+  const starts=[];
+  for(let t=dayStart;t+selectedDuration<=DAY_END;t+=30) starts.push(t);
+  if(!starts.length){
+    grid.innerHTML='<p style="color:var(--text-muted);font-size:13px;grid-column:1/-1">No slots fit this duration today.</p>';
+    return;
+  }
+  starts.forEach(startMin=>{
+    const endMin=startMin+selectedDuration;
+    const btn=document.createElement('button');
+    btn.type='button'; btn.className='slot-btn';
+    const overlaps=dayBookings.some(b=>startMin<b.endMin&&endMin>b.startMin);
+    if(overlaps){
+      btn.classList.add('disabled');
+      btn.innerHTML=`${minsToTime12(startMin)}<span class="slot-status">booked</span>`;
+    } else {
+      btn.innerHTML=`${minsToTime12(startMin)}<span class="slot-status">open</span>`;
+      btn.onclick=()=>selectSlot(startMin,btn);
+    }
+    grid.appendChild(btn);
+  });
+  if(lockedZone){
+    const z=ZONES[lockedZone];
+    const rem=z.maxPerDay-dayBookings.length;
+    showAlert('zone-info',`ℹ This day has ${z.name} bookings · Only ${z.name} stores available · ${rem} slot(s) remaining`,'info');
+    filterDealerToZone(lockedZone);
+  } else {
+    hideAlert('zone-info');
+    filterDealerToZone(null);
+  }
+}
+
+function selectSlot(startMin,btn){
+  document.querySelectorAll('.slot-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected'); selectedSlot=startMin;
+  const endMin=startMin+selectedDuration;
+  document.getElementById('preview-range').textContent=`${minsToTime12(startMin)} – ${minsToTime12(endMin)}`;
+  const dow=new Date(selectedDate+'T12:00:00').getDay();
+  const dayStart=dow===3?DAY_START_WED:DAY_START;
+  const dayWindow=DAY_END-dayStart;
+  const usedAfter=getUsedMinutesForDate(selectedDate)+selectedDuration;
+  const pct=Math.min(100,Math.round((usedAfter/dayWindow)*100));
+  const fill=document.getElementById('remaining-fill');
+  fill.style.width=pct+'%';
+  fill.style.background=pct>=100?'var(--red)':pct>=70?'var(--orange)':'var(--green)';
+  document.getElementById('time-preview').style.display='block';
+  revealSections();
+  updateStats();
+  scheduleAutosave();
+}
+
+function minsToTime12(mins){
+  let h=Math.floor(mins/60),m=mins%60;
+  const ap=h>=12?'PM':'AM'; h=h%12||12;
+  return `${h}:${String(m).padStart(2,'0')} ${ap}`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   COMBOBOX (searchable dealership)
+═══════════════════════════════════════════════════════ */
+let comboLockedZone = null;
+let comboBlurTimer  = null;
+
+function buildDealerDropdown(){ filterDealerToZone(null); }
+
+function filterDealerToZone(zone){
+  comboLockedZone=zone;
+  // rebuild dropdown with all options ready (shown on focus)
+  renderComboDropdown('');
+}
+
+function renderComboDropdown(query){
+  const dd=document.getElementById('dealer-dropdown');
+  dd.innerHTML='';
+  const q=query.trim().toLowerCase();
+  const pool=comboLockedZone?ALL_STORES.filter(s=>s.zone===comboLockedZone):ALL_STORES;
+
+  if(q){
+    // flat filtered list
+    const matches=pool.filter(s=>s.name.toLowerCase().includes(q));
+    if(!matches.length){
+      dd.innerHTML='<div class="combo-no-results">No dealerships found</div>';
+    } else {
+      matches.forEach(s=>{
+        const div=document.createElement('div');
+        div.className='combo-option';
+        if(document.getElementById('dealership-select').value===s.name) div.classList.add('selected-opt');
+        div.textContent=s.name;
+        div.onmousedown=e=>{e.preventDefault();selectDealer(s.name);};
+        dd.appendChild(div);
+      });
+    }
+  } else {
+    // grouped browse
+    const byZone={};
+    pool.forEach(s=>{if(!byZone[s.zone])byZone[s.zone]=[];byZone[s.zone].push(s);});
+    Object.entries(byZone).forEach(([k,stores])=>{
+      const grpLbl=document.createElement('div');
+      grpLbl.className='combo-group-label';
+      grpLbl.textContent=ZONES[k].name+(k==='fullday'?' (Full Day)':'');
+      dd.appendChild(grpLbl);
+      stores.forEach(s=>{
+        const div=document.createElement('div');
+        div.className='combo-option';
+        if(document.getElementById('dealership-select').value===s.name) div.classList.add('selected-opt');
+        div.textContent=s.name;
+        div.onmousedown=e=>{e.preventDefault();selectDealer(s.name);};
+        dd.appendChild(div);
+      });
+    });
+  }
+}
+
+function comboFilter(){
+  const q=document.getElementById('dealer-input').value;
+  renderComboDropdown(q);
+  document.getElementById('dealer-dropdown').classList.add('open');
+  // clear hidden value if user is typing new thing
+  document.getElementById('dealership-select').value='';
+}
+function comboOpen(){
+  clearTimeout(comboBlurTimer);
+  renderComboDropdown(document.getElementById('dealer-input').value);
+  document.getElementById('dealer-dropdown').classList.add('open');
+}
+function comboBlur(){
+  comboBlurTimer=setTimeout(()=>{
+    document.getElementById('dealer-dropdown').classList.remove('open');
+    // if hidden value empty, clear display
+    if(!document.getElementById('dealership-select').value){
+      document.getElementById('dealer-input').value='';
+    }
+  },180);
+}
+function selectDealer(name){
+  const zone=STORE_ZONE[name];
+  // check zone conflict
+  if(selectedDate){
+    const dayBookings=existingBookings.filter(b=>b.date===selectedDate);
+    const bookedZones=[...new Set(dayBookings.map(b=>b.zone))];
+    if(bookedZones.length&&!bookedZones.includes(zone)){
+      showAlert('dealership-alert',`${name} is in ${ZONES[zone].name} but this day already has ${ZONES[bookedZones[0]].name} bookings. Choose a different date or store.`,'error');
+      document.getElementById('dealer-input').value='';
+      document.getElementById('dealership-select').value='';
+      document.getElementById('dealer-dropdown').classList.remove('open');
+      return;
+    }
+  }
+  hideAlert('dealership-alert');
+  document.getElementById('dealer-input').value=name;
+  document.getElementById('dealership-select').value=name;
+  document.getElementById('dealer-dropdown').classList.remove('open');
+  // re-highlight
+  renderComboDropdown('');
+  updateStats();
+  scheduleAutosave();
+}
+
+/* ═══════════════════════════════════════════════════════
+   PACKAGES + MODAL
+═══════════════════════════════════════════════════════ */
+function buildPackages(){
+  const grid=document.getElementById('packages-grid');
+  grid.innerHTML='';
+  PACKAGES.forEach(pkg=>{
+    const wrap=document.createElement('div');
+    wrap.className='pkg-wrapper';
+    wrap.innerHTML=`
+      <input type="checkbox" class="pkg-checkbox" id="pkg-${pkg.id}" value="${pkg.id}" onchange="onPackageToggle('${pkg.id}')">
+      <label class="pkg-label" for="pkg-${pkg.id}" id="label-${pkg.id}">
+        <span class="pkg-icon">${pkg.icon}</span>
+        <span class="pkg-label-text">${pkg.label}</span>
+        <span class="pkg-check">✓</span>
+      </label>
+      <button type="button" class="pkg-deselect" title="Remove" onclick="deselectPackage('${pkg.id}')">×</button>`;
+    grid.appendChild(wrap);
+  });
+
+  const info=document.createElement('div');
+  info.id='pkg-filled-info';
+  info.style.cssText='margin-top:12px;display:none;padding:10px 14px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:10px;font-size:12.5px;color:#15803d;line-height:1.6';
+  grid.parentElement.appendChild(info);
+}
+
+function onPackageToggle(id){
+  const checked=document.getElementById('pkg-'+id).checked;
+  if(checked){
+    // Check time budget before allowing selection
+    if(selectedDuration){
+      const cost = getPkgTimeCost(id);
+      const used = getTotalPkgMins() - cost; // subtract because it's already checked
+      const remaining = selectedDuration - used;
+      if(cost > remaining){
+        // Revert the check and warn
+        document.getElementById('pkg-'+id).checked = false;
+        const lbl = document.getElementById('label-'+id);
+        if(lbl){ lbl.style.animation='none'; void lbl.offsetWidth; lbl.style.animation='shake .4s ease both'; }
+        updatePkgBudget();
+        return;
+      }
+    }
+    // newly checked — open modal
+    openModal(id);
+  }
+  updatePkgBudget();
+  updateStats();
+  scheduleAutosave();
+}
+
+/* clicking an already-checked label reopens modal without unchecking */
+document.addEventListener('click',e=>{
+  const lbl=e.target.closest('.pkg-label');
+  if(!lbl) return;
+  const id=lbl.id.replace('label-','');
+  const cb=document.getElementById('pkg-'+id);
+  if(cb && cb.checked){
+    // prevent the default checkbox toggle (which would uncheck it)
+    e.preventDefault();
+    openModal(id);
+  }
+});
+
+function deselectPackage(id){
+  const cb=document.getElementById('pkg-'+id);
+  if(cb){ cb.checked=false; }
+  // clear stored data for this package
+  packageData[id]=null;
+  updateFilledInfo();
+  updatePkgBudget();
+  updateStats();
+  scheduleAutosave();
+}
+
+
+/* ── PACKAGE DATA STORE ── */
+const packageData = {};
+
+function openModal(id){
+  const pkg=PACKAGES.find(p=>p.id===id);
+  if(!pkg) return;
+  document.getElementById('modal-title').textContent=`${pkg.icon} ${pkg.label}`;
+  document.getElementById('modal-body').innerHTML=buildModalBody(id);
+  // clear any prior error
+  const prevErr = document.getElementById('modal-field-error');
+  if(prevErr) prevErr.remove();
+  // restore saved data into modal
+  restoreModalData(id);
+  document.getElementById('modal-backdrop').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeModal(){
+  const openPkg = getCurrentModalPkg();
+  if(openPkg){
+    const err = validateModalFields(openPkg);
+    if(err){
+      // shake the Done button and show inline error
+      const doneBtn = document.querySelector('.modal-done');
+      const existingErr = document.getElementById('modal-field-error');
+      if(existingErr) existingErr.remove();
+      const errEl = document.createElement('p');
+      errEl.id = 'modal-field-error';
+      errEl.style.cssText = 'color:var(--red);font-size:12.5px;font-weight:600;text-align:center;margin-top:10px;font-family:Inter,sans-serif';
+      errEl.textContent = '⚠ ' + err;
+      doneBtn.parentNode.insertBefore(errEl, doneBtn.nextSibling);
+      if(doneBtn){ doneBtn.classList.remove('shake'); void doneBtn.offsetWidth; doneBtn.classList.add('shake'); doneBtn.addEventListener('animationend',()=>doneBtn.classList.remove('shake'),{once:true}); }
+      return; // block close
+    }
+    saveModalData(openPkg);
+  }
+  document.getElementById('modal-backdrop').classList.remove('open');
+  document.body.style.overflow='';
+  updateFilledInfo();
+  updatePkgBudget();
+  updateStats();
+  scheduleAutosave();
+}
+
+function validateModalFields(id){
+  const body = document.getElementById('modal-body');
+  if(!body) return null;
+  if(id==='ethnic'){
+    const cards = [...body.querySelectorAll('#ethnic-entries .entry-card')];
+    for(let i=0;i<cards.length;i++){
+      if(!cards[i].querySelector('.ethnic-lang')?.value?.trim()) return `Video ${i+1}: Language is required.`;
+      if(!cards[i].querySelector('.ethnic-name')?.value?.trim()) return `Video ${i+1}: Subject name is required.`;
+    }
+  } else if(id==='walkaround'||id==='salesvideo'){
+    const cards = [...body.querySelectorAll(`#${id}-entries .entry-card`)];
+    for(let i=0;i<cards.length;i++){
+      if(!cards[i].querySelector('.veh-model')?.value?.trim()) return `Entry ${i+1}: Make & Model is required.`;
+    }
+  } else if(id==='salesrep'){
+    const cards = [...body.querySelectorAll('#salesrep-entries .entry-card')];
+    for(let i=0;i<cards.length;i++){
+      if(!cards[i].querySelector('.rep-name')?.value?.trim()) return `Rep ${i+1}: Name is required.`;
+    }
+  } else if(id==='headshots'){
+    const names = [...body.querySelectorAll('.headshot-name')].map(i=>i.value.trim()).filter(Boolean);
+    if(!names.length) return 'At least one person name is required.';
+  } else if(id==='service'){
+    if(!body.querySelector('#service-notes')?.value?.trim()) return 'Please describe the service video shoot.';
+  } else if(id==='social'){
+    const cards = [...body.querySelectorAll('#social-entries .entry-card')];
+    for(let i=0;i<cards.length;i++){
+      if(!cards[i].querySelector('.social-hook')?.value?.trim()) return `Video ${i+1}: Hook / theme is required.`;
+    }
+  } else if(id==='gmb'){
+    if(!body.querySelector('#photo-count')?.value?.trim()) return 'Number of photos / deliverables is required.';
+  } else if(id==='lifestyle'){
+    if(!body.querySelector('#lifestyle-count')?.value?.trim()) return 'Number of deliverables is required.';
+  }
+  return null; // all good
+}
+function getCurrentModalPkg(){
+  const title=document.getElementById('modal-title').textContent;
+  return PACKAGES.find(p=>title.includes(p.label))?.id||null;
+}
+function closeModalOnBackdrop(e){
+  if(e.target===document.getElementById('modal-backdrop')) closeModal();
+}
+
+function updateFilledInfo(){
+  const checked=PACKAGES.filter(p=>document.getElementById('pkg-'+p.id)?.checked);
+  const info=document.getElementById('pkg-filled-info');
+  if(!info) return;
+  if(!checked.length){info.style.display='none';return;}
+  info.style.display='block';
+  info.innerHTML='<strong>Selected:</strong> '+checked.map(p=>{
+    const d=packageData[p.id];
+    let count=1;
+    if(p.id==='ethnic'||p.id==='social'||p.id==='walkaround'||p.id==='salesvideo'||p.id==='salesrep') count=d?.entries?.length||1;
+    else if(p.id==='headshots') count=d?.names?.filter(n=>n.trim()).length||1;
+    const countStr=count>1?`${count}× `:'';
+    return `${p.icon} ${countStr}${p.label}`;
+  }).join(' &nbsp;·&nbsp; ');
+}
+
+function getSelectedPackages(){
+  return PACKAGES.filter(p=>document.getElementById('pkg-'+p.id)?.checked).map(p=>{
+    const d=packageData[p.id];
+    let count=1;
+    if(p.id==='ethnic'||p.id==='social'||p.id==='walkaround'||p.id==='salesvideo'||p.id==='salesrep') count=d?.entries?.length||1;
+    else if(p.id==='headshots') count=d?.names?.filter(n=>n.trim()).length||1;
+    return count>1?`${count}× ${p.label}`:p.label;
+  });
+}
+
+/* ── MODAL BODY BUILDERS ── */
+function buildModalBody(id){
+  switch(id){
+    case 'ethnic':     return bodyEthnic();
+    case 'walkaround': return bodyVehicles('walkaround');
+    case 'service':    return bodyService();
+    case 'headshots':  return bodyHeadshots();
+    case 'gmb':        return bodyPhotos();
+    case 'salesvideo': return bodyVehicles('salesvideo');
+    case 'lifestyle':  return bodyLifestyle();
+    case 'social':     return bodySocial();
+    case 'salesrep':   return bodyReps();
+    default: return '<p style="color:var(--text-muted)">No extra details needed.</p>';
+  }
+}
+
+function bodyEthnic(){
+  // First entry is auto-added via JS after render
+  return `<div id="ethnic-entries"></div>
+  <button class="add-entry-btn" onclick="addEthnicEntry()">+ Add Another Ethnic Video</button>`;
+}
+
+function bodyVehicles(prefix){
+  return `<div id="${prefix}-entries"></div>
+  <button class="add-entry-btn" onclick="addVehicleEntry('${prefix}-entries')">+ Add Another Vehicle</button>`;
+}
+function bodyService(){
+  return `<div class="field"><label>Notes</label><textarea id="service-notes" placeholder="Service type, technician, vehicle, key message — anything useful…" style="min-height:120px"></textarea></div>`;
+}
+function bodyHeadshots(){
+  return `<div id="headshot-names-list"><div class="headshot-person"><input type="text" class="headshot-name" placeholder="Full name of person"><button class="remove-person" onclick="removePerson(this)">×</button></div></div>
+  <button class="add-entry-btn" onclick="addPerson()">+ Add Another Person</button>`;
+}
+function bodyPhotos(){
+  return `<div class="field"><label>Photo Types</label>
+  <div class="toggle-group">
+    <input type="checkbox" class="tog-input" id="photo-gmb"><label class="tog-label" for="photo-gmb">📍 GMB</label>
+    <input type="checkbox" class="tog-input" id="photo-vehicle"><label class="tog-label" for="photo-vehicle">🚗 Vehicle</label>
+    <input type="checkbox" class="tog-input" id="photo-service"><label class="tog-label" for="photo-service">🔧 Service</label>
+    <input type="checkbox" class="tog-input" id="photo-lifestyle"><label class="tog-label" for="photo-lifestyle">✨ Lifestyle</label>
+  </div></div>
+  <div class="field"><label>Setting</label>
+  <div class="toggle-group">
+    <input type="radio" class="tog-input" name="photo-setting" id="photo-in"><label class="tog-label" for="photo-in">Indoor</label>
+    <input type="radio" class="tog-input" name="photo-setting" id="photo-out"><label class="tog-label" for="photo-out">Outdoor</label>
+    <input type="radio" class="tog-input" name="photo-setting" id="photo-both"><label class="tog-label" for="photo-both">Both</label>
+  </div></div>
+  <div class="field"><label>Number of Photos / Deliverables</label><input type="text" id="photo-count" placeholder="e.g. 20 GMB + 10 vehicle shots"></div>
+  <div class="field"><label>Areas or Subjects to Cover</label><textarea id="photo-areas" placeholder="Showroom floor, service bay, specific vehicles…"></textarea></div>
+  <div class="field"><label>Reference Link</label><input type="text" id="photo-ref" placeholder="Google Drive, Doc, Pinterest… https://"></div>`;
+}
+function bodyLifestyle(){
+  return `<div class="field"><label>Setting</label>
+  <div class="toggle-group">
+    <input type="radio" class="tog-input" name="ls-setting" id="ls-in"><label class="tog-label" for="ls-in">Indoor</label>
+    <input type="radio" class="tog-input" name="ls-setting" id="ls-out"><label class="tog-label" for="ls-out">Outdoor</label>
+    <input type="radio" class="tog-input" name="ls-setting" id="ls-both"><label class="tog-label" for="ls-both">Both</label>
+  </div></div>
+  <div class="field"><label>Number of Deliverables</label><input type="text" id="lifestyle-count" placeholder="e.g. 10 photos + 2 short clips"></div>
+  <div class="field"><label>Mood / Brand Direction</label><input type="text" id="lifestyle-mood" placeholder="e.g. aspirational, family-focused, luxury feel"></div>
+  <div class="field"><label>Reference Link</label><input type="text" id="lifestyle-ref" placeholder="Google Doc, Drive, Pinterest… https://"></div>`;
+}
+function bodySocial(){
+  return `<div id="social-entries"></div>
+  <button class="add-entry-btn" onclick="addSocialEntry()">+ Add Another Social Media Video</button>`;
+}
+function bodyReps(){
+  return `<div id="salesrep-entries"></div>
+  <button class="add-entry-btn" onclick="addSalesRepEntry()">+ Add Another Rep</button>`;
+}
+
+/* ── ENTRY ADDERS ── */
+function addEthnicEntry(){
+  const list=document.getElementById('ethnic-entries');
+  if(!list) return;
+  const idx=list.children.length+1;
+  const div=document.createElement('div'); div.className='entry-card';
+  div.innerHTML=`
+    ${idx>1?'<button class="entry-remove" onclick="removeEntry(this)">×</button>':''}
+    <div class="field"><label>Language / Dialect</label><input type="text" class="ethnic-lang" placeholder="e.g. Punjabi, Mandarin, Tamil…"></div>
+    <div class="two-col">
+      <div class="field"><label>Subject Name</label><input type="text" class="ethnic-name" placeholder="Person featured"></div>
+      <div class="field"><label>Role / Title</label><input type="text" class="ethnic-role" placeholder="e.g. Sales Manager"></div>
+    </div>
+    <div class="field"><label>Video Type</label>
+    <div class="toggle-group">
+      <input type="radio" class="tog-input" name="et-${idx}" id="et-s-${idx}"><label class="tog-label" for="et-s-${idx}">Sales</label>
+      <input type="radio" class="tog-input" name="et-${idx}" id="et-sv-${idx}"><label class="tog-label" for="et-sv-${idx}">Service</label>
+      <input type="radio" class="tog-input" name="et-${idx}" id="et-b-${idx}"><label class="tog-label" for="et-b-${idx}">Brand Story</label>
+      <input type="radio" class="tog-input" name="et-${idx}" id="et-i-${idx}"><label class="tog-label" for="et-i-${idx}">Intro</label>
+    </div></div>
+    <div class="field"><label>Script / Talking Points</label><textarea class="ethnic-script" placeholder="Key messages, tone, specific lines…" style="min-height:64px"></textarea></div>`;
+  list.appendChild(div);
+}
+
+function addSocialEntry(){
+  const list=document.getElementById('social-entries');
+  if(!list) return;
+  const idx=list.children.length+1;
+  const div=document.createElement('div'); div.className='entry-card';
+  div.innerHTML=`
+    ${idx>1?'<button class="entry-remove" onclick="removeEntry(this)">×</button>':''}
+    <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Video ${idx}</div>
+    <div class="field"><label>Target Platforms</label>
+    <div class="toggle-group">
+      <input type="checkbox" class="tog-input" id="soc-ig-${idx}"><label class="tog-label" for="soc-ig-${idx}">Instagram</label>
+      <input type="checkbox" class="tog-input" id="soc-tt-${idx}"><label class="tog-label" for="soc-tt-${idx}">TikTok</label>
+      <input type="checkbox" class="tog-input" id="soc-fb-${idx}"><label class="tog-label" for="soc-fb-${idx}">Facebook</label>
+      <input type="checkbox" class="tog-input" id="soc-yt-${idx}"><label class="tog-label" for="soc-yt-${idx}">YouTube Shorts</label>
+    </div></div>
+    <div class="field"><label>Content Hook / Theme</label><input type="text" class="social-hook" placeholder="e.g. 'Why we're the #1 Honda dealer in GTA'"></div>
+    <div class="field"><label>Number of Reels / Posts Needed</label><input type="text" class="social-count" placeholder="e.g. 3 reels + 5 static posts"></div>`;
+  list.appendChild(div);
+}
+
+function addVehicleEntry(containerId){
+  const list=document.getElementById(containerId);
+  if(!list) return;
+  const idx=list.children.length+1;
+  const div=document.createElement('div'); div.className='entry-card';
+  div.innerHTML=`
+    ${idx>1?'<button class="entry-remove" onclick="removeEntry(this)">×</button>':''}
+    <div class="two-col">
+      <div class="field"><label>Year</label><input type="text" class="veh-year" placeholder="e.g. 2024"></div>
+      <div class="field"><label>Make & Model</label><input type="text" class="veh-model" placeholder="e.g. Honda CR-V"></div>
+    </div>
+    <div class="field"><label>Talking Points / Script Notes</label><textarea class="veh-notes" placeholder="Key features, price point, promo, tone…" style="min-height:70px"></textarea></div>
+    <div class="field"><label>Reference File Link</label><input type="text" class="veh-ref" placeholder="Google Doc, Drive, Word… (optional)"></div>`;
+  list.appendChild(div);
+}
+
+function addSalesRepEntry(){
+  const list=document.getElementById('salesrep-entries');
+  if(!list) return;
+  const idx=list.children.length+1;
+  const div=document.createElement('div'); div.className='entry-card';
+  div.innerHTML=`
+    ${idx>1?'<button class="entry-remove" onclick="removeEntry(this)">×</button>':''}
+    <div class="two-col">
+      <div class="field"><label>Rep Name</label><input type="text" class="rep-name" placeholder="Full name"></div>
+      <div class="field"><label>Title / Role</label><input type="text" class="rep-role" placeholder="e.g. Finance Manager"></div>
+    </div>
+    <div class="field"><label>Languages Spoken</label><input type="text" class="rep-lang" placeholder="e.g. English, Hindi, French"></div>
+    <div class="field"><label>Key Message</label><textarea class="rep-notes" placeholder="What should this rep's intro communicate?" style="min-height:56px"></textarea></div>
+    <div class="field"><label>Reference File Link</label><input type="text" class="rep-ref" placeholder="Google Doc, Drive, Word… (optional)"></div>`;
+  list.appendChild(div);
+}
+
+function addPerson(){
+  const list=document.getElementById('headshot-names-list');
+  if(!list) return;
+  const div=document.createElement('div'); div.className='headshot-person';
+  div.innerHTML=`<input type="text" class="headshot-name" placeholder="Full name"><button class="remove-person" onclick="removePerson(this)">×</button>`;
+  list.appendChild(div);
+}
+function removePerson(btn){if(document.getElementById('headshot-names-list')?.children.length>1) btn.parentElement.remove();}
+function removeEntry(btn){btn.parentElement.remove();}
+
+/* ── MODAL DATA SAVE / RESTORE ── */
+function saveModalData(id){
+  const body=document.getElementById('modal-body');
+  if(!body) return;
+  const data={};
+  // ethnic
+  if(id==='ethnic'){
+    const entries=[...body.querySelectorAll('#ethnic-entries .entry-card')].map(card=>({
+      lang:card.querySelector('.ethnic-lang')?.value||'',
+      name:card.querySelector('.ethnic-name')?.value||'',
+      role:card.querySelector('.ethnic-role')?.value||'',
+      script:card.querySelector('.ethnic-script')?.value||''
+    }));
+    data.entries=entries;
+  } else if(id==='social'){
+    const entries=[...body.querySelectorAll('#social-entries .entry-card')].map(card=>({
+      hook:card.querySelector('.social-hook')?.value||'',
+      count:card.querySelector('.social-count')?.value||''
+    }));
+    data.entries=entries;
+  } else if(id==='headshots'){
+    data.names=[...body.querySelectorAll('.headshot-name')].map(i=>i.value||'');
+  } else if(id==='walkaround'||id==='salesvideo'){
+    const entries=[...body.querySelectorAll(`#${id}-entries .entry-card`)].map(card=>({
+      year:card.querySelector('.veh-year')?.value||'',
+      model:card.querySelector('.veh-model')?.value||'',
+      notes:card.querySelector('.veh-notes')?.value||''
+    }));
+    data.entries=entries;
+  } else if(id==='salesrep'){
+    const entries=[...body.querySelectorAll('#salesrep-entries .entry-card')].map(card=>({
+      name:card.querySelector('.rep-name')?.value||'',
+      role:card.querySelector('.rep-role')?.value||''
+    }));
+    data.entries=entries;
+  } else if(id==='service'){
+    data.notes=body.querySelector('#service-notes')?.value||'';
+  }
+  packageData[id]=data;
+}
+
+function restoreModalData(id){
+  // Auto-add first entry for list-type modals
+  setTimeout(()=>{
+    const data=packageData[id];
+    if(id==='ethnic'){
+      const list=document.getElementById('ethnic-entries');
+      if(!list) return;
+      if(data?.entries?.length){
+        data.entries.forEach(()=>addEthnicEntry());
+        const cards=[...list.querySelectorAll('.entry-card')];
+        data.entries.forEach((e,i)=>{
+          if(!cards[i]) return;
+          cards[i].querySelector('.ethnic-lang').value=e.lang||'';
+          cards[i].querySelector('.ethnic-name').value=e.name||'';
+          cards[i].querySelector('.ethnic-role').value=e.role||'';
+          cards[i].querySelector('.ethnic-script').value=e.script||'';
+        });
+      } else { addEthnicEntry(); }
+    } else if(id==='social'){
+      const list=document.getElementById('social-entries');
+      if(!list) return;
+      if(data?.entries?.length){
+        data.entries.forEach(()=>addSocialEntry());
+        const cards=[...list.querySelectorAll('.entry-card')];
+        data.entries.forEach((e,i)=>{
+          if(!cards[i]) return;
+          cards[i].querySelector('.social-hook').value=e.hook||'';
+          cards[i].querySelector('.social-count').value=e.count||'';
+        });
+      } else { addSocialEntry(); }
+    } else if(id==='walkaround'||id==='salesvideo'){
+      const list=document.getElementById(`${id}-entries`);
+      if(!list) return;
+      if(data?.entries?.length){
+        data.entries.forEach(()=>addVehicleEntry(`${id}-entries`));
+        const cards=[...list.querySelectorAll('.entry-card')];
+        data.entries.forEach((e,i)=>{
+          if(!cards[i]) return;
+          cards[i].querySelector('.veh-year').value=e.year||'';
+          cards[i].querySelector('.veh-model').value=e.model||'';
+          cards[i].querySelector('.veh-notes').value=e.notes||'';
+        });
+      } else { addVehicleEntry(`${id}-entries`); }
+    } else if(id==='salesrep'){
+      const list=document.getElementById('salesrep-entries');
+      if(!list) return;
+      if(data?.entries?.length){
+        data.entries.forEach(()=>addSalesRepEntry());
+        const cards=[...list.querySelectorAll('.entry-card')];
+        data.entries.forEach((e,i)=>{
+          if(!cards[i]) return;
+          cards[i].querySelector('.rep-name').value=e.name||'';
+          cards[i].querySelector('.rep-role').value=e.role||'';
+        });
+      } else { addSalesRepEntry(); }
+    } else if(id==='headshots'){
+      const list=document.getElementById('headshot-names-list');
+      if(!list) return;
+      if(data?.names?.length){
+        // clear the default first row rendered by bodyHeadshots()
+        list.innerHTML='';
+        data.names.forEach((name,i)=>{
+          const div=document.createElement('div'); div.className='headshot-person';
+          div.innerHTML=`<input type="text" class="headshot-name" placeholder="Full name of person" value="${name.replace(/"/g,'&quot;')}"><button class="remove-person" onclick="removePerson(this)">×</button>`;
+          list.appendChild(div);
+        });
+      }
+      // if no saved data, the default single row from bodyHeadshots() stays — nothing to do
+    } else if(id==='service' && data?.notes){
+      const el=document.getElementById('service-notes');
+      if(el) el.value=data.notes;
+    }
+  },0);
+}
+
+/* ── CONTENT PIECE COUNT ── */
+function getContentPieceCount(){
+  let total=0;
+  const breakdown=[];
+  PACKAGES.forEach(pkg=>{
+    const cb=document.getElementById('pkg-'+pkg.id);
+    if(!cb||!cb.checked) return;
+    const d=packageData[pkg.id];
+    let count=1;
+    if(pkg.id==='ethnic') count=d?.entries?.length||1;
+    else if(pkg.id==='social') count=d?.entries?.length||1;
+    else if(pkg.id==='walkaround'||pkg.id==='salesvideo') count=d?.entries?.length||1;
+    else if(pkg.id==='salesrep') count=d?.entries?.length||1;
+    else if(pkg.id==='headshots') count=d?.names?.filter(n=>n.trim()).length||1;
+    total+=count;
+    breakdown.push(`${count>1?count+'× ':''}${pkg.label}`);
+  });
+  return {total, breakdown};
+}
+
+/* ── REVEAL ── */
+function revealSections(){
+  ['info-section','dealership-section','content-section','notes-section'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el && el.style.display==='none'){
+      el.style.display='block';
+      el.classList.remove('revealed');
+      void el.offsetWidth; // reflow
+      el.classList.add('revealed');
+    }
+  });
+  const sa=document.getElementById('submit-area');
+  const sd=document.getElementById('stats-dashboard');
+  if(sa && sa.style.display==='none'){
+    sa.style.display='block';
+    sa.classList.remove('revealed');
+    void sa.offsetWidth;
+    sa.classList.add('revealed');
+  }
+  if(sd && sd.style.display==='none'){
+    sd.style.display='block';
+    sd.classList.remove('revealed');
+    void sd.offsetWidth;
+    sd.classList.add('revealed');
+  }
+}
+
+/* ── ALERTS ── */
+function showAlert(id,msg,type='error'){
+  const el=document.getElementById(id); if(!el) return;
+  el.innerHTML=msg; el.className=`alert ${type} visible`; el.style.display='flex';
+}
+function hideAlert(id){
+  const el=document.getElementById(id); if(!el) return;
+  el.className='alert'; el.style.display='none';
+}
+
+/* ── VALIDATION ── */
+function validate(){
+  const errors=[];
+  const mark=(id,bad)=>{const el=document.getElementById(id);if(el) el.classList.toggle('invalid',bad);};
+  const name=document.getElementById('strategist-name').value.trim();
+  mark('strategist-name',!name); if(!name) errors.push('Strategist name is required.');
+  const email=document.getElementById('strategist-email').value.trim();
+  const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  mark('strategist-email',!emailOk); if(!emailOk) errors.push('Valid email is required.');
+  if(!selectedDate) errors.push('Please select a shoot date from the calendar.');
+  if(!selectedDuration) errors.push('Please select a session duration.');
+  if(selectedSlot===null) errors.push('Please select a start time.');
+  const store=document.getElementById('dealership-select').value;
+  const inputEl=document.getElementById('dealer-input');
+  if(inputEl) inputEl.classList.toggle('invalid',!store);
+  if(!store) errors.push('Please select a dealership.');
+  const contact=document.getElementById('onsite-contact').value.trim();
+  mark('onsite-contact',!contact); if(!contact) errors.push('On-site contact name is required.');
+  if(getSelectedPackages().length===0) errors.push('Please select at least one content package.');
+  if(selectedDuration && getTotalPkgMins() > selectedDuration){
+    errors.push(`Selected packages need ~${getTotalPkgMins()} min but session is only ${selectedDuration} min. Deselect a package or choose a longer duration.`);
+  }
+  return errors;
+}
+
+/* ── SUBMIT ── */
+async function handleSubmit(){
+  const errors=validate();
+  const summary=document.getElementById('field-error-summary');
+  if(errors.length){
+    summary.innerHTML='<strong>Please fix the following:</strong><br>'+errors.map(e=>`• ${e}`).join('<br>');
+    summary.classList.add('visible'); summary.style.display='block';
+    summary.scrollIntoView({behavior:'smooth',block:'center'});
+    // shake animation
+    const btn2=document.getElementById('submit-btn');
+    btn2.classList.remove('shake'); void btn2.offsetWidth; btn2.classList.add('shake');
+    btn2.addEventListener('animationend',()=>btn2.classList.remove('shake'),{once:true});
+    return;
+  }
+  summary.classList.remove('visible'); summary.style.display='none';
+  const btn=document.getElementById('submit-btn');
+  btn.disabled=true; btn.textContent='Booking…';
+
+  const strategistName =document.getElementById('strategist-name').value.trim();
+  const strategistEmail=document.getElementById('strategist-email').value.trim();
+  const store          =document.getElementById('dealership-select').value;
+  const contact        =document.getElementById('onsite-contact').value.trim();
+  const contactPhone   =document.getElementById('onsite-phone').value.trim();
+  const packages       =getSelectedPackages();
+  const notes          =document.getElementById('additional-notes').value.trim();
+  const zone           =STORE_ZONE[store];
+  const endMin         =selectedSlot+selectedDuration;
+  const durLabel       =DURATIONS.find(d=>d.mins===selectedDuration)?.label||'';
+
+  const desc=[
+    `📍 Store: ${store}`,`🏢 Zone: ${ZONES[zone].name}`,`⏱ Duration: ${durLabel}`,
+    `👤 On-Site Contact: ${contact}${contactPhone?' · '+contactPhone:''}`,
+    `📦 Content: ${packages.join(', ')}`,
+    `\n📧 Booked by: ${strategistName} (${strategistEmail})`,
+    notes?`\n📝 Notes: ${notes}`:null,
+  ].filter(Boolean).join('\n');
+
+  const sh=String(Math.floor(selectedSlot/60)).padStart(2,'0'), sm=String(selectedSlot%60).padStart(2,'0');
+  const eh=String(Math.floor(endMin/60)).padStart(2,'0'),       em=String(endMin%60).padStart(2,'0');
+
+  try {
+    await createCalendarEvent({summary:`📷 ${store} — Content Shoot`,description:desc,startDateTime:`${selectedDate}T${sh}:${sm}:00`,endDateTime:`${selectedDate}T${eh}:${em}:00`,attendeeEmail:strategistEmail});
+    existingBookings.push({date:selectedDate,startMin:selectedSlot,endMin,zone,store});
+    // Persist to localStorage for admin dashboard
+    persistBooking({strategistName,strategistEmail,store,zone,contact,contactPhone,packages,packageDetail:{...packageData},notes,durLabel,durMins:selectedDuration});
+    renderCalendar();
+    showSuccessScreen({strategistName,store,zone,contact,packages,durLabel});
+  } catch(err){
+    btn.disabled=false; btn.textContent='Confirm Booking';
+    summary.innerHTML=`<strong>Calendar error:</strong> ${err.message||'Could not create event.'}`;
+    summary.classList.add('visible'); summary.style.display='block';
+  }
+}
+
+/* ── STATS RINGS ── */
+function setRing(fillId, pct, color){
+  const el=document.getElementById(fillId);
+  if(!el) return;
+  const circumference=188.5;
+  const offset=circumference-(pct/100)*circumference;
+  el.style.strokeDashoffset=offset;
+  if(color) el.style.stroke=color;
+}
+
+function updateStats(){
+  const {total,breakdown}=getContentPieceCount();
+  const pkgCount=PACKAGES.filter(p=>document.getElementById('pkg-'+p.id)?.checked).length;
+  const store=document.getElementById('dealership-select')?.value||'';
+
+  // Content pieces ring (max display = 20 for visual)
+  const piecePct=Math.min(100,(total/Math.max(total,10))*100);
+  setRing('ring-pieces-fill', total>0?Math.max(8,piecePct):0, total>0?'#3a7bd5':'rgba(0,0,0,.07)');
+  const pv=document.getElementById('ring-pieces-val');
+  if(pv) pv.textContent=total||'0';
+  const ps=document.getElementById('ring-pieces-sub');
+  if(ps) ps.textContent=breakdown.length?breakdown.join(', '):'Select packages';
+
+  // Duration ring
+  const durPct=selectedDuration?Math.min(100,(selectedDuration/360)*100):0;
+  setRing('ring-dur-fill', durPct, durPct>0?'#22c55e':'rgba(0,0,0,.07)');
+  const dv=document.getElementById('ring-dur-val');
+  if(dv){
+    if(selectedDuration){
+      const d=DURATIONS.find(d=>d.mins===selectedDuration);
+      dv.textContent=d?d.label:'—';
+    } else { dv.textContent='—'; }
+  }
+  const ds=document.getElementById('ring-dur-sub');
+  if(ds) ds.textContent=selectedSlot?`${minsToTime12(selectedSlot)} start`:'Pick a time';
+
+  // Packages ring (out of 10)
+  const pkgPct=(pkgCount/PACKAGES.length)*100;
+  setRing('ring-pkgs-fill', pkgPct>0?Math.max(8,pkgPct):0, pkgPct>0?'#f59e0b':'rgba(0,0,0,.07)');
+  const pkv=document.getElementById('ring-pkgs-val');
+  if(pkv) pkv.textContent=pkgCount;
+  const pks=document.getElementById('ring-pkgs-sub');
+  if(pks) pks.textContent=`of ${PACKAGES.length} available`;
+
+  // Location ring
+  const locFilled=!!store;
+  setRing('ring-loc-fill', locFilled?100:0, locFilled?'#a855f7':'rgba(0,0,0,.07)');
+  const pin=document.getElementById('ring-loc-pin');
+  if(pin) pin.setAttribute('fill', locFilled?'#a855f7':'var(--text-muted)');
+  const ls=document.getElementById('ring-loc-sub');
+  if(ls) ls.textContent=locFilled?store:'Not selected';
+}
+
+
+/* ── PHONE FORMATTER ── */
+function formatPhone(input){
+  let v=input.value.replace(/\D/g,'');
+  if(v.length<=3) input.value=v;
+  else if(v.length<=6) input.value=v.slice(0,3)+'-'+v.slice(3);
+  else input.value=v.slice(0,3)+'-'+v.slice(3,6)+'-'+v.slice(6,10);
+}
+
+/* ── COUNTRY CODE PICKER ── */
+const COUNTRIES=[
+  {flag:'🇨🇦',code:'+1',name:'Canada'},
+  {flag:'🇺🇸',code:'+1',name:'United States'},
+  {flag:'🇬🇧',code:'+44',name:'United Kingdom'},
+  {flag:'🇦🇺',code:'+61',name:'Australia'},
+  {flag:'🇮🇳',code:'+91',name:'India'},
+  {flag:'🇵🇰',code:'+92',name:'Pakistan'},
+  {flag:'🇧🇩',code:'+880',name:'Bangladesh'},
+  {flag:'🇳🇬',code:'+234',name:'Nigeria'},
+  {flag:'🇵🇭',code:'+63',name:'Philippines'},
+  {flag:'🇨🇳',code:'+86',name:'China'},
+  {flag:'🇰🇷',code:'+82',name:'South Korea'},
+  {flag:'🇯🇵',code:'+81',name:'Japan'},
+  {flag:'🇲🇽',code:'+52',name:'Mexico'},
+  {flag:'🇧🇷',code:'+55',name:'Brazil'},
+  {flag:'🇫🇷',code:'+33',name:'France'},
+  {flag:'🇩🇪',code:'+49',name:'Germany'},
+  {flag:'🇮🇹',code:'+39',name:'Italy'},
+  {flag:'🇪🇸',code:'+34',name:'Spain'},
+  {flag:'🇵🇹',code:'+351',name:'Portugal'},
+  {flag:'🇳🇱',code:'+31',name:'Netherlands'},
+  {flag:'🇸🇪',code:'+46',name:'Sweden'},
+  {flag:'🇳🇴',code:'+47',name:'Norway'},
+  {flag:'🇩🇰',code:'+45',name:'Denmark'},
+  {flag:'🇳🇿',code:'+64',name:'New Zealand'},
+  {flag:'🇿🇦',code:'+27',name:'South Africa'},
+  {flag:'🇸🇬',code:'+65',name:'Singapore'},
+  {flag:'🇦🇪',code:'+971',name:'UAE'},
+  {flag:'🇸🇦',code:'+966',name:'Saudi Arabia'},
+  {flag:'🇮🇷',code:'+98',name:'Iran'},
+  {flag:'🇹🇷',code:'+90',name:'Turkey'},
+  {flag:'🇵🇱',code:'+48',name:'Poland'},
+  {flag:'🇷🇴',code:'+40',name:'Romania'},
+  {flag:'🇺🇦',code:'+380',name:'Ukraine'},
+  {flag:'🇵🇷',code:'+1',name:'Puerto Rico'},
+  {flag:'🇨🇴',code:'+57',name:'Colombia'},
+  {flag:'🇻🇳',code:'+84',name:'Vietnam'},
+  {flag:'🇮🇩',code:'+62',name:'Indonesia'},
+  {flag:'🇲🇾',code:'+60',name:'Malaysia'},
+  {flag:'🇹🇭',code:'+66',name:'Thailand'},
+  {flag:'🇵🇪',code:'+51',name:'Peru'},
+  {flag:'🇨🇱',code:'+56',name:'Chile'},
+  {flag:'🇦🇷',code:'+54',name:'Argentina'},
+  {flag:'🇪🇬',code:'+20',name:'Egypt'},
+  {flag:'🇰🇪',code:'+254',name:'Kenya'},
+  {flag:'🇬🇭',code:'+233',name:'Ghana'},
+  {flag:'🇪🇹',code:'+251',name:'Ethiopia'},
+  {flag:'🇵🇸',code:'+970',name:'Palestine'},
+  {flag:'🇱🇧',code:'+961',name:'Lebanon'},
+  {flag:'🇯🇲',code:'+1',name:'Jamaica'},
+  {flag:'🇹🇹',code:'+1',name:'Trinidad & Tobago'},
+];
+let selectedCountry=COUNTRIES[0];
+
+function buildCountryList(){
+  renderCountryList('');
+}
+function renderCountryList(query){
+  const list=document.getElementById('country-list');
+  if(!list) return;
+  const q=query.trim().toLowerCase();
+  const filtered=q?COUNTRIES.filter(c=>c.name.toLowerCase().includes(q)||c.code.includes(q)):COUNTRIES;
+  list.innerHTML=filtered.map((c,i)=>`<div class="country-opt" onmousedown="selectCountry(${COUNTRIES.indexOf(c)})">${c.flag} <span class="code">${c.code}</span><span class="cname">${c.name}</span></div>`).join('');
+}
+function toggleCountryDropdown(){
+  const dd=document.getElementById('country-dropdown');
+  dd.classList.toggle('open');
+  if(dd.classList.contains('open')){
+    const inp=document.getElementById('country-search-input');
+    if(inp){inp.value='';inp.focus();renderCountryList('');}
+  }
+}
+function closeCountryDropdown(){
+  document.getElementById('country-dropdown')?.classList.remove('open');
+}
+function filterCountries(q){renderCountryList(q);}
+function selectCountry(idx){
+  selectedCountry=COUNTRIES[idx];
+  document.getElementById('country-flag').textContent=selectedCountry.flag;
+  document.getElementById('country-code').textContent=selectedCountry.code;
+  closeCountryDropdown();
+}
+
+/* ── AUTOSAVE ── */
+const AUTOSAVE_KEY='booking_autosave';
+const AUTOSAVE_INTERVAL=90000; // 90s
+const MAX_SAVES=2;
+let autosaveTimer=null;
+let autosaveScheduled=false;
+
+function getFormSnapshot(){
+  return {
+    ts:Date.now(),
+    selectedDate,selectedDuration,selectedSlot,
+    strategistName:document.getElementById('strategist-name')?.value||'',
+    strategistEmail:document.getElementById('strategist-email')?.value||'',
+    dealership:document.getElementById('dealership-select')?.value||'',
+    onsiteContact:document.getElementById('onsite-contact')?.value||'',
+    onsitePhone:document.getElementById('onsite-phone')?.value||'',
+    notes:document.getElementById('additional-notes')?.value||'',
+    checkedPackages:PACKAGES.filter(p=>document.getElementById('pkg-'+p.id)?.checked).map(p=>p.id),
+    packageData:{...packageData},
+    countryCode:selectedCountry?.code||'+1',
+    countryFlag:selectedCountry?.flag||'🇨🇦',
+  };
+}
+
+function doAutosave(){
+  const snap=getFormSnapshot();
+  let saves=[];
+  try{ saves=JSON.parse(localStorage.getItem(AUTOSAVE_KEY)||'[]'); }catch(e){}
+  saves.push(snap);
+  if(saves.length>MAX_SAVES) saves=saves.slice(saves.length-MAX_SAVES);
+  localStorage.setItem(AUTOSAVE_KEY,JSON.stringify(saves));
+  const dot=document.getElementById('autosave-dot');
+  const lbl=document.getElementById('autosave-label');
+  if(dot) dot.className='autosave-dot saved';
+  if(lbl){
+    const t=new Date(snap.ts);
+    lbl.textContent=`Saved at ${t.getHours()}:${String(t.getMinutes()).padStart(2,'0')}`;
+    setTimeout(()=>{lbl.textContent='Auto-save on';},3000);
+  }
+  autosaveScheduled=false;
+}
+
+function scheduleAutosave(){
+  if(autosaveScheduled) return;
+  autosaveScheduled=true;
+  const dot=document.getElementById('autosave-dot');
+  if(dot) dot.className='autosave-dot saving';
+}
+
+function initAutosave(){
+  setInterval(()=>{if(autosaveScheduled) doAutosave();},AUTOSAVE_INTERVAL);
+  // also auto-save on input changes
+  document.addEventListener('input',()=>scheduleAutosave());
+}
+
+function loadAutosave(){
+  let saves=[];
+  try{ saves=JSON.parse(localStorage.getItem(AUTOSAVE_KEY)||'[]'); }catch(e){ return; }
+  if(!saves.length) return;
+  const latest=saves[saves.length-1];
+  if(!latest||!latest.ts) return;
+  const age=(Date.now()-latest.ts)/1000/60; // minutes
+  if(age>120) return; // discard if older than 2 hours
+  // restore
+  if(latest.strategistName){ const el=document.getElementById('strategist-name'); if(el) el.value=latest.strategistName; }
+  if(latest.strategistEmail){ const el=document.getElementById('strategist-email'); if(el) el.value=latest.strategistEmail; }
+  if(latest.dealership){
+    const di=document.getElementById('dealer-input'); const ds=document.getElementById('dealership-select');
+    if(di) di.value=latest.dealership; if(ds) ds.value=latest.dealership;
+  }
+  if(latest.onsiteContact){ const el=document.getElementById('onsite-contact'); if(el) el.value=latest.onsiteContact; }
+  if(latest.onsitePhone){ const el=document.getElementById('onsite-phone'); if(el) el.value=latest.onsitePhone; }
+  if(latest.notes){ const el=document.getElementById('additional-notes'); if(el) el.value=latest.notes; }
+  if(latest.countryCode&&latest.countryFlag){
+    const fc=COUNTRIES.find(c=>c.flag===latest.countryFlag&&c.code===latest.countryCode);
+    if(fc) selectedCountry=fc;
+    const fg=document.getElementById('country-flag'); const cd=document.getElementById('country-code');
+    if(fg) fg.textContent=selectedCountry.flag; if(cd) cd.textContent=selectedCountry.code;
+  }
+  if(latest.packageData){ Object.assign(packageData,latest.packageData); }
+  if(latest.checkedPackages?.length){
+    latest.checkedPackages.forEach(id=>{ const cb=document.getElementById('pkg-'+id); if(cb) cb.checked=true; });
+    updateFilledInfo();
+  }
+  if(latest.selectedDate){
+    selectedDate=latest.selectedDate;
+    // re-select on calendar if same month
+    const d=new Date(latest.selectedDate+'T12:00:00');
+    if(d.getFullYear()===calYear&&d.getMonth()===calMonth){
+      setTimeout(()=>{
+        const cells=[...document.querySelectorAll('.cal-day:not(.cal-empty):not(.cal-other-month)')];
+        const day=d.getDate();
+        const cell=cells.find(c=>parseInt(c.querySelector('span')?.textContent)===day);
+        if(cell&&!cell.classList.contains('cal-disabled')) cell.classList.add('cal-selected');
+      },50);
+    }
+    if(latest.selectedDuration){ selectedDuration=latest.selectedDuration; renderDurationPicker(); }
+    if(latest.selectedSlot!==null){ selectedSlot=latest.selectedSlot; }
+    revealSections();
+  }
+  updateStats();
+  const lbl=document.getElementById('autosave-label');
+  if(lbl) lbl.textContent='Draft restored';
+  setTimeout(()=>{ const l=document.getElementById('autosave-label'); if(l) l.textContent='Auto-save on'; },3000);
+}
+let gisLoaded=false,gapiLoaded=false,tokenClient;
+function loadGoogleAPIs(){
+  return new Promise((res,rej)=>{
+    const gs=document.createElement('script'); gs.src='https://apis.google.com/js/api.js';
+    gs.onload=()=>{gapi.load('client',async()=>{await gapi.client.init({apiKey:GOOGLE_API_KEY,discoveryDocs:['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest']});gapiLoaded=true;if(gisLoaded)res();});}; gs.onerror=rej; document.head.appendChild(gs);
+    const gi=document.createElement('script'); gi.src='https://accounts.google.com/gsi/client';
+    gi.onload=()=>{tokenClient=google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CLIENT_ID,scope:'https://www.googleapis.com/auth/calendar.events',callback:''});gisLoaded=true;if(gapiLoaded)res();}; gi.onerror=rej; document.head.appendChild(gi);
+  });
+}
+async function createCalendarEvent({summary,description,startDateTime,endDateTime,attendeeEmail}){
+  if(GOOGLE_API_KEY==='YOUR_API_KEY_HERE'){await new Promise(r=>setTimeout(r,900));return {status:'demo'};}
+  if(!gapiLoaded||!gisLoaded) await loadGoogleAPIs();
+  await new Promise((res,rej)=>{tokenClient.callback=r=>r.error?rej(new Error(r.error)):res(r);gapi.client.getToken()===null?tokenClient.requestAccessToken({prompt:'consent'}):tokenClient.requestAccessToken({prompt:''});});
+  const resp=await gapi.client.calendar.events.insert({calendarId:CALENDAR_ID,resource:{summary,description,start:{dateTime:startDateTime,timeZone:'America/Toronto'},end:{dateTime:endDateTime,timeZone:'America/Toronto'},attendees:[{email:attendeeEmail}],reminders:{useDefault:false,overrides:[{method:'email',minutes:1440},{method:'popup',minutes:60}]}},sendUpdates:'all'});
+  return resp.result;
+}
+
+/* ── SUCCESS ── */
+function showSuccessScreen({strategistName,store,zone,contact,packages,durLabel}){
+  document.getElementById('main-form').style.display='none';
+  document.getElementById('success-screen').classList.add('visible');
+  const dateStr2=new Date(selectedDate+'T12:00:00').toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const rows=[
+    {key:'Dealership',val:store},{key:'Zone',val:ZONES[zone].name},
+    {key:'Date',val:dateStr2},{key:'Time',val:`${minsToTime12(selectedSlot)} – ${minsToTime12(selectedSlot+selectedDuration)} (${durLabel})`},
+    {key:'On-Site Contact',val:contact},{key:'Content',val:packages.join(', ')},{key:'Booked By',val:strategistName},
+  ];
+  document.getElementById('booking-summary').innerHTML=rows.map(r=>`<div class="summary-row"><span class="key">${r.key}</span><span class="val">${r.val}</span></div>`).join('');
+}
+
+/* ── RESET ── */
+function resetForAnotherBooking(){
+  document.getElementById('success-screen').classList.remove('visible');
+  document.getElementById('main-form').style.display='block';
+  selectedDate=null;selectedDuration=null;selectedSlot=null;
+  document.querySelectorAll('.cal-day.cal-selected').forEach(c=>c.classList.remove('cal-selected'));
+  document.getElementById('time-preview').style.display='none';
+  renderSlots();
+  ['info-section','dealership-section','content-section','notes-section','submit-area','stats-dashboard'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){ el.style.display='none'; el.classList.remove('revealed'); }
+  });
+  document.getElementById('dealer-input').value='';
+  document.getElementById('dealership-select').value='';
+  document.getElementById('onsite-contact').value='';
+  document.getElementById('onsite-phone').value='';
+  document.getElementById('additional-notes').value='';
+  document.querySelectorAll('.pkg-checkbox').forEach(c=>c.checked=false);
+  Object.keys(packageData).forEach(k=>delete packageData[k]);
+  const info=document.getElementById('pkg-filled-info');
+  if(info){info.style.display='none';info.innerHTML='';}
+  const err=document.getElementById('field-error-summary');
+  err.classList.remove('visible');err.style.display='none';
+  document.getElementById('submit-btn').disabled=false;
+  document.getElementById('submit-btn').textContent='Confirm Booking';
+  document.querySelectorAll('.invalid').forEach(el=>el.classList.remove('invalid'));
+  // reset autosave indicator
+  const lbl=document.getElementById('autosave-label');
+  if(lbl) lbl.textContent='Auto-save on';
+  const dot=document.getElementById('autosave-dot');
+  if(dot) dot.className='autosave-dot';
+  localStorage.removeItem(AUTOSAVE_KEY);
+  renderDurationPicker();
+  updateStats();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ── RESET FORM ── */
+function promptReset(){
+  document.getElementById('reset-modal-backdrop').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeResetModal(){
+  document.getElementById('reset-modal-backdrop').classList.remove('open');
+  document.body.style.overflow='';
+}
+function confirmReset(){
+  closeResetModal();
+  // Reuse all the reset logic from resetForAnotherBooking
+  selectedDate=null; selectedDuration=null; selectedSlot=null;
+  document.querySelectorAll('.cal-day.cal-selected').forEach(c=>c.classList.remove('cal-selected'));
+  document.getElementById('time-preview').style.display='none';
+  renderSlots();
+  ['info-section','dealership-section','content-section','notes-section','submit-area','stats-dashboard'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){ el.style.display='none'; el.classList.remove('revealed'); }
+  });
+  // Clear all text fields
+  ['strategist-name','strategist-email','onsite-contact','onsite-phone','additional-notes'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('dealer-input').value='';
+  document.getElementById('dealership-select').value='';
+  // Uncheck all packages and clear data
+  document.querySelectorAll('.pkg-checkbox').forEach(c=>c.checked=false);
+  Object.keys(packageData).forEach(k=>delete packageData[k]);
+  const info=document.getElementById('pkg-filled-info');
+  if(info){info.style.display='none';info.innerHTML='';}
+  // Reset validation states
+  document.querySelectorAll('.invalid').forEach(el=>el.classList.remove('invalid'));
+  const err=document.getElementById('field-error-summary');
+  err.classList.remove('visible'); err.style.display='none';
+  // Reset submit button
+  const btn=document.getElementById('submit-btn');
+  btn.disabled=false; btn.textContent='Confirm Booking';
+  // Reset country selector
+  selectedCountry=COUNTRIES[0];
+  document.getElementById('country-flag').textContent=selectedCountry.flag;
+  document.getElementById('country-code').textContent=selectedCountry.code;
+  // Reset autosave indicator
+  const lbl=document.getElementById('autosave-label'); if(lbl) lbl.textContent='Auto-save on';
+  const dot=document.getElementById('autosave-dot'); if(dot) dot.className='autosave-dot';
+  localStorage.removeItem(AUTOSAVE_KEY);
+  renderDurationPicker();
+  updateStats();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+// Close reset modal on backdrop click
+document.addEventListener('click',e=>{
+  if(e.target===document.getElementById('reset-modal-backdrop')) closeResetModal();
+  if(e.target===document.getElementById('cancel-booking-backdrop')) closeCancelBooking();
+});
+
+/* ═══════════════════════════════════════════════════════
+   DARK / LIGHT MODE
+═══════════════════════════════════════════════════════ */
+function applyTheme(dark){
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  document.getElementById('theme-icon').textContent = dark ? '☀️' : '🌙';
+  document.getElementById('theme-label').textContent = dark ? 'Light' : 'Dark';
+  const textColor = dark ? '#e8edf5' : '#1a1a1a';
+  document.querySelectorAll('.stat-ring-val').forEach(el => el.setAttribute('fill', textColor));
+}
+function toggleTheme(){
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  applyTheme(!isDark);
+  try { localStorage.setItem('theme', !isDark ? 'dark' : 'light'); } catch(e){}
+}
+function initTheme(){
+  let saved = 'light';
+  try { saved = localStorage.getItem('theme') || 'light'; } catch(e){}
+  applyTheme(saved === 'dark');
+}
+
+/* ═══════════════════════════════════════════════════════
+   INPUT VALID GLOW
+═══════════════════════════════════════════════════════ */
+function attachValidationGlow(){
+  document.addEventListener('input', e => {
+    const el = e.target;
+    if (!el.matches('input[type="text"], input[type="email"], textarea')) return;
+    const val = el.value.trim();
+    if(el.type === 'email'){
+      const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+      el.classList.toggle('valid-field', ok);
+      el.classList.toggle('invalid', val.length > 0 && !ok);
+    } else {
+      el.classList.toggle('valid-field', val.length > 0);
+      if(val.length > 0) el.classList.remove('invalid');
+    }
+  });
+  setInterval(() => {
+    const di = document.getElementById('dealer-input');
+    const ds = document.getElementById('dealership-select');
+    if(!di || !ds) return;
+    di.classList.toggle('valid-field', !!ds.value);
+  }, 500);
+}
+
+/* ═══════════════════════════════════════════════════════
+   BUTTON PULSE
+═══════════════════════════════════════════════════════ */
+function updateSubmitPulse(){
+  const btn = document.getElementById('submit-btn');
+  if(!btn) return;
+  const ready = !!selectedDate && !!selectedDuration && selectedSlot !== null
+    && !!(document.getElementById('dealership-select')?.value)
+    && !!(document.getElementById('strategist-name')?.value?.trim())
+    && !!(document.getElementById('strategist-email')?.value?.trim());
+  btn.classList.toggle('btn-pulse', ready);
+}
+document.addEventListener('input', updateSubmitPulse);
+
+/* shake integrated into handleSubmit directly */
+
+/* ── INIT ── */
+// Run theme init after DOM is ready (toggle element lives after <script>)
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', () => { initTheme(); });
+} else {
+  initTheme();
+}
+attachValidationGlow();
+setInterval(updateSubmitPulse, 800);
+
+
+/* ════════════════════════════════════════════════════════
+   BOOKINGS STORAGE — localStorage persistence
+════════════════════════════════════════════════════════ */
+const BOOKINGS_KEY = 'admin_bookings';
+
+function loadBookings(){
+  try { return JSON.parse(localStorage.getItem(BOOKINGS_KEY) || '[]'); } catch(e){ return []; }
+}
+function saveBookings(arr){
+  try { localStorage.setItem(BOOKINGS_KEY, JSON.stringify(arr)); } catch(e){}
+}
+
+/* handleSubmit persistence integrated directly */
+
+/* Called after a booking is confirmed — saves to localStorage */
+function persistBooking({strategistName, strategistEmail, store, zone, contact, contactPhone, packages, packageDetail, notes, durLabel, durMins}){
+  const bookings = loadBookings();
+  const endMin = selectedSlot + durMins;
+  const booking = {
+    id: 'b_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+    createdAt: Date.now(),
+    status: 'confirmed',
+    date: selectedDate,
+    startMin: selectedSlot,
+    endMin,
+    durLabel,
+    durMins,
+    store,
+    zone,
+    zoneName: ZONES[zone]?.name || zone,
+    contact,
+    contactPhone: contactPhone || '',
+    packages,
+    packageDetail: packageDetail || {},
+    notes: notes || '',
+    strategistName,
+    strategistEmail,
+  };
+  bookings.push(booking);
+  saveBookings(bookings);
+  return booking;
+}
+
+/* ════════════════════════════════════════════════════════
+   ADMIN NAVIGATION
+════════════════════════════════════════════════════════ */
+let currentAdminTab = 'calendar';
+let admCalYear, admCalMonth;
+let selectedAdmDate = null;
+
+function showAdmin(){
+  document.getElementById('admin-view').classList.add('active');
+  document.getElementById('admin-view').style.display = 'block';
+  // hide booking form page elements
+  document.querySelector('.header').style.display = 'none';
+  document.querySelector('.rules-bar').style.display = 'none';
+  document.querySelector('.container').style.display = 'none';
+  const tt = document.querySelector('.theme-toggle');
+  if(tt) tt.style.bottom = '80px'; // shift up so it doesn't clash with tabs
+  const bd = document.querySelector('.backdoor-btn');
+  if(bd) bd.style.display = 'none';
+  document.body.style.overflow = '';
+  const now = new Date();
+  admCalYear = now.getFullYear();
+  admCalMonth = now.getMonth();
+  admRefreshAll();
+  window.scrollTo({top:0,behavior:'instant'});
+}
+
+function hideAdmin(){
+  document.getElementById('admin-view').classList.remove('active');
+  document.getElementById('admin-view').style.display = 'none';
+  document.querySelector('.header').style.display = '';
+  document.querySelector('.rules-bar').style.display = '';
+  document.querySelector('.container').style.display = '';
+  const tt = document.querySelector('.theme-toggle');
+  if(tt) tt.style.bottom = '';
+  const bd = document.querySelector('.backdoor-btn');
+  if(bd) bd.style.display = '';
+  window.scrollTo({top:0,behavior:'instant'});
+}
+
+function switchAdminTab(tab){
+  currentAdminTab = tab;
+  document.getElementById('admin-tab-calendar').style.display = tab === 'calendar' ? 'block' : 'none';
+  document.getElementById('admin-tab-upcoming').style.display = tab === 'upcoming' ? 'block' : 'none';
+  document.getElementById('tab-calendar').classList.toggle('active', tab === 'calendar');
+  document.getElementById('tab-upcoming').classList.toggle('active', tab === 'upcoming');
+  if(tab === 'upcoming') renderBookingList();
+}
+
+/* ════════════════════════════════════════════════════════
+   ADMIN — refresh everything
+════════════════════════════════════════════════════════ */
+function admRefreshAll(){
+  const bookings = loadBookings();
+  updateAdminStats(bookings);
+  renderAdminCalendar(bookings);
+  if(currentAdminTab === 'upcoming') renderBookingList();
+}
+
+function updateAdminStats(bookings){
+  const now = new Date();
+  const todayStr = dateStr(now);
+  const thisMonth = now.getMonth();
+  const thisYear = now.getFullYear();
+  const upcoming = bookings.filter(b => b.date >= todayStr).length;
+  const thisMonthCount = bookings.filter(b => {
+    const d = new Date(b.date + 'T12:00:00');
+    return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+  }).length;
+  document.getElementById('adm-stat-total').textContent = bookings.length;
+  document.getElementById('adm-stat-upcoming').textContent = upcoming;
+  document.getElementById('adm-stat-month').textContent = thisMonthCount;
+  document.getElementById('admin-total-badge').textContent = bookings.length;
+}
+
+/* ════════════════════════════════════════════════════════
+   ADMIN CALENDAR
+════════════════════════════════════════════════════════ */
+function renderAdminCalendar(bookings){
+  bookings = bookings || loadBookings();
+  const label = new Date(admCalYear, admCalMonth, 1)
+    .toLocaleDateString('en-CA', {month:'long', year:'numeric'});
+  document.getElementById('adm-cal-month-label').textContent = label;
+
+  const grid = document.getElementById('adm-cal-grid');
+  grid.innerHTML = '';
+
+  const firstDay = new Date(admCalYear, admCalMonth, 1).getDay();
+  const daysInMonth = new Date(admCalYear, admCalMonth+1, 0).getDate();
+  const todayStr = dateStr(new Date());
+
+  // blank leading cells
+  for(let i = 0; i < firstDay; i++){
+    const e = document.createElement('div'); e.className = 'cal-day cal-empty'; grid.appendChild(e);
+  }
+
+  for(let d = 1; d <= daysInMonth; d++){
+    const dt = new Date(admCalYear, admCalMonth, d);
+    const ds = dateStr(dt);
+    const dayBookings = bookings.filter(b => b.date === ds);
+
+    const cell = document.createElement('div');
+    cell.className = 'cal-day';
+    if(ds === todayStr) cell.classList.add('cal-today');
+    if(ds === selectedAdmDate) cell.classList.add('cal-selected');
+    if(!dayBookings.length) cell.style.cursor = 'default';
+
+    // Build dots for each booking (up to 3 visible)
+    let dotsHtml = '';
+    if(dayBookings.length){
+      const shown = dayBookings.slice(0, 3);
+      const dotRow = shown.map(b => {
+        const cls = b.status === 'confirmed' ? 'admin-dot-confirmed' : 'admin-dot-pending';
+        return `<span class="admin-dot ${cls}"></span>`;
+      }).join('');
+      dotsHtml = `<span style="display:flex;gap:2px;flex-wrap:wrap;justify-content:center">${dotRow}</span>`;
+      if(dayBookings.length > 3) dotsHtml += `<span style="font-size:8px;color:var(--text-muted);font-weight:700">+${dayBookings.length-3}</span>`;
+    }
+
+    cell.innerHTML = `<span>${d}</span>${dotsHtml}`;
+
+    if(dayBookings.length){
+      cell.onclick = () => admSelectDay(ds, dayBookings);
+    }
+
+    grid.appendChild(cell);
+  }
+}
+
+function admCalPrev(){
+  admCalMonth--;
+  if(admCalMonth < 0){ admCalMonth = 11; admCalYear--; }
+  selectedAdmDate = null;
+  document.getElementById('adm-drawer-wrap').innerHTML = '';
+  renderAdminCalendar();
+}
+function admCalNext(){
+  admCalMonth++;
+  if(admCalMonth > 11){ admCalMonth = 0; admCalYear++; }
+  selectedAdmDate = null;
+  document.getElementById('adm-drawer-wrap').innerHTML = '';
+  renderAdminCalendar();
+}
+
+function admSelectDay(ds, dayBookings){
+  // Toggle off if same day tapped again
+  if(selectedAdmDate === ds){
+    selectedAdmDate = null;
+    renderAdminCalendar();
+    document.getElementById('adm-drawer-wrap').innerHTML = '';
+    return;
+  }
+  selectedAdmDate = ds;
+  renderAdminCalendar();
+  renderDayDrawer(ds, dayBookings);
+}
+
+function renderDayDrawer(ds, bookings){
+  const wrap = document.getElementById('adm-drawer-wrap');
+  const dt = new Date(ds + 'T12:00:00');
+  const prettyDate = dt.toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+
+  let html = `<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px;font-family:'Inter',sans-serif;margin-top:4px">${prettyDate} · ${bookings.length} booking${bookings.length>1?'s':''}</div>`;
+
+  bookings.forEach(b => {
+    const pkgTags = b.packages.map(p => `<span class="drawer-pkg-tag">${p}</span>`).join('');
+    const statusCls = b.status === 'confirmed' ? 'status-upcoming' : 'status-past';
+    html += `
+    <div class="booking-drawer-inner" style="margin-bottom:10px" onclick="openBDetail('${b.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:15px;font-weight:800;font-family:'Inter',sans-serif">${b.store}</span>
+        <span class="booking-card-status ${statusCls}">${b.status}</span>
+      </div>
+      <div class="drawer-row"><span class="drawer-key">Time</span><span class="drawer-val">${minsToTime12(b.startMin)} – ${minsToTime12(b.endMin)}</span></div>
+      <div class="drawer-row"><span class="drawer-key">Duration</span><span class="drawer-val">${b.durLabel}</span></div>
+      <div class="drawer-row"><span class="drawer-key">Packages</span><div class="drawer-pkgs">${pkgTags}</div></div>
+      <div class="tap-hint">👆 Tap to view full shoot details</div>
+    </div>`;
+  });
+
+  wrap.innerHTML = html;
+  setTimeout(() => wrap.scrollIntoView({behavior:'smooth', block:'nearest'}), 50);
+}
+
+/* ════════════════════════════════════════════════════════
+   ADMIN — UPCOMING SHOOTS LIST
+════════════════════════════════════════════════════════ */
+function renderBookingList(){
+  const bookings = loadBookings();
+  const todayStr = dateStr(new Date());
+
+  // Sort: upcoming first (ascending), then past (descending)
+  const upcoming = bookings.filter(b => b.date >= todayStr).sort((a,b) => a.date.localeCompare(b.date) || a.startMin - b.startMin);
+  const past = bookings.filter(b => b.date < todayStr).sort((a,b) => b.date.localeCompare(a.date));
+  const sorted = [...upcoming, ...past];
+
+  const wrap = document.getElementById('adm-booking-list');
+  if(!sorted.length){
+    wrap.innerHTML = `<div class="admin-empty"><div class="admin-empty-icon">📭</div><div class="admin-empty-title">No bookings yet</div><div class="admin-empty-sub">Confirmed bookings from the form will appear here automatically.</div></div>`;
+    return;
+  }
+
+  let html = '';
+  let shownPastDivider = false;
+
+  sorted.forEach(b => {
+    const isPast = b.date < todayStr;
+    const isToday = b.date === todayStr;
+
+    if(isPast && !shownPastDivider){
+      html += `<div class="admin-section-head" style="margin-top:20px">Past Shoots</div>`;
+      shownPastDivider = true;
+    }
+
+    const dt = new Date(b.date + 'T12:00:00');
+    const prettyDate = dt.toLocaleDateString('en-CA', {month:'short', day:'numeric', year:'numeric'});
+    const dow = dt.toLocaleDateString('en-CA', {weekday:'long'});
+    const statusCls = isPast ? 'status-past' : isToday ? 'status-today' : 'status-upcoming';
+    const statusLabel = isPast ? 'Completed' : isToday ? 'Today' : 'Upcoming';
+    const pkgTags = b.packages.map(p => `<span class="pkg-tag">${p}</span>`).join('');
+
+    html += `
+    <div class="booking-card${isPast?' past':''}" onclick="openBDetail('${b.id}')">
+      <div class="booking-card-header">
+        <div>
+          <div class="booking-card-date">${prettyDate}</div>
+          <div class="booking-card-dow">${dow}</div>
+        </div>
+        <span class="booking-card-status ${statusCls}">${statusLabel}</span>
+      </div>
+      <div class="booking-card-store">${b.store}</div>
+      <div class="booking-card-time">${minsToTime12(b.startMin)} – ${minsToTime12(b.endMin)} &nbsp;·&nbsp; ${b.durLabel} &nbsp;·&nbsp; ${b.zoneName}</div>
+      <div class="booking-card-pkgs">${pkgTags}</div>
+      <div class="booking-card-booker">Booked by ${b.strategistName} · On-site: ${b.contact}${b.contactPhone?' ('+b.contactPhone+')':''}</div>
+      <div class="tap-hint" style="margin-top:10px">👆 Tap for full shoot details</div>
+    </div>`;
+  });
+
+  wrap.innerHTML = html;
+}
+
+/* showSuccessScreen patch removed — persistBooking called in handleSubmit */
+
+
+/* ════════════════════════════════════════════════════════
+   BOOKING DETAIL MODAL
+════════════════════════════════════════════════════════ */
+
+function openBDetail(bookingId){
+  const bookings = loadBookings();
+  const b = bookings.find(x => x.id === bookingId);
+  if(!b) return;
+
+  const dt = new Date(b.date + 'T12:00:00');
+  const prettyDate = dt.toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+
+  document.getElementById('bdetail-store').textContent = b.store;
+  document.getElementById('bdetail-meta').textContent =
+    prettyDate + ' · ' + minsToTime12(b.startMin) + ' – ' + minsToTime12(b.endMin) + ' (' + b.durLabel + ')';
+
+  const body = document.getElementById('bdetail-body');
+  body.innerHTML = buildBDetailHTML(b);
+
+  // Footer buttons — reschedule + delete
+  const footer = document.getElementById('bdetail-footer');
+  if(footer) footer.innerHTML = `
+    <div class="bdetail-footer-btns">
+      <button class="bdetail-reschedule-btn" onclick="openReschedule('${b.id}')">📅 Reschedule</button>
+      <button class="bdetail-cancel-btn" style="margin-top:0;width:100%" onclick="promptCancelBooking('${b.id}')">🗑 Delete</button>
+    </div>`;
+  document.getElementById('bdetail-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeBDetail(e){
+  if(e.target === document.getElementById('bdetail-backdrop')) closeBDetailDirect();
+}
+function closeBDetailDirect(){
+  document.getElementById('bdetail-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function buildBDetailHTML(b){
+  const PACKAGE_META = {
+    ethnic:     {icon:'🌍', label:'Ethnic Videos'},
+    walkaround: {icon:'🚗', label:'Walkaround'},
+    service:    {icon:'🔧', label:'Service Video'},
+    headshots:  {icon:'📸', label:'Headshots'},
+    gmb:        {icon:'📷', label:'Photo Session'},
+    salesvideo: {icon:'🎬', label:'Sales Video'},
+    lifestyle:  {icon:'✨', label:'Lifestyle Content'},
+    social:     {icon:'📱', label:'Social Media Content'},
+    salesrep:   {icon:'🎤', label:'Sales Rep. Intro Video'},
+  };
+
+  let html = '';
+
+  // ── SHOOT OVERVIEW ──
+  html += `<div class="bdetail-section">
+    <div class="bdetail-section-title">Shoot Details</div>
+    <div class="bdetail-row"><span class="bdetail-key">Date</span><span class="bdetail-val">${new Date(b.date+'T12:00:00').toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}</span></div>
+    <div class="bdetail-row"><span class="bdetail-key">Time</span><span class="bdetail-val">${minsToTime12(b.startMin)} – ${minsToTime12(b.endMin)}</span></div>
+    <div class="bdetail-row"><span class="bdetail-key">Duration</span><span class="bdetail-val">${b.durLabel}</span></div>
+    <div class="bdetail-row"><span class="bdetail-key">Location</span><span class="bdetail-val">${b.store}</span></div>
+    <div class="bdetail-row"><span class="bdetail-key">Zone</span><span class="bdetail-val">${b.zoneName}</span></div>
+  </div>`;
+
+  // ── CONTACTS ──
+  html += `<div class="bdetail-section">
+    <div class="bdetail-section-title">People</div>
+    <div class="bdetail-row"><span class="bdetail-key">Booked By</span><span class="bdetail-val">${b.strategistName}</span></div>
+    <div class="bdetail-row"><span class="bdetail-key">Email</span><span class="bdetail-val">${b.strategistEmail}</span></div>
+    <div class="bdetail-row"><span class="bdetail-key">On-Site Contact</span><span class="bdetail-val">${b.contact}</span></div>
+    ${b.contactPhone ? `<div class="bdetail-row"><span class="bdetail-key">Contact Phone</span><span class="bdetail-val">${b.contactPhone}</span></div>` : ''}
+  </div>`;
+
+  // ── PACKAGES SUMMARY TAGS ──
+  const pkgTags = b.packages.map(p => `<span class="bdetail-tag bdetail-tag-accent">${p}</span>`).join('');
+  html += `<div class="bdetail-section">
+    <div class="bdetail-section-title">Content Packages (${b.packages.length})</div>
+    <div class="bdetail-tags" style="margin-bottom:14px">${pkgTags}</div>`;
+
+  // ── PACKAGE DETAILS ──
+  const pd = b.packageDetail || {};
+
+  // Ethnic Videos
+  if(pd.ethnic?.entries?.length){
+    html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>🌍</span> Ethnic Videos</div>`;
+    pd.ethnic.entries.forEach((e,i) => {
+      html += `<div class="pkg-entry-card"><div class="pkg-entry-label">Video ${i+1}</div>`;
+      if(e.lang) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Language</span><span class="pkg-detail-inner-val">${e.lang}</span></div>`;
+      if(e.name) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Subject</span><span class="pkg-detail-inner-val">${e.name}</span></div>`;
+      if(e.role) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Role</span><span class="pkg-detail-inner-val">${e.role}</span></div>`;
+      if(e.script) html += `<div class="pkg-detail-inner-row" style="flex-direction:column;gap:4px"><span class="pkg-detail-inner-key">Script / Talking Points</span><span class="pkg-detail-inner-val" style="text-align:left;font-style:italic">${e.script}</span></div>`;
+      html += `</div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Walkaround / Sales Video — vehicle entries
+  ['walkaround','salesvideo'].forEach(pkg => {
+    if(pd[pkg]?.entries?.length){
+      const meta = PACKAGE_META[pkg];
+      html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>${meta.icon}</span> ${meta.label}</div>`;
+      pd[pkg].entries.forEach((e,i) => {
+        html += `<div class="pkg-entry-card"><div class="pkg-entry-label">Vehicle ${i+1}</div>`;
+        if(e.year || e.model) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Vehicle</span><span class="pkg-detail-inner-val">${[e.year,e.model].filter(Boolean).join(' ')}</span></div>`;
+        if(e.notes) html += `<div class="pkg-detail-inner-row" style="flex-direction:column;gap:4px"><span class="pkg-detail-inner-key">Talking Points</span><span class="pkg-detail-inner-val" style="text-align:left;font-style:italic">${e.notes}</span></div>`;
+        html += `</div>`;
+      });
+      html += `</div>`;
+    }
+  });
+
+  // Service Video
+  if(pd.service?.notes){
+    html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>🔧</span> Service Video</div>
+      <div class="pkg-detail-inner-row" style="flex-direction:column;gap:4px"><span class="pkg-detail-inner-key">Notes</span><span class="pkg-detail-inner-val" style="text-align:left;font-style:italic">${pd.service.notes}</span></div>
+    </div>`;
+  }
+
+  // Headshots
+  if(pd.headshots?.names?.length){
+    const filled = pd.headshots.names.filter(n => n.trim());
+    if(filled.length){
+      html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>📸</span> Headshots</div>`;
+      filled.forEach((n,i) => {
+        html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Person ${i+1}</span><span class="pkg-detail-inner-val">${n}</span></div>`;
+      });
+      html += `</div>`;
+    }
+  }
+
+  // Photo Session (GMB)
+  if(pd.gmb){
+    const g = pd.gmb;
+    const types = ['gmb','vehicle','service','lifestyle'].filter(t => g['photo-'+t] === true || g[t]);
+    html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>📷</span> Photo Session</div>`;
+    if(g.count) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Deliverables</span><span class="pkg-detail-inner-val">${g.count}</span></div>`;
+    if(g.areas) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Areas / Subjects</span><span class="pkg-detail-inner-val">${g.areas}</span></div>`;
+    if(g.ref) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Reference</span><span class="pkg-detail-inner-val" style="word-break:break-all">${g.ref}</span></div>`;
+    html += `</div>`;
+  }
+
+  // Lifestyle
+  if(pd.lifestyle){
+    const l = pd.lifestyle;
+    html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>✨</span> Lifestyle Content</div>`;
+    if(l.count) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Deliverables</span><span class="pkg-detail-inner-val">${l.count}</span></div>`;
+    if(l.mood) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Mood / Direction</span><span class="pkg-detail-inner-val">${l.mood}</span></div>`;
+    if(l.ref) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Reference</span><span class="pkg-detail-inner-val" style="word-break:break-all">${l.ref}</span></div>`;
+    html += `</div>`;
+  }
+
+  // Social Media
+  if(pd.social?.entries?.length){
+    html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>📱</span> Social Media Content</div>`;
+    pd.social.entries.forEach((e,i) => {
+      html += `<div class="pkg-entry-card"><div class="pkg-entry-label">Video ${i+1}</div>`;
+      if(e.hook) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Hook / Theme</span><span class="pkg-detail-inner-val">${e.hook}</span></div>`;
+      if(e.count) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Deliverables</span><span class="pkg-detail-inner-val">${e.count}</span></div>`;
+      html += `</div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Sales Rep
+  if(pd.salesrep?.entries?.length){
+    html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>🎤</span> Sales Rep. Intro Videos</div>`;
+    pd.salesrep.entries.forEach((e,i) => {
+      html += `<div class="pkg-entry-card"><div class="pkg-entry-label">Rep ${i+1}</div>`;
+      if(e.name) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Name</span><span class="pkg-detail-inner-val">${e.name}</span></div>`;
+      if(e.role) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Role</span><span class="pkg-detail-inner-val">${e.role}</span></div>`;
+      if(e.lang) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Languages</span><span class="pkg-detail-inner-val">${e.lang}</span></div>`;
+      if(e.notes) html += `<div class="pkg-detail-inner-row" style="flex-direction:column;gap:4px"><span class="pkg-detail-inner-key">Key Message</span><span class="pkg-detail-inner-val" style="text-align:left;font-style:italic">${e.notes}</span></div>`;
+      if(e.ref) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Reference</span><span class="pkg-detail-inner-val" style="word-break:break-all">${e.ref}</span></div>`;
+      html += `</div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `</div>`; // close packages section
+
+  // ── NOTES ──
+  if(b.notes){
+    html += `<div class="bdetail-section">
+      <div class="bdetail-section-title">Additional Notes</div>
+      <div class="bdetail-notes">${b.notes}</div>
+    </div>`;
+  }
+
+  // ── BOOKING META ──
+  const booked = new Date(b.createdAt);
+  const bookedStr = booked.toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric'}) + ' at ' + booked.getHours() + ':' + String(booked.getMinutes()).padStart(2,'0');
+  html += `<div class="bdetail-section">
+    <div class="bdetail-section-title">Booking Record</div>
+    <div class="bdetail-row"><span class="bdetail-key">Booking ID</span><span class="bdetail-val" style="font-size:11px;font-family:monospace;opacity:.7">${b.id}</span></div>
+    <div class="bdetail-row"><span class="bdetail-key">Submitted</span><span class="bdetail-val">${bookedStr}</span></div>
+    <div class="bdetail-row"><span class="bdetail-key">Status</span><span class="bdetail-val" style="color:var(--green);text-transform:capitalize">${b.status}</span></div>
+  </div>`;
+
+  return html;
+}
+
+
+/* ── CANCEL / DELETE BOOKING ── */
+let _pendingCancelId = null;
+
+function promptCancelBooking(id){
+  _pendingCancelId = id;
+  // Reuse the existing reset-modal-backdrop style with custom content
+  const backdrop = document.getElementById('cancel-booking-backdrop');
+  backdrop.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeCancelBooking(){
+  _pendingCancelId = null;
+  document.getElementById('cancel-booking-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function confirmCancelBooking(){
+  if(!_pendingCancelId) return;
+  const bookings = loadBookings().filter(b => b.id !== _pendingCancelId);
+  saveBookings(bookings);
+  _pendingCancelId = null;
+  closeCancelBooking();
+  closeBDetailDirect();
+  admRefreshAll(); // refresh calendar + list
+}
+
+
+/* ════════════════════════════════════════════════════════
+   CALENDAR EXPORT — Outlook (ICS) + Google Calendar URL
+════════════════════════════════════════════════════════ */
+
+/* Build the shared event data from current booking state */
+function getCalEventData(){
+  const store     = document.getElementById('dealership-select')?.value || '';
+  const contact   = document.getElementById('onsite-contact')?.value?.trim() || '';
+  const phone     = document.getElementById('onsite-phone')?.value?.trim() || '';
+  const notes     = document.getElementById('additional-notes')?.value?.trim() || '';
+  const name      = document.getElementById('strategist-name')?.value?.trim() || '';
+  const email     = document.getElementById('strategist-email')?.value?.trim() || '';
+  const zone      = STORE_ZONE[store] || '';
+  const zoneName  = ZONES[zone]?.name || zone;
+  const pkgs      = getSelectedPackages();
+  const durLabel  = DURATIONS.find(d => d.mins === selectedDuration)?.label || '';
+  const endMin    = selectedSlot + selectedDuration;
+
+  // Build date-time strings (Toronto — no DST adjustment needed for ICS local)
+  const pad = n => String(n).padStart(2,'0');
+  const dateBase = selectedDate.replace(/-/g,''); // YYYYMMDD
+  const startH = pad(Math.floor(selectedSlot/60)), startM = pad(selectedSlot%60);
+  const endH   = pad(Math.floor(endMin/60)),        endM   = pad(endMin%60);
+  const dtStart = `${dateBase}T${startH}${startM}00`;
+  const dtEnd   = `${dateBase}T${endH}${endM}00`;
+
+  const title = `📷 Content Shoot — ${store}`;
+
+  const bodyLines = [
+    `📍 Location: ${store}`,
+    `🏢 Zone: ${zoneName}`,
+    `⏱ Duration: ${durLabel}`,
+    `👤 On-Site Contact: ${contact}${phone ? ' · ' + phone : ''}`,
+    `📦 Content: ${pkgs.join(', ')}`,
+    ``,
+    `📧 Booked by: ${name} (${email})`,
+    notes ? `📝 Notes: ${notes}` : null,
+  ].filter(v => v !== null).join('\n');
+
+  return { title, dtStart, dtEnd, dateBase, startH, startM, endH, endM, store, bodyLines, zone, zoneName };
+}
+
+/* ── OUTLOOK / ICS EXPORT ── */
+function exportToOutlook(){
+  const ev = getCalEventData();
+
+  // ICS format — timezone-naive local time (TZID header covers Toronto)
+  const icsLines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Content Shoot Booking//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VTIMEZONE',
+    'TZID:America/Toronto',
+    'BEGIN:STANDARD',
+    'TZOFFSETFROM:-0400',
+    'TZOFFSETTO:-0500',
+    'TZNAME:EST',
+    'DTSTART:19701101T020000',
+    'RRULE:FREQ=YEARLY;BYDAY=1SU;BYMONTH=11',
+    'END:STANDARD',
+    'BEGIN:DAYLIGHT',
+    'TZOFFSETFROM:-0500',
+    'TZOFFSETTO:-0400',
+    'TZNAME:EDT',
+    'DTSTART:19700308T020000',
+    'RRULE:FREQ=YEARLY;BYDAY=2SU;BYMONTH=3',
+    'END:DAYLIGHT',
+    'END:VTIMEZONE',
+    'BEGIN:VEVENT',
+    `DTSTART;TZID=America/Toronto:${ev.dtStart}`,
+    `DTEND;TZID=America/Toronto:${ev.dtEnd}`,
+    `SUMMARY:${ev.title}`,
+    `LOCATION:${ev.store}`,
+    `DESCRIPTION:${ev.bodyLines.replace(/\n/g,'\\n').replace(/,/g,'\\,')}`,
+    `STATUS:CONFIRMED`,
+    `TRANSP:OPAQUE`,
+    `BEGIN:VALARM`,
+    `TRIGGER:-PT60M`,
+    `ACTION:DISPLAY`,
+    `DESCRIPTION:Reminder: Content Shoot in 1 hour`,
+    `END:VALARM`,
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n');
+
+  const blob = new Blob([icsLines], { type:'text/calendar;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `content-shoot-${selectedDate}-${ev.store.replace(/[^a-z0-9]/gi,'-').toLowerCase()}.ics`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+}
+
+/* ── GOOGLE CALENDAR URL EXPORT ── */
+function exportToGoogle(){
+  const ev = getCalEventData();
+
+  // Google uses UTC format: YYYYMMDDTHHMMSSZ
+  // Since we're in Toronto (ET) we offset: EDT=UTC-4, EST=UTC-5
+  // Detect DST: rough check — DST runs 2nd Sun Mar → 1st Sun Nov
+  function isEDT(dateStr){
+    const d = new Date(dateStr + 'T12:00:00');
+    const y = d.getFullYear();
+    // 2nd Sunday of March
+    const mar = new Date(y, 2, 1);
+    while(mar.getDay() !== 0) mar.setDate(mar.getDate()+1);
+    mar.setDate(mar.getDate()+7);
+    // 1st Sunday of November
+    const nov = new Date(y, 10, 1);
+    while(nov.getDay() !== 0) nov.setDate(nov.getDate()+1);
+    return d >= mar && d < nov;
+  }
+
+  const offset = isEDT(selectedDate) ? 4 : 5;
+  function toUTC(dateStr, h, m){
+    const d = new Date(`${dateStr}T${h}:${m}:00`);
+    d.setHours(d.getHours() + offset);
+    const pad = n => String(n).padStart(2,'0');
+    return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00Z`;
+  }
+
+  const start = toUTC(selectedDate, ev.startH, ev.startM);
+  const end   = toUTC(selectedDate, ev.endH,   ev.endM);
+
+  const params = new URLSearchParams({
+    action:   'TEMPLATE',
+    text:     ev.title,
+    dates:    `${start}/${end}`,
+    details:  ev.bodyLines,
+    location: ev.store,
+    ctz:      'America/Toronto',
+  });
+
+  window.open('https://calendar.google.com/calendar/render?' + params.toString(), '_blank');
+}
+
+
+/* ════════════════════════════════════════════════════════
+   RESCHEDULE BOOKING
+════════════════════════════════════════════════════════ */
+let _rsBookingId   = null;   // booking being rescheduled
+let _rsYear        = null;
+let _rsMonth       = null;
+let _rsSelectedDate = null;
+let _rsSelectedSlot = null;
+
+function openReschedule(id){
+  _rsBookingId = id;
+  _rsSelectedDate = null;
+  _rsSelectedSlot = null;
+
+  const now = new Date();
+  _rsYear  = now.getFullYear();
+  _rsMonth = now.getMonth();
+
+  document.getElementById('rs-error').textContent = '';
+  document.getElementById('rs-slots-wrap').style.display = 'none';
+  document.getElementById('rs-slot-grid').innerHTML = '';
+  document.getElementById('rs-confirm-btn').classList.remove('ready');
+
+  const b = loadBookings().find(x => x.id === id);
+  if(b) document.getElementById('reschedule-sub').textContent =
+    `Currently: ${new Date(b.date+'T12:00:00').toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'})} · ${minsToTime12(b.startMin)} – ${minsToTime12(b.endMin)}`;
+
+  rsRenderCalendar();
+  document.getElementById('reschedule-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeReschedule(){
+  _rsBookingId = null; _rsSelectedDate = null; _rsSelectedSlot = null;
+  document.getElementById('reschedule-backdrop').classList.remove('open');
+  document.body.style.overflow = 'hidden'; // keep bdetail open
+}
+function closeRescheduleOnBackdrop(e){
+  if(e.target === document.getElementById('reschedule-backdrop')) closeReschedule();
+}
+
+function rsCalPrev(){
+  _rsMonth--;
+  if(_rsMonth < 0){ _rsMonth = 11; _rsYear--; }
+  _rsSelectedDate = null; _rsSelectedSlot = null;
+  document.getElementById('rs-slots-wrap').style.display = 'none';
+  document.getElementById('rs-confirm-btn').classList.remove('ready');
+  rsRenderCalendar();
+}
+function rsCalNext(){
+  _rsMonth++;
+  if(_rsMonth > 11){ _rsMonth = 0; _rsYear++; }
+  _rsSelectedDate = null; _rsSelectedSlot = null;
+  document.getElementById('rs-slots-wrap').style.display = 'none';
+  document.getElementById('rs-confirm-btn').classList.remove('ready');
+  rsRenderCalendar();
+}
+
+function rsRenderCalendar(){
+  const now   = new Date();
+  const label = new Date(_rsYear, _rsMonth, 1).toLocaleDateString('en-CA',{month:'long',year:'numeric'});
+  document.getElementById('rs-cal-month').textContent = label;
+  document.getElementById('rs-cal-prev').disabled = (_rsYear === now.getFullYear() && _rsMonth === now.getMonth());
+
+  const grid = document.getElementById('rs-cal-grid');
+  grid.innerHTML = '';
+
+  const firstDay    = new Date(_rsYear, _rsMonth, 1).getDay();
+  const daysInMonth = new Date(_rsYear, _rsMonth+1, 0).getDate();
+  const todayStr    = dateStr(now);
+  const minDate     = new Date(now.getTime() + 72*60*60*1000);
+  const holidays    = holidayCache[_rsYear] || getHolidays(_rsYear);
+
+  // Get the booking being rescheduled so we can exclude it from conflict checks
+  const allBookings = loadBookings();
+  const thisBooking = allBookings.find(x => x.id === _rsBookingId);
+  const otherBookings = allBookings.filter(x => x.id !== _rsBookingId);
+
+  for(let i=0; i<firstDay; i++){
+    const e = document.createElement('div'); e.className='cal-day cal-empty'; grid.appendChild(e);
+  }
+
+  for(let d=1; d<=daysInMonth; d++){
+    const dt   = new Date(_rsYear, _rsMonth, d);
+    const ds   = dateStr(dt);
+    const dow  = dt.getDay();
+    const isWeekend = dow===0||dow===6;
+    const isHoliday = holidays.has(ds);
+    const isTooSoon = dt < minDate;
+
+    // Check availability using OTHER bookings (exclude the one being rescheduled)
+    const dayOther = otherBookings.filter(b => b.date === ds);
+    const weekFull = (() => {
+      const ws = getWeekStart(ds);
+      const we = new Date(ws+'T12:00:00'); we.setDate(we.getDate()+6);
+      return otherBookings.filter(b => b.date>=ws && b.date<=dateStr(we)).length >= WEEKLY_CAP;
+    })();
+
+    const dayFull = (() => {
+      if(!dayOther.length) return false;
+      const zone = dayOther[0].zone;
+      if(zone==='fullday') return true;
+      const usedMins = dayOther.reduce((s,b)=>s+(b.endMin-b.startMin),0);
+      const ds_dow = new Date(ds+'T12:00:00').getDay();
+      const dayStart = ds_dow===3?DAY_START_WED:DAY_START;
+      return (DAY_END-dayStart-usedMins)<30 || dayOther.length>=ZONES[zone].maxPerDay;
+    })();
+
+    const cell = document.createElement('div');
+    cell.className = 'cal-day';
+    if(ds === todayStr) cell.classList.add('cal-today');
+    if(ds === _rsSelectedDate) cell.classList.add('cal-selected');
+
+    const disabled = isWeekend||isHoliday||isTooSoon||weekFull||dayFull;
+    if(disabled){
+      cell.classList.add('cal-disabled');
+    } else {
+      cell.onclick = () => rsSelectDay(ds);
+    }
+
+    // Dot
+    let dotClass='';
+    if(!isWeekend&&!isHoliday&&!isTooSoon){
+      const usedMins = dayOther.reduce((s,b)=>s+(b.endMin-b.startMin),0);
+      if(dayFull||weekFull) dotClass='dot-red';
+      else if(usedMins>180) dotClass='dot-yellow';
+      else dotClass='dot-green';
+    }
+    cell.innerHTML = `<span>${d}</span>${dotClass?`<span class="avail-dot ${dotClass}"></span>`:''}`;
+    grid.appendChild(cell);
+  }
+}
+
+function rsSelectDay(ds){
+  _rsSelectedDate = ds;
+  _rsSelectedSlot = null;
+  document.getElementById('rs-confirm-btn').classList.remove('ready');
+  document.querySelectorAll('#rs-cal-grid .cal-day.cal-selected').forEach(c=>c.classList.remove('cal-selected'));
+  const cells=[...document.querySelectorAll('#rs-cal-grid .cal-day:not(.cal-empty)')];
+  const dayNum=parseInt(ds.split('-')[2]);
+  const cell=cells.find(c=>parseInt(c.querySelector('span')?.textContent)===dayNum);
+  if(cell) cell.classList.add('cal-selected');
+
+  rsRenderSlots(ds);
+  document.getElementById('rs-slots-wrap').style.display='block';
+}
+
+function rsRenderSlots(ds){
+  const allBookings = loadBookings();
+  const thisBooking = allBookings.find(x => x.id === _rsBookingId);
+  const durMins = thisBooking?.durMins || 60;
+  const otherBookings = allBookings.filter(x => x.id !== _rsBookingId);
+  const dayOther = otherBookings.filter(b => b.date === ds);
+  const dow = new Date(ds+'T12:00:00').getDay();
+  const dayStart = dow===3?DAY_START_WED:DAY_START;
+
+  const grid = document.getElementById('rs-slot-grid');
+  grid.innerHTML='';
+
+  const starts=[];
+  for(let t=dayStart; t+durMins<=DAY_END; t+=30) starts.push(t);
+
+  if(!starts.length){
+    grid.innerHTML='<p style="color:var(--text-muted);font-size:13px;grid-column:1/-1">No slots fit for this duration.</p>';
+    return;
+  }
+
+  starts.forEach(startMin=>{
+    const endMin=startMin+durMins;
+    const btn=document.createElement('button');
+    btn.type='button'; btn.className='reschedule-slot-btn';
+    const overlaps=dayOther.some(b=>startMin<b.endMin&&endMin>b.startMin);
+    if(overlaps){
+      btn.classList.add('disabled');
+      btn.innerHTML=`${minsToTime12(startMin)}<span class="reschedule-slot-sub">booked</span>`;
+    } else {
+      btn.innerHTML=`${minsToTime12(startMin)}<span class="reschedule-slot-sub">open</span>`;
+      btn.onclick=()=>{
+        document.querySelectorAll('.reschedule-slot-btn.selected').forEach(b=>b.classList.remove('selected'));
+        btn.classList.add('selected');
+        _rsSelectedSlot=startMin;
+        document.getElementById('rs-confirm-btn').classList.add('ready');
+        document.getElementById('rs-error').textContent='';
+      };
+    }
+    grid.appendChild(btn);
+  });
+}
+
+function confirmReschedule(){
+  if(!_rsBookingId||!_rsSelectedDate||_rsSelectedSlot===null) return;
+  const bookings = loadBookings();
+  const idx = bookings.findIndex(b=>b.id===_rsBookingId);
+  if(idx===-1){ document.getElementById('rs-error').textContent='Booking not found.'; return; }
+
+  const b = bookings[idx];
+  const newEnd = _rsSelectedSlot + b.durMins;
+
+  // Double-check no conflict with others
+  const others = bookings.filter((_,i)=>i!==idx);
+  const conflict = others.filter(o=>o.date===_rsSelectedDate).some(o=>_rsSelectedSlot<o.endMin&&newEnd>o.startMin);
+  if(conflict){ document.getElementById('rs-error').textContent='⚠ Conflict detected. Please pick another slot.'; return; }
+
+  // Update the booking
+  bookings[idx] = { ...b, date:_rsSelectedDate, startMin:_rsSelectedSlot, endMin:newEnd };
+  saveBookings(bookings);
+
+  closeReschedule();
+  closeBDetailDirect();
+  admRefreshAll();
+}
+
+</script>
+<!-- DARK MODE TOGGLE -->
+<div class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">
+  <div class="theme-toggle-track">
+    <div class="theme-toggle-knob"></div>
+  </div>
+  <span class="theme-toggle-icon" id="theme-icon">🌙</span>
+  <span id="theme-label">Dark</span>
+</div>
+
+<!-- ══ BACK DOOR BUTTON ══ -->
+<button class="backdoor-btn" onclick="showAdmin()">⚙ Admin</button>
+
+<!-- ══ ADMIN DASHBOARD ══ -->
+<div id="admin-view">
+  <div class="admin-header">
+    <div class="admin-header-back" onclick="hideAdmin()">←</div>
+    <div class="admin-header-info">
+      <div class="admin-header-title">Admin Dashboard</div>
+      <div class="admin-header-sub">Content Shoot Bookings</div>
+    </div>
+    <span class="admin-badge" id="admin-total-badge">0</span>
+  </div>
+
+  <div class="admin-tabs">
+    <div class="admin-tab active" id="tab-calendar" onclick="switchAdminTab('calendar')">📅 Calendar</div>
+    <div class="admin-tab" id="tab-upcoming" onclick="switchAdminTab('upcoming')">📋 Shoots</div>
+  </div>
+
+  <!-- CALENDAR TAB -->
+  <div id="admin-tab-calendar" class="admin-container">
+    <!-- Stats strip -->
+    <div class="admin-stat-strip">
+      <div class="admin-stat">
+        <div class="admin-stat-val" id="adm-stat-total">0</div>
+        <div class="admin-stat-label">Total</div>
+      </div>
+      <div class="admin-stat">
+        <div class="admin-stat-val" id="adm-stat-upcoming">0</div>
+        <div class="admin-stat-label">Upcoming</div>
+      </div>
+      <div class="admin-stat">
+        <div class="admin-stat-val" id="adm-stat-month">0</div>
+        <div class="admin-stat-label">This Month</div>
+      </div>
+    </div>
+
+    <!-- Calendar -->
+    <div class="admin-cal-card">
+      <div class="cal-nav">
+        <button class="cal-nav-btn" id="adm-cal-prev" onclick="admCalPrev()">‹</button>
+        <div class="cal-month-label" id="adm-cal-month-label"></div>
+        <button class="cal-nav-btn" id="adm-cal-next" onclick="admCalNext()">›</button>
+      </div>
+      <div class="cal-weekdays">
+        <div class="cal-wd">Sun</div><div class="cal-wd">Mon</div><div class="cal-wd">Tue</div>
+        <div class="cal-wd">Wed</div><div class="cal-wd">Thu</div><div class="cal-wd">Fri</div><div class="cal-wd">Sat</div>
+      </div>
+      <div class="cal-grid" id="adm-cal-grid"></div>
+      <div class="admin-cal-legend">
+        <div class="admin-cal-legend-item"><span class="admin-dot admin-dot-confirmed"></span>Confirmed</div>
+        <div class="admin-cal-legend-item"><span class="admin-dot admin-dot-pending"></span>Pending</div>
+      </div>
+    </div>
+
+    <!-- Booking drawer for selected day -->
+    <div id="adm-drawer-wrap"></div>
+  </div>
+
+  <!-- UPCOMING TAB -->
+  <div id="admin-tab-upcoming" class="admin-container" style="display:none">
+    <div class="admin-section-head">All Shoots</div>
+    <div id="adm-booking-list"></div>
+  </div>
+</div>
+
+
+<!-- ══ BOOKING DETAIL MODAL (admin) ══ -->
+<div class="bdetail-backdrop" id="bdetail-backdrop" onclick="closeBDetail(event)">
+  <div class="bdetail-sheet" id="bdetail-sheet">
+    <div class="bdetail-scroll">
+      <div class="bdetail-handle"></div>
+      <div class="bdetail-header" style="position:relative">
+        <div class="bdetail-store" id="bdetail-store"></div>
+        <div class="bdetail-meta" id="bdetail-meta"></div>
+        <div class="bdetail-close" onclick="closeBDetailDirect()">×</div>
+      </div>
+      <div class="bdetail-body" id="bdetail-body"></div>
+    </div>
+    <div class="bdetail-footer" id="bdetail-footer"></div>
+  </div>
+</div>
+
+
+<!-- ══ CANCEL BOOKING CONFIRM MODAL ══ -->
+<div class="reset-modal-backdrop" id="cancel-booking-backdrop" style="z-index:900">
+  <div class="reset-modal">
+    <div class="reset-modal-icon">🗑</div>
+    <div class="reset-modal-title">Delete this booking?</div>
+    <div class="reset-modal-body">This will permanently remove the booking from the admin dashboard. This action cannot be undone.</div>
+    <div class="reset-modal-actions">
+      <button class="reset-modal-no" onclick="closeCancelBooking()">No, keep it</button>
+      <button class="reset-modal-yes" onclick="confirmCancelBooking()">Yes, delete it</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ RESCHEDULE MODAL ══ -->
+<div class="reschedule-backdrop" id="reschedule-backdrop" onclick="closeRescheduleOnBackdrop(event)">
+  <div class="reschedule-modal">
+    <div class="reschedule-title">Reschedule Booking</div>
+    <div class="reschedule-sub" id="reschedule-sub">Pick a new date and time</div>
+
+    <!-- Mini calendar -->
+    <div class="cal-nav" style="margin-bottom:14px">
+      <button class="cal-nav-btn" id="rs-cal-prev" onclick="rsCalPrev()">‹</button>
+      <div class="cal-month-label" id="rs-cal-month"></div>
+      <button class="cal-nav-btn" id="rs-cal-next" onclick="rsCalNext()">›</button>
+    </div>
+    <div class="cal-weekdays">
+      <div class="cal-wd">Sun</div><div class="cal-wd">Mon</div><div class="cal-wd">Tue</div>
+      <div class="cal-wd">Wed</div><div class="cal-wd">Thu</div><div class="cal-wd">Fri</div><div class="cal-wd">Sat</div>
+    </div>
+    <div class="cal-grid" id="rs-cal-grid"></div>
+
+    <!-- Time slots -->
+    <div id="rs-slots-wrap" style="margin-top:16px;display:none">
+      <label style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);display:block;margin-bottom:8px;font-family:'Inter',sans-serif">Start Time</label>
+      <div class="reschedule-slot-grid" id="rs-slot-grid"></div>
+    </div>
+    <div class="reschedule-error" id="rs-error"></div>
+
+    <div class="reschedule-actions">
+      <button class="reschedule-cancel-btn" onclick="closeReschedule()">Cancel</button>
+      <button class="reschedule-confirm-btn" id="rs-confirm-btn" onclick="confirmReschedule()">Confirm Reschedule</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
