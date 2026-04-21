@@ -328,7 +328,7 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
 .backdoor-btn:hover{opacity:1;border-color:var(--neon);color:var(--text);box-shadow:var(--shadow-out),0 0 0 3px var(--neon-glow)}
 
 /* Admin wrapper */
-#admin-view{display:none;min-height:100vh}
+#admin-view{display:none;min-height:100vh}@keyframes spin{to{transform:rotate(360deg)}}
 #admin-view.active{display:block}
 
 /* Admin header */
@@ -1908,6 +1908,7 @@ async function handleSubmit(){
   const zone           =STORE_ZONE[store];
   const endMin         =selectedSlot+selectedDuration;
   const durLabel       =DURATIONS.find(d=>d.mins===selectedDuration)?.label||'';
+  const bookingPayload ={id:'b_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),createdAt:Date.now(),status:'confirmed',date:selectedDate,startMin:selectedSlot,endMin,durLabel,durMins:selectedDuration,store,zone,zoneName:ZONES[zone]?.name||zone,contact,contactPhone,packages,packageDetail:{...packageData},notes,strategistName,strategistEmail};
 
   const desc=[
     `📍 Store: ${store}`,`🏢 Zone: ${ZONES[zone].name}`,`⏱ Duration: ${durLabel}`,
@@ -1921,7 +1922,7 @@ async function handleSubmit(){
   const eh=String(Math.floor(endMin/60)).padStart(2,'0'),       em=String(endMin%60).padStart(2,'0');
 
   try {
-    await createCalendarEvent({summary:`📷 ${store} — Content Shoot`,description:desc,startDateTime:`${selectedDate}T${sh}:${sm}:00`,endDateTime:`${selectedDate}T${eh}:${em}:00`,attendeeEmail:strategistEmail});
+    await createCalendarEvent({summary:`📷 ${store} — Content Shoot`,description:desc,startDateTime:`${selectedDate}T${sh}:${sm}:00`,endDateTime:`${selectedDate}T${eh}:${em}:00`,bookingData:bookingPayload});
     existingBookings.push({date:selectedDate,startMin:selectedSlot,endMin,zone,store});
     // Persist to localStorage for admin dashboard
     persistBooking({strategistName,strategistEmail,store,zone,contact,contactPhone,packages,packageDetail:{...packageData},notes,durLabel,durMins:selectedDuration});
@@ -2185,8 +2186,8 @@ function loadAutosave(){
   if(lbl) lbl.textContent='Draft restored';
   setTimeout(()=>{ const l=document.getElementById('autosave-label'); if(l) l.textContent='Auto-save on'; },3000);
 }
-async function createCalendarEvent({summary,description,startDateTime,endDateTime}){
-  const res=await fetch('/.netlify/functions/create-booking',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({summary,description,startDateTime,endDateTime})});
+async function createCalendarEvent({summary,description,startDateTime,endDateTime,bookingData}){
+  const res=await fetch('/.netlify/functions/create-booking',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({summary,description,startDateTime,endDateTime,bookingData})});
   const data=await res.json();
   if(!res.ok||data.error) throw new Error(data.error||'Booking failed');
   return data;
@@ -2385,6 +2386,52 @@ function saveBookings(arr){
 
 /* handleSubmit persistence integrated directly */
 
+/* ════════════════════════════════════════════════════════
+   ADMIN API — server-side booking data via Google Calendar
+════════════════════════════════════════════════════════ */
+let adminBookingsCache = [];
+const ADMIN_TOKEN_KEY = 'adminToken';
+function getAdminToken(){ return sessionStorage.getItem(ADMIN_TOKEN_KEY); }
+function setAdminToken(t){ sessionStorage.setItem(ADMIN_TOKEN_KEY, t); }
+function clearAdminToken(){ sessionStorage.removeItem(ADMIN_TOKEN_KEY); }
+
+async function fetchAdminBookings(){
+  const token = getAdminToken();
+  if(!token) return [];
+  try {
+    const res = await fetch('/.netlify/functions/get-bookings', { headers:{'X-Admin-Token':token} });
+    if(res.status === 401){ clearAdminToken(); return []; }
+    const data = await res.json();
+    adminBookingsCache = data.bookings || [];
+    return adminBookingsCache;
+  } catch(e){ return adminBookingsCache; }
+}
+
+async function handleAdminLogin(){
+  const username = document.getElementById('admin-login-username').value.trim();
+  const password = document.getElementById('admin-login-password').value.trim();
+  const errEl = document.getElementById('admin-login-error');
+  const btn = document.getElementById('admin-login-btn');
+  errEl.textContent = '';
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    const res = await fetch('/.netlify/functions/admin-auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Invalid credentials');
+    setAdminToken(data.token);
+    document.getElementById('admin-login-view').style.display = 'none';
+    _showAdminDashboard();
+  } catch(err){
+    errEl.textContent = err.message || 'Login failed';
+    btn.disabled = false; btn.textContent = 'Sign In';
+  }
+}
+
+function adminLogout(){
+  clearAdminToken();
+  hideAdmin();
+}
+
 /* Called after a booking is confirmed — saves to localStorage */
 function persistBooking({strategistName, strategistEmail, store, zone, contact, contactPhone, packages, packageDetail, notes, durLabel, durMins}){
   const bookings = loadBookings();
@@ -2422,16 +2469,32 @@ let admCalYear, admCalMonth;
 let selectedAdmDate = null;
 
 function showAdmin(){
-  document.getElementById('admin-view').classList.add('active');
-  document.getElementById('admin-view').style.display = 'block';
-  // hide booking form page elements
+  if(!getAdminToken()){ showAdminLogin(); return; }
+  _showAdminDashboard();
+}
+
+function showAdminLogin(){
   document.querySelector('.header').style.display = 'none';
   document.querySelector('.rules-bar').style.display = 'none';
   document.querySelector('.container').style.display = 'none';
-  const tt = document.querySelector('.theme-toggle');
-  if(tt) tt.style.bottom = '80px'; // shift up so it doesn't clash with tabs
-  const bd = document.querySelector('.backdoor-btn');
-  if(bd) bd.style.display = 'none';
+  const tt = document.querySelector('.theme-toggle'); if(tt) tt.style.bottom = '80px';
+  const bd = document.querySelector('.backdoor-btn'); if(bd) bd.style.display = 'none';
+  document.getElementById('admin-login-view').style.display = 'flex';
+  document.getElementById('admin-login-username').value = '';
+  document.getElementById('admin-login-password').value = '';
+  document.getElementById('admin-login-error').textContent = '';
+  window.scrollTo({top:0,behavior:'instant'});
+}
+
+function _showAdminDashboard(){
+  document.querySelector('.header').style.display = 'none';
+  document.querySelector('.rules-bar').style.display = 'none';
+  document.querySelector('.container').style.display = 'none';
+  const tt = document.querySelector('.theme-toggle'); if(tt) tt.style.bottom = '80px';
+  const bd = document.querySelector('.backdoor-btn'); if(bd) bd.style.display = 'none';
+  document.getElementById('admin-login-view').style.display = 'none';
+  document.getElementById('admin-view').classList.add('active');
+  document.getElementById('admin-view').style.display = 'block';
   document.body.style.overflow = '';
   const now = new Date();
   admCalYear = now.getFullYear();
@@ -2443,13 +2506,12 @@ function showAdmin(){
 function hideAdmin(){
   document.getElementById('admin-view').classList.remove('active');
   document.getElementById('admin-view').style.display = 'none';
+  document.getElementById('admin-login-view').style.display = 'none';
   document.querySelector('.header').style.display = '';
   document.querySelector('.rules-bar').style.display = '';
   document.querySelector('.container').style.display = '';
-  const tt = document.querySelector('.theme-toggle');
-  if(tt) tt.style.bottom = '';
-  const bd = document.querySelector('.backdoor-btn');
-  if(bd) bd.style.display = '';
+  const tt = document.querySelector('.theme-toggle'); if(tt) tt.style.bottom = '';
+  const bd = document.querySelector('.backdoor-btn'); if(bd) bd.style.display = '';
   window.scrollTo({top:0,behavior:'instant'});
 }
 
@@ -2465,11 +2527,21 @@ function switchAdminTab(tab){
 /* ════════════════════════════════════════════════════════
    ADMIN — refresh everything
 ════════════════════════════════════════════════════════ */
-function admRefreshAll(){
-  const bookings = loadBookings();
-  updateAdminStats(bookings);
-  renderAdminCalendar(bookings);
-  if(currentAdminTab === 'upcoming') renderBookingList();
+async function admRefreshAll(){
+  showAdminLoading(true);
+  try {
+    const bookings = await fetchAdminBookings();
+    updateAdminStats(bookings);
+    renderAdminCalendar(bookings);
+    if(currentAdminTab === 'upcoming') renderBookingList(bookings);
+  } finally {
+    showAdminLoading(false);
+  }
+}
+
+function showAdminLoading(show){
+  const el = document.getElementById('adm-loading');
+  if(el) el.style.display = show ? 'flex' : 'none';
 }
 
 function updateAdminStats(bookings){
@@ -2492,7 +2564,7 @@ function updateAdminStats(bookings){
    ADMIN CALENDAR
 ════════════════════════════════════════════════════════ */
 function renderAdminCalendar(bookings){
-  bookings = bookings || loadBookings();
+  bookings = bookings || adminBookingsCache;
   const label = new Date(admCalYear, admCalMonth, 1)
     .toLocaleDateString('en-CA', {month:'long', year:'numeric'});
   document.getElementById('adm-cal-month-label').textContent = label;
@@ -2600,8 +2672,8 @@ function renderDayDrawer(ds, bookings){
 /* ════════════════════════════════════════════════════════
    ADMIN — UPCOMING SHOOTS LIST
 ════════════════════════════════════════════════════════ */
-function renderBookingList(){
-  const bookings = loadBookings();
+function renderBookingList(bookings){
+  bookings = bookings || adminBookingsCache;
   const todayStr = dateStr(new Date());
 
   // Sort: upcoming first (ascending), then past (descending)
@@ -2662,7 +2734,7 @@ function renderBookingList(){
 ════════════════════════════════════════════════════════ */
 
 function openBDetail(bookingId){
-  const bookings = loadBookings();
+  const bookings = adminBookingsCache;
   const b = bookings.find(x => x.id === bookingId);
   if(!b) return;
 
@@ -2681,6 +2753,7 @@ function openBDetail(bookingId){
   if(footer) footer.innerHTML = `
     <div class="bdetail-footer-btns">
       <button class="bdetail-reschedule-btn" onclick="openReschedule('${b.id}')">📅 Reschedule</button>
+      <button class="bdetail-reschedule-btn" style="background:var(--surface);border:1px solid var(--border);color:var(--text)" onclick="openEditBooking('${b.id}')">✏️ Edit</button>
       <button class="bdetail-cancel-btn" style="margin-top:0;width:100%" onclick="promptCancelBooking('${b.id}')">🗑 Delete</button>
     </div>`;
   document.getElementById('bdetail-backdrop').classList.add('open');
@@ -2873,14 +2946,24 @@ function closeCancelBooking(){
   document.getElementById('cancel-booking-backdrop').classList.remove('open');
   document.body.style.overflow = '';
 }
-function confirmCancelBooking(){
+async function confirmCancelBooking(){
   if(!_pendingCancelId) return;
-  const bookings = loadBookings().filter(b => b.id !== _pendingCancelId);
-  saveBookings(bookings);
-  _pendingCancelId = null;
-  closeCancelBooking();
-  closeBDetailDirect();
-  admRefreshAll(); // refresh calendar + list
+  const b = adminBookingsCache.find(x => x.id === _pendingCancelId);
+  const btn = document.querySelector('#cancel-booking-backdrop .reset-modal-yes');
+  if(btn){ btn.disabled=true; btn.textContent='Deleting…'; }
+  try {
+    if(b?.eventId){
+      const res = await fetch('/.netlify/functions/delete-booking',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Token':getAdminToken()},body:JSON.stringify({eventId:b.eventId})});
+      if(!res.ok){ const d=await res.json(); throw new Error(d.error||'Delete failed'); }
+    }
+    _pendingCancelId = null;
+    closeCancelBooking();
+    closeBDetailDirect();
+    await admRefreshAll();
+  } catch(err){
+    if(btn){ btn.disabled=false; btn.textContent='Yes, delete it'; }
+    alert('Delete failed: '+err.message);
+  }
 }
 
 
@@ -3048,7 +3131,7 @@ function openReschedule(id){
   document.getElementById('rs-slot-grid').innerHTML = '';
   document.getElementById('rs-confirm-btn').classList.remove('ready');
 
-  const b = loadBookings().find(x => x.id === id);
+  const b = adminBookingsCache.find(x => x.id === id);
   if(b) document.getElementById('reschedule-sub').textContent =
     `Currently: ${new Date(b.date+'T12:00:00').toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'})} · ${minsToTime12(b.startMin)} – ${minsToTime12(b.endMin)}`;
 
@@ -3099,7 +3182,7 @@ function rsRenderCalendar(){
   const holidays    = holidayCache[_rsYear] || getHolidays(_rsYear);
 
   // Get the booking being rescheduled so we can exclude it from conflict checks
-  const allBookings = loadBookings();
+  const allBookings = adminBookingsCache;
   const thisBooking = allBookings.find(x => x.id === _rsBookingId);
   const otherBookings = allBookings.filter(x => x.id !== _rsBookingId);
 
@@ -3173,7 +3256,7 @@ function rsSelectDay(ds){
 }
 
 function rsRenderSlots(ds){
-  const allBookings = loadBookings();
+  const allBookings = adminBookingsCache;
   const thisBooking = allBookings.find(x => x.id === _rsBookingId);
   const durMins = thisBooking?.durMins || 60;
   const otherBookings = allBookings.filter(x => x.id !== _rsBookingId);
@@ -3214,27 +3297,101 @@ function rsRenderSlots(ds){
   });
 }
 
-function confirmReschedule(){
+async function confirmReschedule(){
   if(!_rsBookingId||!_rsSelectedDate||_rsSelectedSlot===null) return;
-  const bookings = loadBookings();
-  const idx = bookings.findIndex(b=>b.id===_rsBookingId);
-  if(idx===-1){ document.getElementById('rs-error').textContent='Booking not found.'; return; }
-
-  const b = bookings[idx];
+  const b = adminBookingsCache.find(x=>x.id===_rsBookingId);
+  if(!b){ document.getElementById('rs-error').textContent='Booking not found.'; return; }
   const newEnd = _rsSelectedSlot + b.durMins;
-
-  // Double-check no conflict with others
-  const others = bookings.filter((_,i)=>i!==idx);
+  const others = adminBookingsCache.filter(x=>x.id!==_rsBookingId);
   const conflict = others.filter(o=>o.date===_rsSelectedDate).some(o=>_rsSelectedSlot<o.endMin&&newEnd>o.startMin);
   if(conflict){ document.getElementById('rs-error').textContent='⚠ Conflict detected. Please pick another slot.'; return; }
+  const pad=n=>String(n).padStart(2,'0');
+  const sh=pad(Math.floor(_rsSelectedSlot/60)),sm=pad(_rsSelectedSlot%60);
+  const eh=pad(Math.floor(newEnd/60)),em=pad(newEnd%60);
+  const updatedBooking={...b,date:_rsSelectedDate,startMin:_rsSelectedSlot,endMin:newEnd};
+  const confirmBtn=document.getElementById('rs-confirm-btn');
+  if(confirmBtn){confirmBtn.disabled=true;confirmBtn.textContent='Saving…';}
+  try{
+    const res=await fetch('/.netlify/functions/update-booking',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Token':getAdminToken()},body:JSON.stringify({eventId:b.eventId,bookingData:updatedBooking,startDateTime:`${_rsSelectedDate}T${sh}:${sm}:00`,endDateTime:`${_rsSelectedDate}T${eh}:${em}:00`})});
+    if(!res.ok){const d=await res.json();throw new Error(d.error||'Update failed');}
+    closeReschedule();
+    closeBDetailDirect();
+    await admRefreshAll();
+  }catch(err){
+    document.getElementById('rs-error').textContent='Update failed: '+err.message;
+    if(confirmBtn){confirmBtn.disabled=false;confirmBtn.textContent='Confirm Reschedule';}
+  }
+}
 
-  // Update the booking
-  bookings[idx] = { ...b, date:_rsSelectedDate, startMin:_rsSelectedSlot, endMin:newEnd };
-  saveBookings(bookings);
+/* ════════════════════════════════════════════════════════
+   EDIT BOOKING
+════════════════════════════════════════════════════════ */
+let _editBookingId = null;
 
-  closeReschedule();
-  closeBDetailDirect();
-  admRefreshAll();
+function openEditBooking(id){
+  _editBookingId = id;
+  const b = adminBookingsCache.find(x=>x.id===id);
+  if(!b) return;
+  document.getElementById('edit-booking-sub').textContent =
+    new Date(b.date+'T12:00:00').toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'})+' · '+minsToTime12(b.startMin)+' – '+minsToTime12(b.endMin);
+  const storeEl=document.getElementById('edit-store');
+  storeEl.innerHTML='';
+  ALL_STORES.forEach(s=>{const opt=document.createElement('option');opt.value=s.name;opt.textContent=s.name;if(s.name===b.store)opt.selected=true;storeEl.appendChild(opt);});
+  document.getElementById('edit-contact').value=b.contact||'';
+  document.getElementById('edit-contact-phone').value=b.contactPhone||'';
+  document.getElementById('edit-strategist-name').value=b.strategistName||'';
+  document.getElementById('edit-strategist-email').value=b.strategistEmail||'';
+  document.getElementById('edit-notes').value=b.notes||'';
+  const pkgGrid=document.getElementById('edit-packages-grid');
+  pkgGrid.innerHTML='';
+  PACKAGES.forEach(p=>{
+    const label=document.createElement('label');
+    label.style.cssText='display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;padding:8px 0;border-bottom:1px solid var(--border)';
+    const cb=document.createElement('input');
+    cb.type='checkbox';cb.value=p.id;cb.checked=(b.packages||[]).includes(p.id);
+    cb.style.cssText='width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0';
+    label.appendChild(cb);label.appendChild(document.createTextNode(p.icon+' '+p.label));
+    pkgGrid.appendChild(label);
+  });
+  document.getElementById('edit-error').textContent='';
+  document.getElementById('edit-booking-backdrop').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function closeEditBooking(){
+  _editBookingId=null;
+  document.getElementById('edit-booking-backdrop').classList.remove('open');
+  document.body.style.overflow='hidden';
+}
+function closeEditBookingOnBackdrop(e){
+  if(e.target===document.getElementById('edit-booking-backdrop')) closeEditBooking();
+}
+
+async function confirmEditBooking(){
+  if(!_editBookingId) return;
+  const b=adminBookingsCache.find(x=>x.id===_editBookingId);
+  if(!b) return;
+  const store=document.getElementById('edit-store').value;
+  const contact=document.getElementById('edit-contact').value.trim();
+  const contactPhone=document.getElementById('edit-contact-phone').value.trim();
+  const strategistName=document.getElementById('edit-strategist-name').value.trim();
+  const strategistEmail=document.getElementById('edit-strategist-email').value.trim();
+  const notes=document.getElementById('edit-notes').value.trim();
+  const packages=[...document.querySelectorAll('#edit-packages-grid input[type=checkbox]:checked')].map(cb=>cb.value);
+  const zone=STORE_ZONE[store]||b.zone;
+  const updatedBooking={...b,store,zone,zoneName:ZONES[zone]?.name||zone,contact,contactPhone,strategistName,strategistEmail,notes,packages};
+  const btn=document.getElementById('edit-confirm-btn');
+  btn.disabled=true;btn.textContent='Saving…';
+  try{
+    const res=await fetch('/.netlify/functions/update-booking',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Token':getAdminToken()},body:JSON.stringify({eventId:b.eventId,bookingData:updatedBooking})});
+    if(!res.ok){const d=await res.json();throw new Error(d.error||'Update failed');}
+    closeEditBooking();
+    closeBDetailDirect();
+    await admRefreshAll();
+  }catch(err){
+    document.getElementById('edit-error').textContent='Save failed: '+err.message;
+    btn.disabled=false;btn.textContent='Save Changes';
+  }
 }
 
 </script>
@@ -3250,15 +3407,45 @@ function confirmReschedule(){
 <!-- ══ BACK DOOR BUTTON ══ -->
 <button class="backdoor-btn" onclick="showAdmin()">⚙ Admin</button>
 
+<!-- ══ ADMIN LOGIN ══ -->
+<div id="admin-login-view" style="display:none;min-height:100vh;align-items:center;justify-content:center;flex-direction:column;background:var(--bg);padding:40px 20px;transition:background .3s">
+  <div style="width:100%;max-width:340px">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-size:36px;margin-bottom:10px">&#128272;</div>
+      <div style="font-size:22px;font-weight:900;letter-spacing:-.4px;font-family:'Inter',sans-serif">Admin Dashboard</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-top:4px">Content Shoot Bookings</div>
+    </div>
+    <div style="background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-xl);padding:28px;box-shadow:var(--shadow-card);transition:background .3s">
+      <div style="margin-bottom:14px">
+        <label style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);display:block;margin-bottom:6px;font-family:'Inter',sans-serif">Username</label>
+        <input type="text" id="admin-login-username" autocomplete="username" placeholder="Enter username" style="width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;box-sizing:border-box;outline:none" onkeydown="if(event.key==='Enter')handleAdminLogin()">
+      </div>
+      <div style="margin-bottom:18px">
+        <label style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);display:block;margin-bottom:6px;font-family:'Inter',sans-serif">Password</label>
+        <input type="password" id="admin-login-password" autocomplete="current-password" placeholder="Enter password" style="width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;box-sizing:border-box;outline:none" onkeydown="if(event.key==='Enter')handleAdminLogin()">
+      </div>
+      <div id="admin-login-error" style="color:#ef4444;font-size:13px;font-weight:600;min-height:18px;text-align:center;margin-bottom:14px"></div>
+      <button id="admin-login-btn" onclick="handleAdminLogin()" style="width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Inter',sans-serif;font-size:14px;font-weight:800;cursor:pointer;letter-spacing:.02em">Sign In</button>
+    </div>
+    <div style="text-align:center;margin-top:20px">
+      <button onclick="hideAdmin()" style="background:none;border:none;color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">&#8592; Back to booking form</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ ADMIN DASHBOARD ══ -->
 <div id="admin-view">
   <div class="admin-header">
-    <div class="admin-header-back" onclick="hideAdmin()">←</div>
+    <div class="admin-header-back" onclick="hideAdmin()">&#8592;</div>
     <div class="admin-header-info">
       <div class="admin-header-title">Admin Dashboard</div>
       <div class="admin-header-sub">Content Shoot Bookings</div>
     </div>
     <span class="admin-badge" id="admin-total-badge">0</span>
+    <button onclick="adminLogout()" style="background:none;border:none;color:var(--text-muted);font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;padding:6px 8px;border-radius:8px;margin-left:4px" title="Log out">Sign out</button>
+  </div>
+  <div id="adm-loading" style="display:none;justify-content:center;align-items:center;padding:32px;color:var(--text-muted);font-size:13px;font-weight:600;gap:8px;font-family:'Inter',sans-serif">
+    <span style="display:inline-block;animation:spin 1s linear infinite;font-size:16px">&#8635;</span>&nbsp;Loading bookings&#8230;
   </div>
 
   <div class="admin-tabs">
@@ -3377,5 +3564,48 @@ function confirmReschedule(){
   </div>
 </div>
 
+
+<!-- ══ EDIT BOOKING MODAL ══ -->
+<div class="reschedule-backdrop" id="edit-booking-backdrop" onclick="closeEditBookingOnBackdrop(event)">
+  <div class="reschedule-modal" style="max-height:88vh;overflow-y:auto">
+    <div class="reschedule-title">Edit Booking</div>
+    <div class="reschedule-sub" id="edit-booking-sub"></div>
+    <div style="display:flex;flex-direction:column;gap:14px;margin-top:18px">
+      <div>
+        <label style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);display:block;margin-bottom:6px;font-family:'Inter',sans-serif">Dealership</label>
+        <select id="edit-store" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box"></select>
+      </div>
+      <div>
+        <label style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);display:block;margin-bottom:6px;font-family:'Inter',sans-serif">On-Site Contact Name</label>
+        <input type="text" id="edit-contact" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box">
+      </div>
+      <div>
+        <label style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);display:block;margin-bottom:6px;font-family:'Inter',sans-serif">Contact Phone</label>
+        <input type="text" id="edit-contact-phone" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box">
+      </div>
+      <div>
+        <label style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);display:block;margin-bottom:6px;font-family:'Inter',sans-serif">Strategist Name</label>
+        <input type="text" id="edit-strategist-name" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box">
+      </div>
+      <div>
+        <label style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);display:block;margin-bottom:6px;font-family:'Inter',sans-serif">Strategist Email</label>
+        <input type="email" id="edit-strategist-email" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box">
+      </div>
+      <div>
+        <label style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);display:block;margin-bottom:8px;font-family:'Inter',sans-serif">Content Packages</label>
+        <div id="edit-packages-grid"></div>
+      </div>
+      <div>
+        <label style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);display:block;margin-bottom:6px;font-family:'Inter',sans-serif">Additional Notes</label>
+        <textarea id="edit-notes" rows="3" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box;resize:vertical"></textarea>
+      </div>
+    </div>
+    <div class="reschedule-error" id="edit-error"></div>
+    <div class="reschedule-actions">
+      <button class="reschedule-cancel-btn" onclick="closeEditBooking()">Cancel</button>
+      <button class="reschedule-confirm-btn ready" id="edit-confirm-btn" onclick="confirmEditBooking()">Save Changes</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
