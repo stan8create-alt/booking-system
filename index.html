@@ -784,7 +784,7 @@ const PACKAGES = [
   { id:'headshots',  label:'Headshots',              icon:'📸' },
   { id:'gmb',        label:'Photo Session',          icon:'📷' },
   { id:'salesrep',   label:'Sales Rep. Intro Video', icon:'🎤' },
-  { id:'lifestyle',  label:'Lifestyle Content',      icon:'✨' },
+  { id:'event',      label:'Event Coverage',         icon:'✨' },
   { id:'social',     label:'Social Media Content',   icon:'📱' },
 ];
 
@@ -796,7 +796,7 @@ const PACKAGE_MINS = {
   headshots:  45,  // flat 45 min for all headshots
   gmb:        45,  // photo tour of facility
   salesvideo: 30,  // per vehicle entry
-  lifestyle:  45,  // staging, multiple setups
+  event:      45,  // event coverage
   social:     30,  // per reel concept
   salesrep:   20,  // per rep intro clip
 };
@@ -1564,10 +1564,15 @@ function validateModalFields(id){
       if(!cards[i].querySelector('.ethnic-lang')?.value?.trim()) return `Video ${i+1}: Language is required.`;
       if(!cards[i].querySelector('.ethnic-name')?.value?.trim()) return `Video ${i+1}: Subject name is required.`;
     }
-  } else if(id==='walkaround'||id==='salesvideo'){
-    const cards = [...body.querySelectorAll(`#${id}-entries .entry-card`)];
+  } else if(id==='walkaround'){
+    const cards = [...body.querySelectorAll('#walkaround-entries .entry-card')];
     for(let i=0;i<cards.length;i++){
       if(!cards[i].querySelector('.veh-model')?.value?.trim()) return `Entry ${i+1}: Make & Model is required.`;
+    }
+  } else if(id==='salesvideo'){
+    const cards = [...body.querySelectorAll('#salesvideo-entries .entry-card')];
+    for(let i=0;i<cards.length;i++){
+      if(!cards[i].querySelector('.sv-speaker')?.value?.trim()) return `Video ${i+1}: Name of Person Speaking is required.`;
     }
   } else if(id==='salesrep'){
     const cards = [...body.querySelectorAll('#salesrep-entries .entry-card')];
@@ -1586,8 +1591,8 @@ function validateModalFields(id){
     }
   } else if(id==='gmb'){
     if(!body.querySelector('#photo-count')?.value?.trim()) return 'Number of photos / deliverables is required.';
-  } else if(id==='lifestyle'){
-    if(!body.querySelector('#lifestyle-count')?.value?.trim()) return 'Number of deliverables is required.';
+  } else if(id==='event'){
+    if(!body.querySelector('#event-name')?.value?.trim()) return 'Event Name is required.';
   }
   return null; // all good
 }
@@ -1633,8 +1638,8 @@ function buildModalBody(id){
     case 'service':    return bodyService();
     case 'headshots':  return bodyHeadshots();
     case 'gmb':        return bodyPhotos();
-    case 'salesvideo': return bodyVehicles('salesvideo');
-    case 'lifestyle':  return bodyLifestyle();
+    case 'salesvideo': return bodySalesVideo();
+    case 'event':      return bodyEvent();
     case 'social':     return bodySocial();
     case 'salesrep':   return bodyReps();
     default: return '<p style="color:var(--text-muted)">No extra details needed.</p>';
@@ -1652,7 +1657,9 @@ function bodyVehicles(prefix){
   <button class="add-entry-btn" onclick="addVehicleEntry('${prefix}-entries')">+ Add Another Vehicle</button>`;
 }
 function bodyService(){
-  return `<div class="field"><label>Notes</label><textarea id="service-notes" placeholder="Service type, technician, vehicle, key message — anything useful…" style="min-height:120px"></textarea></div>`;
+  return `<div class="field"><label>Person Speaking on Video</label><input type="text" id="service-speaker" placeholder="Full name of person featured"></div>
+  <div class="field"><label>Title / Role</label><input type="text" id="service-role" placeholder="e.g. Service Advisor, Service Manager"></div>
+  <div class="field"><label>Notes</label><textarea id="service-notes" placeholder="Service type, technician, vehicle, key message — anything useful…" style="min-height:100px"></textarea></div>`;
 }
 function bodyHeadshots(){
   return `<div id="headshot-names-list"><div class="headshot-person"><input type="text" class="headshot-name" placeholder="Full name of person"><button class="remove-person" onclick="removePerson(this)">×</button></div></div>
@@ -1676,16 +1683,22 @@ function bodyPhotos(){
   <div class="field"><label>Areas or Subjects to Cover</label><textarea id="photo-areas" placeholder="Showroom floor, service bay, specific vehicles…"></textarea></div>
   <div class="field"><label>Reference Link</label><input type="text" id="photo-ref" placeholder="Google Drive, Doc, Pinterest… https://"></div>`;
 }
-function bodyLifestyle(){
-  return `<div class="field"><label>Setting</label>
-  <div class="toggle-group">
-    <input type="radio" class="tog-input" name="ls-setting" id="ls-in"><label class="tog-label" for="ls-in">Indoor</label>
-    <input type="radio" class="tog-input" name="ls-setting" id="ls-out"><label class="tog-label" for="ls-out">Outdoor</label>
-    <input type="radio" class="tog-input" name="ls-setting" id="ls-both"><label class="tog-label" for="ls-both">Both</label>
+function bodySalesVideo(){
+  return `<div id="salesvideo-entries"></div>
+  <button class="add-entry-btn" onclick="addSalesVideoEntry()">+ Add Another Video</button>`;
+}
+function bodyEvent(){
+  return `<div class="field"><label>Event Name <span class="req">*</span></label><input type="text" id="event-name" placeholder="Name of the event"></div>
+  <div class="two-col">
+    <div class="field"><label>Contact Person <span style="font-weight:400;font-size:11px;color:var(--text-muted)">(optional)</span></label><input type="text" id="event-contact" placeholder="Full name"></div>
+    <div class="field"><label>Contact Phone <span style="font-weight:400;font-size:11px;color:var(--text-muted)">(optional)</span></label><input type="text" id="event-phone" placeholder="e.g. 416-555-0100"></div>
+  </div>
+  <div class="field"><label>Event Date &amp; Time</label>
+  <div class="two-col" style="margin-top:8px">
+    <div class="field"><label style="font-size:11px;font-weight:500;color:var(--text-muted);margin-bottom:4px">From</label><input type="text" id="event-from" placeholder="e.g. 10:00 AM"></div>
+    <div class="field"><label style="font-size:11px;font-weight:500;color:var(--text-muted);margin-bottom:4px">Until</label><input type="text" id="event-until" placeholder="e.g. 4:00 PM"></div>
   </div></div>
-  <div class="field"><label>Number of Deliverables</label><input type="text" id="lifestyle-count" placeholder="e.g. 10 photos + 2 short clips"></div>
-  <div class="field"><label>Mood / Brand Direction</label><input type="text" id="lifestyle-mood" placeholder="e.g. aspirational, family-focused, luxury feel"></div>
-  <div class="field"><label>Reference Link</label><input type="text" id="lifestyle-ref" placeholder="Google Doc, Drive, Pinterest… https://"></div>`;
+  <div class="field"><label>Key Moments to Capture</label><textarea id="event-moments" placeholder="e.g. ribbon cutting, test drive demos, crowd interactions, speeches…" style="min-height:90px"></textarea></div>`;
 }
 function bodySocial(){
   return `<div id="social-entries"></div>
@@ -1756,6 +1769,21 @@ function addVehicleEntry(containerId){
   list.appendChild(div);
 }
 
+function addSalesVideoEntry(){
+  const list=document.getElementById('salesvideo-entries');
+  if(!list) return;
+  const idx=list.children.length+1;
+  const div=document.createElement('div'); div.className='entry-card';
+  div.innerHTML=`
+    ${idx>1?'<button class="entry-remove" onclick="removeEntry(this)">×</button>':''}
+    <div class="two-col">
+      <div class="field"><label>Name of Person Speaking</label><input type="text" class="sv-speaker" placeholder="Full name"></div>
+      <div class="field"><label>Title / Role</label><input type="text" class="sv-role" placeholder="e.g. Sales Manager"></div>
+    </div>
+    <div class="field"><label>Talking Points / Script Notes</label><textarea class="veh-notes" placeholder="Key messages, tone, specific lines…" style="min-height:70px"></textarea></div>
+    <div class="field"><label>Reference File Link</label><input type="text" class="veh-ref" placeholder="Google Doc, Drive, Word… (optional)"></div>`;
+  list.appendChild(div);
+}
 function addSalesRepEntry(){
   const list=document.getElementById('salesrep-entries');
   if(!list) return;
@@ -1805,11 +1833,19 @@ function saveModalData(id){
     data.entries=entries;
   } else if(id==='headshots'){
     data.names=[...body.querySelectorAll('.headshot-name')].map(i=>i.value||'');
-  } else if(id==='walkaround'||id==='salesvideo'){
-    const entries=[...body.querySelectorAll(`#${id}-entries .entry-card`)].map(card=>({
+  } else if(id==='walkaround'){
+    const entries=[...body.querySelectorAll('#walkaround-entries .entry-card')].map(card=>({
       year:card.querySelector('.veh-year')?.value||'',
       model:card.querySelector('.veh-model')?.value||'',
       notes:card.querySelector('.veh-notes')?.value||''
+    }));
+    data.entries=entries;
+  } else if(id==='salesvideo'){
+    const entries=[...body.querySelectorAll('#salesvideo-entries .entry-card')].map(card=>({
+      speaker:card.querySelector('.sv-speaker')?.value||'',
+      role:card.querySelector('.sv-role')?.value||'',
+      notes:card.querySelector('.veh-notes')?.value||'',
+      ref:card.querySelector('.veh-ref')?.value||''
     }));
     data.entries=entries;
   } else if(id==='salesrep'){
@@ -1819,7 +1855,16 @@ function saveModalData(id){
     }));
     data.entries=entries;
   } else if(id==='service'){
+    data.speaker=body.querySelector('#service-speaker')?.value||'';
+    data.role=body.querySelector('#service-role')?.value||'';
     data.notes=body.querySelector('#service-notes')?.value||'';
+  } else if(id==='event'){
+    data.name=body.querySelector('#event-name')?.value||'';
+    data.contact=body.querySelector('#event-contact')?.value||'';
+    data.phone=body.querySelector('#event-phone')?.value||'';
+    data.from=body.querySelector('#event-from')?.value||'';
+    data.until=body.querySelector('#event-until')?.value||'';
+    data.moments=body.querySelector('#event-moments')?.value||'';
   }
   packageData[id]=data;
 }
@@ -1854,11 +1899,11 @@ function restoreModalData(id){
           cards[i].querySelector('.social-count').value=e.count||'';
         });
       } else { addSocialEntry(); }
-    } else if(id==='walkaround'||id==='salesvideo'){
-      const list=document.getElementById(`${id}-entries`);
+    } else if(id==='walkaround'){
+      const list=document.getElementById('walkaround-entries');
       if(!list) return;
       if(data?.entries?.length){
-        data.entries.forEach(()=>addVehicleEntry(`${id}-entries`));
+        data.entries.forEach(()=>addVehicleEntry('walkaround-entries'));
         const cards=[...list.querySelectorAll('.entry-card')];
         data.entries.forEach((e,i)=>{
           if(!cards[i]) return;
@@ -1866,7 +1911,21 @@ function restoreModalData(id){
           cards[i].querySelector('.veh-model').value=e.model||'';
           cards[i].querySelector('.veh-notes').value=e.notes||'';
         });
-      } else { addVehicleEntry(`${id}-entries`); }
+      } else { addVehicleEntry('walkaround-entries'); }
+    } else if(id==='salesvideo'){
+      const list=document.getElementById('salesvideo-entries');
+      if(!list) return;
+      if(data?.entries?.length){
+        data.entries.forEach(()=>addSalesVideoEntry());
+        const cards=[...list.querySelectorAll('.entry-card')];
+        data.entries.forEach((e,i)=>{
+          if(!cards[i]) return;
+          cards[i].querySelector('.sv-speaker').value=e.speaker||'';
+          cards[i].querySelector('.sv-role').value=e.role||'';
+          cards[i].querySelector('.veh-notes').value=e.notes||'';
+          cards[i].querySelector('.veh-ref').value=e.ref||'';
+        });
+      } else { addSalesVideoEntry(); }
     } else if(id==='salesrep'){
       const list=document.getElementById('salesrep-entries');
       if(!list) return;
@@ -1892,9 +1951,17 @@ function restoreModalData(id){
         });
       }
       // if no saved data, the default single row from bodyHeadshots() stays — nothing to do
-    } else if(id==='service' && data?.notes){
-      const el=document.getElementById('service-notes');
-      if(el) el.value=data.notes;
+    } else if(id==='service'){
+      if(data?.speaker){ const el=document.getElementById('service-speaker'); if(el) el.value=data.speaker; }
+      if(data?.role){ const el=document.getElementById('service-role'); if(el) el.value=data.role; }
+      if(data?.notes){ const el=document.getElementById('service-notes'); if(el) el.value=data.notes; }
+    } else if(id==='event'){
+      if(data?.name){ const el=document.getElementById('event-name'); if(el) el.value=data.name; }
+      if(data?.contact){ const el=document.getElementById('event-contact'); if(el) el.value=data.contact; }
+      if(data?.phone){ const el=document.getElementById('event-phone'); if(el) el.value=data.phone; }
+      if(data?.from){ const el=document.getElementById('event-from'); if(el) el.value=data.from; }
+      if(data?.until){ const el=document.getElementById('event-until'); if(el) el.value=data.until; }
+      if(data?.moments){ const el=document.getElementById('event-moments'); if(el) el.value=data.moments; }
     }
   },0);
 }
@@ -2877,7 +2944,7 @@ function buildBDetailHTML(b){
     headshots:  {icon:'📸', label:'Headshots'},
     gmb:        {icon:'📷', label:'Photo Session'},
     salesvideo: {icon:'🎬', label:'Sales Video'},
-    lifestyle:  {icon:'✨', label:'Lifestyle Content'},
+    event:      {icon:'✨', label:'Event Coverage'},
     social:     {icon:'📱', label:'Social Media Content'},
     salesrep:   {icon:'🎤', label:'Sales Rep. Intro Video'},
   };
@@ -2926,26 +2993,38 @@ function buildBDetailHTML(b){
     html += `</div>`;
   }
 
-  // Walkaround / Sales Video — vehicle entries
-  ['walkaround','salesvideo'].forEach(pkg => {
-    if(pd[pkg]?.entries?.length){
-      const meta = PACKAGE_META[pkg];
-      html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>${meta.icon}</span> ${meta.label}</div>`;
-      pd[pkg].entries.forEach((e,i) => {
-        html += `<div class="pkg-entry-card"><div class="pkg-entry-label">Vehicle ${i+1}</div>`;
-        if(e.year || e.model) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Vehicle</span><span class="pkg-detail-inner-val">${[e.year,e.model].filter(Boolean).join(' ')}</span></div>`;
-        if(e.notes) html += `<div class="pkg-detail-inner-row" style="flex-direction:column;gap:4px"><span class="pkg-detail-inner-key">Talking Points</span><span class="pkg-detail-inner-val" style="text-align:left;font-style:italic">${e.notes}</span></div>`;
-        html += `</div>`;
-      });
+  // Walkaround — vehicle entries
+  if(pd.walkaround?.entries?.length){
+    html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>🚗</span> Walkaround</div>`;
+    pd.walkaround.entries.forEach((e,i) => {
+      html += `<div class="pkg-entry-card"><div class="pkg-entry-label">Vehicle ${i+1}</div>`;
+      if(e.year || e.model) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Vehicle</span><span class="pkg-detail-inner-val">${[e.year,e.model].filter(Boolean).join(' ')}</span></div>`;
+      if(e.notes) html += `<div class="pkg-detail-inner-row" style="flex-direction:column;gap:4px"><span class="pkg-detail-inner-key">Talking Points</span><span class="pkg-detail-inner-val" style="text-align:left;font-style:italic">${e.notes}</span></div>`;
       html += `</div>`;
-    }
-  });
+    });
+    html += `</div>`;
+  }
+  // Sales Video — speaker entries
+  if(pd.salesvideo?.entries?.length){
+    html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>🎬</span> Sales Video</div>`;
+    pd.salesvideo.entries.forEach((e,i) => {
+      html += `<div class="pkg-entry-card"><div class="pkg-entry-label">Video ${i+1}</div>`;
+      if(e.speaker) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Speaker</span><span class="pkg-detail-inner-val">${e.speaker}</span></div>`;
+      if(e.role) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Role</span><span class="pkg-detail-inner-val">${e.role}</span></div>`;
+      if(e.notes) html += `<div class="pkg-detail-inner-row" style="flex-direction:column;gap:4px"><span class="pkg-detail-inner-key">Talking Points</span><span class="pkg-detail-inner-val" style="text-align:left;font-style:italic">${e.notes}</span></div>`;
+      if(e.ref) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Reference</span><span class="pkg-detail-inner-val" style="word-break:break-all">${e.ref}</span></div>`;
+      html += `</div>`;
+    });
+    html += `</div>`;
+  }
 
   // Service Video
-  if(pd.service?.notes){
-    html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>🔧</span> Service Video</div>
-      <div class="pkg-detail-inner-row" style="flex-direction:column;gap:4px"><span class="pkg-detail-inner-key">Notes</span><span class="pkg-detail-inner-val" style="text-align:left;font-style:italic">${pd.service.notes}</span></div>
-    </div>`;
+  if(pd.service?.notes || pd.service?.speaker){
+    html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>🔧</span> Service Video</div>`;
+    if(pd.service.speaker) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Speaker</span><span class="pkg-detail-inner-val">${pd.service.speaker}</span></div>`;
+    if(pd.service.role) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Role</span><span class="pkg-detail-inner-val">${pd.service.role}</span></div>`;
+    if(pd.service.notes) html += `<div class="pkg-detail-inner-row" style="flex-direction:column;gap:4px"><span class="pkg-detail-inner-key">Notes</span><span class="pkg-detail-inner-val" style="text-align:left;font-style:italic">${pd.service.notes}</span></div>`;
+    html += `</div>`;
   }
 
   // Headshots
@@ -2971,13 +3050,15 @@ function buildBDetailHTML(b){
     html += `</div>`;
   }
 
-  // Lifestyle
-  if(pd.lifestyle){
-    const l = pd.lifestyle;
-    html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>✨</span> Lifestyle Content</div>`;
-    if(l.count) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Deliverables</span><span class="pkg-detail-inner-val">${l.count}</span></div>`;
-    if(l.mood) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Mood / Direction</span><span class="pkg-detail-inner-val">${l.mood}</span></div>`;
-    if(l.ref) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Reference</span><span class="pkg-detail-inner-val" style="word-break:break-all">${l.ref}</span></div>`;
+  // Event Coverage
+  if(pd.event?.name){
+    const ev = pd.event;
+    html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>✨</span> Event Coverage</div>`;
+    if(ev.name) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Event</span><span class="pkg-detail-inner-val">${ev.name}</span></div>`;
+    if(ev.contact) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Contact</span><span class="pkg-detail-inner-val">${ev.contact}</span></div>`;
+    if(ev.phone) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Phone</span><span class="pkg-detail-inner-val">${ev.phone}</span></div>`;
+    if(ev.from || ev.until) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Event Time</span><span class="pkg-detail-inner-val">${[ev.from,ev.until].filter(Boolean).join(' – ')}</span></div>`;
+    if(ev.moments) html += `<div class="pkg-detail-inner-row" style="flex-direction:column;gap:4px"><span class="pkg-detail-inner-key">Key Moments</span><span class="pkg-detail-inner-val" style="text-align:left;font-style:italic">${ev.moments}</span></div>`;
     html += `</div>`;
   }
 
