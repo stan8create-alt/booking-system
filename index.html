@@ -1549,8 +1549,10 @@ function showDiscardConfirm(){
   wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 function forceCloseModal(){
+  const openPkg=getCurrentModalPkg();
   document.getElementById('modal-backdrop').classList.remove('open');
   document.body.style.overflow='';
+  if(openPkg) deselectPackage(openPkg);
 }
 
 function validateModalFields(id){
