@@ -168,8 +168,9 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
 .remaining-bar-fill{height:100%;border-radius:99px;background:var(--green);transition:width .3s,background .3s}
 
 /* ── PACKAGES GRID ── */
-.packages-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
-@media(min-width:520px){.packages-grid{grid-template-columns:repeat(3,1fr)}}
+.packages-grid{display:grid;grid-template-columns:1fr;gap:9px}
+@media(min-width:480px){.packages-grid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:600px){.packages-grid{grid-template-columns:repeat(3,1fr)}}
 .pkg-checkbox{display:none}
 .pkg-wrapper{position:relative;display:flex;flex-direction:column}
 .pkg-label{display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 12px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--text-muted);box-shadow:var(--shadow-out);transition:all .16s;user-select:none;min-height:52px;font-family:'Inter',sans-serif}
@@ -520,7 +521,7 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
   <div class="modal" id="modal-box">
     <div class="modal-header">
       <div class="modal-title" id="modal-title">Details</div>
-      <button class="modal-close" onclick="closeModal()">×</button>
+      <button class="modal-close" onclick="dismissModal()">×</button>
     </div>
     <div id="modal-body"></div>
     <button class="modal-done" onclick="closeModal()">✓ Done</button>
@@ -1523,6 +1524,35 @@ function closeModal(){
   scheduleAutosave();
 }
 
+function dismissModal(){
+  // Called by × and backdrop — no validation; confirm only if user typed something
+  const openPkg=getCurrentModalPkg();
+  if(openPkg&&hasModalData(openPkg)){
+    showDiscardConfirm();
+    return;
+  }
+  forceCloseModal();
+}
+function hasModalData(id){
+  const body=document.getElementById('modal-body');
+  if(!body) return false;
+  return [...body.querySelectorAll('input[type=text],input[type=email],input[type=number],textarea')].some(el=>el.value.trim()!=='');
+}
+function showDiscardConfirm(){
+  if(document.getElementById('modal-discard-confirm')) return;
+  const wrap=document.createElement('div');
+  wrap.id='modal-discard-confirm';
+  wrap.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:16px;text-align:center;animation:fadeIn .18s ease';
+  wrap.innerHTML=`<p style="font-size:13px;font-weight:700;margin:0 0 12px;color:var(--text);font-family:Inter,sans-serif">Close without saving?<br><span style="font-weight:400;font-size:12px;color:var(--text-muted)">Your edits won\u2019t be saved.</span></p><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button type="button" onclick="forceCloseModal()" style="padding:10px;border:1px solid var(--red);background:var(--red);color:#fff;border-radius:var(--radius-sm);font-weight:700;font-size:12.5px;cursor:pointer;font-family:Inter,sans-serif">Yes, Discard</button><button type="button" onclick="document.getElementById('modal-discard-confirm').remove()" style="padding:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:var(--radius-sm);font-weight:700;font-size:12.5px;cursor:pointer;font-family:Inter,sans-serif">No, Keep Editing</button></div>`;
+  const body=document.getElementById('modal-body');
+  body.insertBefore(wrap,body.firstChild);
+  wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function forceCloseModal(){
+  document.getElementById('modal-backdrop').classList.remove('open');
+  document.body.style.overflow='';
+}
+
 function validateModalFields(id){
   const body = document.getElementById('modal-body');
   if(!body) return null;
@@ -1564,7 +1594,7 @@ function getCurrentModalPkg(){
   return PACKAGES.find(p=>title.includes(p.label))?.id||null;
 }
 function closeModalOnBackdrop(e){
-  if(e.target===document.getElementById('modal-backdrop')) closeModal();
+  if(e.target===document.getElementById('modal-backdrop')) dismissModal();
 }
 
 function updateFilledInfo(){
