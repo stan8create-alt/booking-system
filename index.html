@@ -950,6 +950,7 @@ let selectedDuration = null;
 let selectedSlot     = null;
 let existingBookings = []; // {date,startMin,endMin,zone,store}
 let googleBusyRanges = []; // busy windows from Google Calendar for selected date
+let calBusyByDate = {}; // {dateStr: [{start,end},...]} for dot coloring, cross-device
 let calYear, calMonth;
 let holidayCache = {};
 
@@ -961,6 +962,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   holidayCache[calYear]   = getHolidays(calYear);
   holidayCache[calYear+1] = getHolidays(calYear+1);
   renderCalendar();
+  fetchCalMonthBusy(calYear,calMonth);
   renderDurationPicker(); // always show duration picker
   buildPackages();
   buildDealerDropdown();
@@ -1019,12 +1021,19 @@ function renderCalendar(){
       cell.onclick=()=>selectCalDay(dstr,cell);
     }
 
-    // availability dot
+    // availability dot — uses GCal busy data for cross-device accuracy
     let dotClass='';
     if(!isWeekend&&!isHoliday&&!isTooSoon){
-      const usedMins = getUsedMinutesForDate(dstr);
-      const weekCount = getWeekBookingCount(dstr);
-      if(dayFull||weekFull) dotClass='dot-red';
+      const gcalUsedMins = getGcalUsedMins(dstr);
+      const sessionUsedMins = getUsedMinutesForDate(dstr);
+      const usedMins = Math.max(gcalUsedMins, sessionUsedMins);
+      const gcalWeekCount = getGcalWeekCount(dstr);
+      const sessionWeekCount = getWeekBookingCount(dstr);
+      const weekCount = Math.max(gcalWeekCount, sessionWeekCount);
+      const gcalDayFull = gcalUsedMins >= (DAY_END - (new Date(dstr+'T12:00:00').getDay()===3?DAY_START_WED:DAY_START) - 30);
+      const combinedDayFull = dayFull || gcalDayFull;
+      const combinedWeekFull = weekCount >= WEEKLY_CAP;
+      if(combinedDayFull||combinedWeekFull) dotClass='dot-red';
       else if(usedMins>180||weekCount>=4) dotClass='dot-yellow';
       else dotClass='dot-green';
     }
@@ -1039,12 +1048,14 @@ function calPrev(){
   if(calMonth<0){calMonth=11;calYear--;}
   holidayCache[calYear]=holidayCache[calYear]||getHolidays(calYear);
   renderCalendar();
+  fetchCalMonthBusy(calYear,calMonth);
 }
 function calNext(){
   calMonth++;
   if(calMonth>11){calMonth=0;calYear++;}
   holidayCache[calYear]=holidayCache[calYear]||getHolidays(calYear);
   renderCalendar();
+  fetchCalMonthBusy(calYear,calMonth);
 }
 
 async function fetchGoogleBusy(dstr){
@@ -1106,6 +1117,64 @@ function isDayFull(dstr){
   return false;
 }
 function getUsedMinutesForDate(date){ return existingBookings.filter(b=>b.date===date).reduce((s,b)=>s+(b.endMin-b.startMin),0); }
+
+/* ── GCAL BUSY HELPERS (cross-device dot coloring) ── */
+function busyDateET(isoStr){
+  // Convert UTC ISO string to ET wall-clock date string YYYY-MM-DD
+  const d=new Date(isoStr);
+  return d.toLocaleDateString('en-CA',{timeZone:'America/Toronto'});
+}
+function busyDurMins(range){
+  return Math.round((new Date(range.end)-new Date(range.start))/60000);
+}
+function getBusyForDate(dstr){
+  return (calBusyByDate[dstr]||[]);
+}
+function getGcalUsedMins(dstr){
+  return getBusyForDate(dstr).reduce((s,r)=>s+busyDurMins(r),0);
+}
+function getGcalWeekCount(dstr){
+  const ws=getWeekStart(dstr);
+  const we=new Date(ws+'T12:00:00'); we.setDate(we.getDate()+6);
+  const weStr=dateStr(we);
+  // Count distinct days that have any busy time in the week
+  let count=0;
+  const d=new Date(ws+'T12:00:00');
+  for(let i=0;i<7;i++){
+    const ds=dateStr(d);
+    if(getBusyForDate(ds).length>0) count++;
+    d.setDate(d.getDate()+1);
+  }
+  return count;
+}
+async function fetchCalMonthBusy(year,month){
+  // Fetch busy ranges for the visible month ±7 days
+  const first=new Date(year,month,1);
+  const last=new Date(year,month+1,0);
+  const fromD=new Date(first); fromD.setDate(fromD.getDate()-7);
+  const toD=new Date(last); toD.setDate(toD.getDate()+7);
+  const from=dateStr(fromD), to=dateStr(toD);
+  try{
+    const res=await fetch(`/.netlify/functions/get-busy?from=${from}&to=${to}`);
+    if(!res.ok) return;
+    const {busy}=await res.json();
+    if(!Array.isArray(busy)) return;
+    // Group by ET date
+    const byDate={};
+    busy.forEach(r=>{
+      const ds=busyDateET(r.start);
+      (byDate[ds]=byDate[ds]||[]).push(r);
+    });
+    // Merge into calBusyByDate
+    const d=new Date(fromD);
+    while(dateStr(d)<=to){
+      const ds=dateStr(d);
+      calBusyByDate[ds]=byDate[ds]||[];
+      d.setDate(d.getDate()+1);
+    }
+    renderCalendar();
+  }catch(e){}
+}
 
 /* ── DURATION PICKER ── */
 function renderDurationPicker(){
