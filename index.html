@@ -561,6 +561,7 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
   <div class="cal-grid" id="cal-grid"></div>
 
   <div id="date-alert" class="alert error" style="margin-top:14px"><span id="date-alert-msg"></span></div>
+  <div id="date-zone-info" class="alert info" style="margin-top:10px;display:none"></div>
 
   <hr class="cal-divider" style="margin:20px 0">
 
@@ -750,7 +751,7 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
     </button>
   </div>
   <button class="book-another-btn" onclick="resetForAnotherBooking()">+ Book Another Store</button>
-  <p class="success-detail" style="font-size:12.5px;margin-top:22px;">Need changes? Contact the photographer directly.</p>
+  <p class="success-detail" style="font-size:12.5px;margin-top:22px;">Need changes? Contact Stan directly.</p>
 </div>
 </div><!-- /container -->
 
@@ -790,11 +791,11 @@ const PACKAGES = [
 
 /* ── PACKAGE TIME COSTS (minutes needed per package) ── */
 const PACKAGE_MINS = {
-  ethnic:     30,  // 30 min per video entry
+  ethnic:     20,  // 20 min per video entry
   walkaround: 60,  // 60 min per vehicle entry
   service:    30,  // service bay, interview
-  headshots:  45,  // flat 45 min for all headshots
-  gmb:        45,  // photo tour of facility
+  headshots:  30,  // flat 30 min for all headshots
+  gmb:        30,  // photo tour of facility
   salesvideo: 30,  // per vehicle entry
   event:      45,  // event coverage
   social:     30,  // per reel concept
@@ -1067,14 +1068,37 @@ async function fetchGoogleBusy(dstr){
   }catch(e){}
   renderSlots();
 }
+async function fetchDayZoneInfo(dstr){
+  const el=document.getElementById('date-zone-info');
+  if(!el) return;
+  el.style.display='none'; el.textContent='';
+  try{
+    const res=await fetch(`/.netlify/functions/get-day-info?date=${dstr}`);
+    if(!res.ok) return;
+    const {summary}=await res.json();
+    if(!summary||!summary.length) return;
+    // Build message for each zone
+    const parts=summary.map(({zone,bookedCount})=>{
+      const z=ZONES[zone];
+      if(!z) return null;
+      const rem=Math.max(0,z.maxPerDay-bookedCount);
+      return `${z.name}: ${bookedCount} booked, ${rem} slot${rem!==1?'s':''} remaining`;
+    }).filter(Boolean);
+    if(!parts.length) return;
+    el.textContent=`⚠️ ${parts.join(' · ')} — only matching stores available`;
+    el.style.display='block';
+  }catch(e){}
+}
 function selectCalDay(dstr,cell){// Fetch Google Calendar busy times for selected date
 fetchGoogleBusy(dstr);
+fetchDayZoneInfo(dstr);
   document.querySelectorAll('.cal-day.cal-selected').forEach(c=>c.classList.remove('cal-selected'));
   cell.classList.add('cal-selected');
   selectedDate     = dstr;
   selectedDuration = null;
   selectedSlot     = null;
   hideAlert('date-alert');
+  const _dzi=document.getElementById('date-zone-info'); if(_dzi){_dzi.style.display='none';_dzi.textContent='';}
 
   document.getElementById('time-preview').style.display='none';
   renderDurationPicker();
@@ -3194,56 +3218,26 @@ function getCalEventData(){
 /* ── OUTLOOK / ICS EXPORT ── */
 function exportToOutlook(){
   const ev = getCalEventData();
-
-  // ICS format — timezone-naive local time (TZID header covers Toronto)
-  const icsLines = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//Content Shoot Booking//EN',
-    'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH',
-    'BEGIN:VTIMEZONE',
-    'TZID:America/Toronto',
-    'BEGIN:STANDARD',
-    'TZOFFSETFROM:-0400',
-    'TZOFFSETTO:-0500',
-    'TZNAME:EST',
-    'DTSTART:19701101T020000',
-    'RRULE:FREQ=YEARLY;BYDAY=1SU;BYMONTH=11',
-    'END:STANDARD',
-    'BEGIN:DAYLIGHT',
-    'TZOFFSETFROM:-0500',
-    'TZOFFSETTO:-0400',
-    'TZNAME:EDT',
-    'DTSTART:19700308T020000',
-    'RRULE:FREQ=YEARLY;BYDAY=2SU;BYMONTH=3',
-    'END:DAYLIGHT',
-    'END:VTIMEZONE',
-    'BEGIN:VEVENT',
-    `DTSTART;TZID=America/Toronto:${ev.dtStart}`,
-    `DTEND;TZID=America/Toronto:${ev.dtEnd}`,
-    `SUMMARY:${ev.title}`,
-    `LOCATION:${ev.store}`,
-    `DESCRIPTION:${ev.bodyLines.replace(/\n/g,'\\n').replace(/,/g,'\\,')}`,
-    `STATUS:CONFIRMED`,
-    `TRANSP:OPAQUE`,
-    `BEGIN:VALARM`,
-    `TRIGGER:-PT60M`,
-    `ACTION:DISPLAY`,
-    `DESCRIPTION:Reminder: Content Shoot in 1 hour`,
-    `END:VALARM`,
-    'END:VEVENT',
-    'END:VCALENDAR',
-  ].join('\r\n');
-
-  const blob = new Blob([icsLines], { type:'text/calendar;charset=utf-8' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `content-shoot-${selectedDate}-${ev.store.replace(/[^a-z0-9]/gi,'-').toLowerCase()}.ics`;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+  // Detect EDT vs EST offset for Toronto
+  function etOffset(dateStr){
+    const d=new Date(dateStr+'T12:00:00');
+    const y=d.getFullYear();
+    const dstStart=new Date(y,2,1); while(dstStart.getDay()!==0)dstStart.setDate(dstStart.getDate()+1); dstStart.setDate(dstStart.getDate()+7);
+    const dstEnd=new Date(y,10,1); while(dstEnd.getDay()!==0)dstEnd.setDate(dstEnd.getDate()+1);
+    return d>=dstStart&&d<dstEnd?'-04:00':'-05:00';
+  }
+  const offset=etOffset(selectedDate);
+  // Format: YYYY-MM-DDTHH:MM:SS±HH:MM
+  const startISO=`${selectedDate}T${ev.startH}:${ev.startM}:00${offset}`;
+  const endISO=`${selectedDate}T${ev.endH}:${ev.endM}:00${offset}`;
+  const params=new URLSearchParams({
+    subject: ev.title,
+    startdt: startISO,
+    enddt: endISO,
+    location: ev.store,
+    body: ev.bodyLines,
+  });
+  window.open(`https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`,'_blank');
 }
 
 /* ── GOOGLE CALENDAR URL EXPORT ── */
