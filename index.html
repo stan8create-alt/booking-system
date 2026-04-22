@@ -953,6 +953,7 @@ let selectedSlot     = null;
 let existingBookings = []; // {date,startMin,endMin,zone,store}
 let googleBusyRanges = []; // busy windows from Google Calendar for selected date
 let calBusyByDate = {}; // {dateStr: [{start,end},...]} for dot coloring, cross-device
+let calZoneByDate = {}; // {dateStr: [{zone,bookedCount}]} from get-day-info
 let calYear, calMonth;
 let holidayCache = {};
 
@@ -1011,19 +1012,26 @@ function renderCalendar(){
     const weekFull   = isWeekFull(dstr);
     const dayFull    = isDayFull(dstr);
 
+    // Cross-device zone check: fullday zone = 1 booking fills the day; other zones check maxPerDay
+    const gcalZones  = calZoneByDate[dstr] || [];
+    const gcalZoneFull = gcalZones.some(z => {
+      const zDef = ZONES[z.zone];
+      return zDef && z.bookedCount >= zDef.maxPerDay;
+    });
+
     const cell = document.createElement('div');
     cell.className = 'cal-day';
     if(dstr===todayStr) cell.classList.add('cal-today');
     if(dstr===selectedDate) cell.classList.add('cal-selected');
 
-    const disabled = isWeekend||isHoliday||isTooSoon||weekFull||dayFull;
+    const disabled = isWeekend||isHoliday||isTooSoon||weekFull||dayFull||gcalZoneFull;
     if(disabled){
       cell.classList.add('cal-disabled');
     } else {
       cell.onclick=()=>selectCalDay(dstr,cell);
     }
 
-    // availability dot — uses GCal busy data for cross-device accuracy
+    // availability dot — uses GCal zone + busy data for cross-device accuracy
     let dotClass='';
     if(!isWeekend&&!isHoliday&&!isTooSoon){
       const gcalUsedMins = getGcalUsedMins(dstr);
@@ -1032,8 +1040,7 @@ function renderCalendar(){
       const gcalWeekCount = getGcalWeekCount(dstr);
       const sessionWeekCount = getWeekBookingCount(dstr);
       const weekCount = Math.max(gcalWeekCount, sessionWeekCount);
-      const gcalDayFull = gcalUsedMins >= (DAY_END - (new Date(dstr+'T12:00:00').getDay()===3?DAY_START_WED:DAY_START) - 30);
-      const combinedDayFull = dayFull || gcalDayFull;
+      const combinedDayFull = dayFull || gcalZoneFull;
       const combinedWeekFull = weekCount >= WEEKLY_CAP;
       if(combinedDayFull||combinedWeekFull) dotClass='dot-red';
       else if(usedMins>180||weekCount>=4) dotClass='dot-yellow';
@@ -1198,6 +1205,22 @@ async function fetchCalMonthBusy(year,month){
       d.setDate(d.getDate()+1);
     }
     renderCalendar();
+  }catch(e){}
+  // Also fetch zone data for dots (fullday zone detection)
+  try{
+    const res2=await fetch(`/.netlify/functions/get-day-info?from=${from}&to=${to}`);
+    if(res2.ok){
+      const {byDate}=await res2.json();
+      if(byDate){
+        // Clear range first
+        const d2=new Date(fromD);
+        while(dateStr(d2)<=to){
+          calZoneByDate[dateStr(d2)]=byDate[dateStr(d2)]||[];
+          d2.setDate(d2.getDate()+1);
+        }
+        renderCalendar();
+      }
+    }
   }catch(e){}
 }
 
@@ -3218,26 +3241,13 @@ function getCalEventData(){
 /* ── OUTLOOK / ICS EXPORT ── */
 function exportToOutlook(){
   const ev = getCalEventData();
-  // Detect EDT vs EST offset for Toronto
-  function etOffset(dateStr){
-    const d=new Date(dateStr+'T12:00:00');
-    const y=d.getFullYear();
-    const dstStart=new Date(y,2,1); while(dstStart.getDay()!==0)dstStart.setDate(dstStart.getDate()+1); dstStart.setDate(dstStart.getDate()+7);
-    const dstEnd=new Date(y,10,1); while(dstEnd.getDay()!==0)dstEnd.setDate(dstEnd.getDate()+1);
-    return d>=dstStart&&d<dstEnd?'-04:00':'-05:00';
-  }
-  const offset=etOffset(selectedDate);
-  // Format: YYYY-MM-DDTHH:MM:SS±HH:MM
-  const startISO=`${selectedDate}T${ev.startH}:${ev.startM}:00${offset}`;
-  const endISO=`${selectedDate}T${ev.endH}:${ev.endM}:00${offset}`;
-  const params=new URLSearchParams({
-    subject: ev.title,
-    startdt: startISO,
-    enddt: endISO,
-    location: ev.store,
-    body: ev.bodyLines,
-  });
-  window.open(`https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`,'_blank');
+  // Outlook Web expects YYYY-MM-DDTHH:MM:SS — no timezone suffix
+  const startdt=`${selectedDate}T${ev.startH}:${ev.startM}:00`;
+  const enddt=`${selectedDate}T${ev.endH}:${ev.endM}:00`;
+  // Build query manually to avoid URLSearchParams double-encoding colons in datetime
+  const enc=encodeURIComponent;
+  const query=`subject=${enc(ev.title)}&startdt=${enc(startdt)}&enddt=${enc(enddt)}&location=${enc(ev.store)}&body=${enc(ev.bodyLines)}`;
+  window.open(`https://outlook.live.com/calendar/0/deeplink/compose?${query}`,'_blank');
 }
 
 /* ── GOOGLE CALENDAR URL EXPORT ── */
