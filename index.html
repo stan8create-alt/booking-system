@@ -1012,19 +1012,21 @@ function renderCalendar(){
     const weekFull   = isWeekFull(dstr);
     const dayFull    = isDayFull(dstr);
 
-    // Cross-device zone check: fullday zone = 1 booking fills the day; other zones check maxPerDay
-    const gcalZones  = calZoneByDate[dstr] || [];
-    const gcalZoneFull = gcalZones.some(z => {
-      const zDef = ZONES[z.zone];
-      return zDef && z.bookedCount >= zDef.maxPerDay;
-    });
+    // Cross-device availability checks
+    const gcalZones    = calZoneByDate[dstr] || [];
+    const gcalZoneFull = gcalZones.some(z => { const zDef=ZONES[z.zone]; return zDef&&z.bookedCount>=zDef.maxPerDay; });
+    // Fallback if zone cache not yet loaded: use raw busy minutes
+    const gcalUsedMins = getGcalUsedMins(dstr);
+    const _dayStart    = dt.getDay()===3 ? DAY_START_WED : DAY_START;
+    const gcalDayFull  = gcalUsedMins >= (DAY_END - _dayStart - 30);
+    const gcalBlocked  = gcalZoneFull || gcalDayFull;
 
     const cell = document.createElement('div');
     cell.className = 'cal-day';
     if(dstr===todayStr) cell.classList.add('cal-today');
     if(dstr===selectedDate) cell.classList.add('cal-selected');
 
-    const disabled = isWeekend||isHoliday||isTooSoon||weekFull||dayFull||gcalZoneFull;
+    const disabled = isWeekend||isHoliday||isTooSoon||weekFull||dayFull||gcalBlocked;
     if(disabled){
       cell.classList.add('cal-disabled');
     } else {
@@ -1034,13 +1036,12 @@ function renderCalendar(){
     // availability dot — uses GCal zone + busy data for cross-device accuracy
     let dotClass='';
     if(!isWeekend&&!isHoliday&&!isTooSoon){
-      const gcalUsedMins = getGcalUsedMins(dstr);
       const sessionUsedMins = getUsedMinutesForDate(dstr);
       const usedMins = Math.max(gcalUsedMins, sessionUsedMins);
       const gcalWeekCount = getGcalWeekCount(dstr);
       const sessionWeekCount = getWeekBookingCount(dstr);
       const weekCount = Math.max(gcalWeekCount, sessionWeekCount);
-      const combinedDayFull = dayFull || gcalZoneFull;
+      const combinedDayFull = dayFull || gcalBlocked;
       const combinedWeekFull = weekCount >= WEEKLY_CAP;
       if(combinedDayFull||combinedWeekFull) dotClass='dot-red';
       else if(usedMins>180||weekCount>=4) dotClass='dot-yellow';
@@ -3247,7 +3248,7 @@ function exportToOutlook(){
   // Build query manually to avoid URLSearchParams double-encoding colons in datetime
   const enc=encodeURIComponent;
   const query=`subject=${enc(ev.title)}&startdt=${enc(startdt)}&enddt=${enc(enddt)}&location=${enc(ev.store)}&body=${enc(ev.bodyLines)}`;
-  window.open(`https://outlook.live.com/calendar/0/deeplink/compose?${query}`,'_blank');
+  window.open(`https://outlook.office.com/calendar/0/deeplink/compose?${query}`,'_blank');
 }
 
 /* ── GOOGLE CALENDAR URL EXPORT ── */
