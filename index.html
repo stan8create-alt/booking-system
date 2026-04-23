@@ -565,24 +565,27 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
 
   <hr class="cal-divider" style="margin:20px 0">
 
-  <!-- Duration — always visible -->
+  <!-- Date → Start Time → Duration -->
   <div id="duration-field">
-    <div class="field" style="margin-bottom:18px">
-      <label style="margin-bottom:10px">Session Duration <span class="req">*</span></label>
-      <div class="duration-row" id="duration-row"></div>
-    </div>
-
-    <!-- Start time — always visible, slots empty until date+duration chosen -->
+    <!-- Start time — appears after date selected -->
     <div id="slot-field">
       <label style="margin-bottom:10px">Start Time <span class="req">*</span></label>
       <div id="zone-info" class="alert info"></div>
       <div class="slots-grid" id="slots-grid">
-        <p style="color:var(--text-muted);font-size:13px;grid-column:1/-1;padding:10px 0">Select a date and duration to see available slots.</p>
+        <p style="color:var(--text-muted);font-size:13px;grid-column:1/-1;padding:10px 0">Select a date on the calendar above to see available start times.</p>
       </div>
-      <div class="time-preview" id="time-preview">
-        Session: <strong id="preview-range">—</strong>
-        <div class="remaining-bar"><div class="remaining-bar-fill" id="remaining-fill" style="width:0%"></div></div>
-      </div>
+    </div>
+
+    <!-- Duration — appears after start time selected -->
+    <div class="field" id="duration-row-wrap" style="margin-top:18px;display:none">
+      <label style="margin-bottom:10px">Session Duration <span class="req">*</span></label>
+      <div class="duration-row" id="duration-row"></div>
+    </div>
+
+    <!-- Time preview — appears after duration selected -->
+    <div class="time-preview" id="time-preview">
+      Session: <strong id="preview-range">—</strong>
+      <div class="remaining-bar"><div class="remaining-bar-fill" id="remaining-fill" style="width:0%"></div></div>
     </div>
   </div>
 
@@ -1109,10 +1112,10 @@ fetchDayZoneInfo(dstr);
   const _dzi=document.getElementById('date-zone-info'); if(_dzi){_dzi.style.display='none';_dzi.textContent='';}
 
   document.getElementById('time-preview').style.display='none';
-  renderDurationPicker();
+  const _drw=document.getElementById('duration-row-wrap'); if(_drw) _drw.style.display='none';
   renderSlots();
 
-  setTimeout(()=>document.getElementById('duration-field').scrollIntoView({behavior:'smooth',block:'nearest'}),50);
+  setTimeout(()=>document.getElementById('slot-field').scrollIntoView({behavior:'smooth',block:'nearest'}),50);
 }
 
 
@@ -1228,52 +1231,27 @@ async function fetchCalMonthBusy(year,month){
 /* ── DURATION PICKER ── */
 function renderDurationPicker(){
   const row=document.getElementById('duration-row');
+  if(!row) return;
   row.innerHTML='';
-  // If no date selected yet, show all buttons as selectable placeholders
-  if(!selectedDate){
-    DURATIONS.forEach(dur=>{
-      const btn=document.createElement('button');
-      btn.type='button'; btn.className='dur-btn';
-      btn.innerHTML=`${dur.label}<span class="dur-sub">${dur.sub}</span>`;
-      btn.onclick=()=>{
-        if(!selectedDate){
-          // flash a hint — no date picked yet
-          document.getElementById('cal-grid').style.outline='2px solid rgba(58,123,213,.35)';
-          setTimeout(()=>document.getElementById('cal-grid').style.outline='',1200);
-          return;
-        }
-        selectDuration(dur.mins,btn);
-      };
-      row.appendChild(btn);
-    });
-    return;
-  }
-  const dow=new Date(selectedDate+'T12:00:00').getDay();
-  const dayStart=dow===3?DAY_START_WED:DAY_START;
-  const dayWindow=DAY_END-dayStart;
-  const usedMins=getUsedMinutesForDate(selectedDate);
-  const freeMins=dayWindow-usedMins;
-  const isFullDayBooked=existingBookings.filter(b=>b.date===selectedDate).some(b=>b.zone==='fullday');
+  // Duration only meaningful once a slot is picked
+  if(!selectedDate || selectedSlot===null) return;
+  const dayBookings=existingBookings.filter(b=>b.date===selectedDate);
+  const isFullDayBooked=dayBookings.some(b=>b.zone==='fullday');
+  const toET=iso=>{const d=new Date(iso);const p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(d);return parseInt(p.find(x=>x.type==='hour').value)*60+parseInt(p.find(x=>x.type==='minute').value);};
   DURATIONS.forEach(dur=>{
     const btn=document.createElement('button');
     btn.type='button'; btn.className='dur-btn';
-    const fits=dur.mins<=freeMins&&!isFullDayBooked;
-    if(!fits) btn.classList.add('disabled');
     btn.innerHTML=`${dur.label}<span class="dur-sub">${dur.sub}</span>`;
+    const endMin=selectedSlot+dur.mins;
+    const fitsInDay=endMin<=DAY_END;
+    const overlapsBooking=dayBookings.some(b=>selectedSlot<b.endMin&&endMin>b.startMin);
+    const overlapsGcal=googleBusyRanges.some(b=>selectedSlot<toET(b.end)&&endMin>toET(b.start));
+    const fits=fitsInDay&&!overlapsBooking&&!overlapsGcal&&!isFullDayBooked;
+    if(!fits) btn.classList.add('disabled');
     if(fits) btn.onclick=()=>selectDuration(dur.mins,btn);
+    if(selectedDuration===dur.mins && fits) btn.classList.add('selected');
     row.appendChild(btn);
   });
-}
-
-function selectDuration(mins,btn){
-  document.querySelectorAll('.dur-btn').forEach(b=>b.classList.remove('selected'));
-  btn.classList.add('selected');
-  selectedDuration=mins; selectedSlot=null;
-  document.getElementById('time-preview').style.display='none';
-  renderSlots();
-  updatePkgBudget();
-  updateStats();
-  scheduleAutosave();
 }
 
 /* ── SLOT GRID ── */
@@ -1281,32 +1259,27 @@ function renderSlots(){
   const grid=document.getElementById('slots-grid');
   grid.innerHTML='';
   if(!selectedDate){
-    grid.innerHTML='<p style="color:var(--text-muted);font-size:13px;grid-column:1/-1;padding:10px 0">Select a date on the calendar above to see available slots.</p>';
-    return;
-  }
-  if(!selectedDuration){
-    grid.innerHTML='<p style="color:var(--text-muted);font-size:13px;grid-column:1/-1;padding:10px 0">Pick a duration above to see available slots.</p>';
+    grid.innerHTML='<p style="color:var(--text-muted);font-size:13px;grid-column:1/-1;padding:10px 0">Select a date on the calendar above to see available start times.</p>';
     return;
   }
   const dayBookings=existingBookings.filter(b=>b.date===selectedDate);
   const lockedZone=dayBookings.length?dayBookings[0].zone:null;
   const dow=new Date(selectedDate+'T12:00:00').getDay();
   const dayStart=dow===3?DAY_START_WED:DAY_START;
+  const MIN_DUR=30; // smallest duration option
   const starts=[];
-  for(let t=dayStart;t+selectedDuration<=DAY_END;t+=30) starts.push(t);
+  for(let t=dayStart;t+MIN_DUR<=DAY_END;t+=30) starts.push(t);
   if(!starts.length){
-    grid.innerHTML='<p style="color:var(--text-muted);font-size:13px;grid-column:1/-1">No slots fit this duration today.</p>';
+    grid.innerHTML='<p style="color:var(--text-muted);font-size:13px;grid-column:1/-1">No available start times today.</p>';
     return;
   }
+  const toET=iso=>{const d=new Date(iso);const p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(d);return parseInt(p.find(x=>x.type==='hour').value)*60+parseInt(p.find(x=>x.type==='minute').value);};
   starts.forEach(startMin=>{
-    const endMin=startMin+selectedDuration;
+    const endMin=startMin+MIN_DUR;
     const btn=document.createElement('button');
     btn.type='button'; btn.className='slot-btn';
     const overlaps=dayBookings.some(b=>startMin<b.endMin&&endMin>b.startMin);
-    const gcalBusy=googleBusyRanges.some(b=>{
-      const toET=iso=>{const d=new Date(iso);const p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(d);return parseInt(p.find(x=>x.type==='hour').value)*60+parseInt(p.find(x=>x.type==='minute').value);};
-      return startMin<toET(b.end)&&endMin>toET(b.start);
-    });
+    const gcalBusy=googleBusyRanges.some(b=>startMin<toET(b.end)&&endMin>toET(b.start));
     if(overlaps||gcalBusy){
       btn.classList.add('disabled');
       btn.innerHTML=`${minsToTime12(startMin)}<span class="slot-status">booked</span>`;
@@ -1314,6 +1287,7 @@ function renderSlots(){
       btn.innerHTML=`${minsToTime12(startMin)}<span class="slot-status">open</span>`;
       btn.onclick=()=>selectSlot(startMin,btn);
     }
+    if(selectedSlot===startMin) btn.classList.add('selected');
     grid.appendChild(btn);
   });
   if(lockedZone){
@@ -1329,19 +1303,38 @@ function renderSlots(){
 
 function selectSlot(startMin,btn){
   document.querySelectorAll('.slot-btn').forEach(b=>b.classList.remove('selected'));
-  btn.classList.add('selected'); selectedSlot=startMin;
-  const endMin=startMin+selectedDuration;
-  document.getElementById('preview-range').textContent=`${minsToTime12(startMin)} – ${minsToTime12(endMin)}`;
-  const dow=new Date(selectedDate+'T12:00:00').getDay();
-  const dayStart=dow===3?DAY_START_WED:DAY_START;
-  const dayWindow=DAY_END-dayStart;
-  const usedAfter=getUsedMinutesForDate(selectedDate)+selectedDuration;
-  const pct=Math.min(100,Math.round((usedAfter/dayWindow)*100));
-  const fill=document.getElementById('remaining-fill');
-  fill.style.width=pct+'%';
-  fill.style.background=pct>=100?'var(--red)':pct>=70?'var(--orange)':'var(--green)';
-  document.getElementById('time-preview').style.display='block';
+  btn.classList.add('selected');
+  selectedSlot=startMin;
+  selectedDuration=null; // changing slot resets duration
+  document.getElementById('time-preview').style.display='none';
+  // Show duration picker now
+  const drw=document.getElementById('duration-row-wrap');
+  if(drw) drw.style.display='block';
+  renderDurationPicker();
+  // Reveal the rest of the form so the user can keep filling
   revealSections();
+  updateStats();
+  scheduleAutosave();
+}
+
+function selectDuration(mins,btn){
+  document.querySelectorAll('.dur-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedDuration=mins;
+  if(selectedSlot!==null){
+    const endMin=selectedSlot+mins;
+    document.getElementById('preview-range').textContent=`${minsToTime12(selectedSlot)} – ${minsToTime12(endMin)}`;
+    const dow=new Date(selectedDate+'T12:00:00').getDay();
+    const dayStart=dow===3?DAY_START_WED:DAY_START;
+    const dayWindow=DAY_END-dayStart;
+    const usedAfter=getUsedMinutesForDate(selectedDate)+mins;
+    const pct=Math.min(100,Math.round((usedAfter/dayWindow)*100));
+    const fill=document.getElementById('remaining-fill');
+    fill.style.width=pct+'%';
+    fill.style.background=pct>=100?'var(--red)':pct>=70?'var(--orange)':'var(--green)';
+    document.getElementById('time-preview').style.display='block';
+  }
+  updatePkgBudget();
   updateStats();
   scheduleAutosave();
 }
@@ -2393,8 +2386,21 @@ function loadAutosave(){
         if(cell&&!cell.classList.contains('cal-disabled')) cell.classList.add('cal-selected');
       },50);
     }
-    if(latest.selectedDuration){ selectedDuration=latest.selectedDuration; renderDurationPicker(); }
-    if(latest.selectedSlot!==null){ selectedSlot=latest.selectedSlot; }
+    if(latest.selectedSlot!==null && latest.selectedSlot!==undefined){
+      selectedSlot=latest.selectedSlot;
+      const drw=document.getElementById('duration-row-wrap'); if(drw) drw.style.display='block';
+      renderSlots();
+    }
+    if(latest.selectedDuration){
+      selectedDuration=latest.selectedDuration;
+      renderDurationPicker();
+      // Show time preview
+      if(selectedSlot!==null){
+        const endMin=selectedSlot+selectedDuration;
+        document.getElementById('preview-range').textContent=`${minsToTime12(selectedSlot)} – ${minsToTime12(endMin)}`;
+        document.getElementById('time-preview').style.display='block';
+      }
+    }
     revealSections();
   }
   updateStats();
@@ -2454,6 +2460,7 @@ function resetForAnotherBooking(){
   const dot=document.getElementById('autosave-dot');
   if(dot) dot.className='autosave-dot';
   localStorage.removeItem(AUTOSAVE_KEY);
+  const _drw=document.getElementById('duration-row-wrap'); if(_drw) _drw.style.display='none';
   renderDurationPicker();
   updateStats();
   window.scrollTo({top:0,behavior:'smooth'});
@@ -2505,6 +2512,7 @@ function confirmReset(){
   const lbl=document.getElementById('autosave-label'); if(lbl) lbl.textContent='Auto-save on';
   const dot=document.getElementById('autosave-dot'); if(dot) dot.className='autosave-dot';
   localStorage.removeItem(AUTOSAVE_KEY);
+  const _drw=document.getElementById('duration-row-wrap'); if(_drw) _drw.style.display='none';
   renderDurationPicker();
   updateStats();
   window.scrollTo({top:0,behavior:'smooth'});
@@ -3175,6 +3183,9 @@ function closeCancelBooking(){
   _pendingCancelId = null;
   document.getElementById('cancel-booking-backdrop').classList.remove('open');
   document.body.style.overflow = '';
+  // Reset the delete button so the next deletion isn't blocked by stale disabled state
+  const btn = document.querySelector('#cancel-booking-backdrop .reset-modal-yes');
+  if(btn){ btn.disabled = false; btn.textContent = 'Yes, delete it'; }
 }
 async function confirmCancelBooking(){
   if(!_pendingCancelId) return;
