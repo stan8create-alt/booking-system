@@ -18,7 +18,7 @@ exports.handler = async (event) => {
         description,
         start: { dateTime: startDateTime, timeZone: 'America/Toronto' },
         end: { dateTime: endDateTime, timeZone: 'America/Toronto' },
-        attendees: [{ email: 'stan.8create@gmail.com' }],
+        attendees: [{ email: 'stan@8create.ca' }],
         extendedProperties: {
           private: {
             source: 'zanchin-booking',
