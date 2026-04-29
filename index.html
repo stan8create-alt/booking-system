@@ -2440,11 +2440,11 @@ function resetForAnotherBooking(){
     const el=document.getElementById(id);
     if(el){ el.style.display='none'; el.classList.remove('revealed'); }
   });
+  ['strategist-name','strategist-email','onsite-contact','onsite-phone','additional-notes'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
   document.getElementById('dealer-input').value='';
   document.getElementById('dealership-select').value='';
-  document.getElementById('onsite-contact').value='';
-  document.getElementById('onsite-phone').value='';
-  document.getElementById('additional-notes').value='';
   document.querySelectorAll('.pkg-checkbox').forEach(c=>c.checked=false);
   Object.keys(packageData).forEach(k=>delete packageData[k]);
   const info=document.getElementById('pkg-filled-info');
@@ -2454,6 +2454,10 @@ function resetForAnotherBooking(){
   document.getElementById('submit-btn').disabled=false;
   document.getElementById('submit-btn').textContent='Confirm Booking';
   document.querySelectorAll('.invalid').forEach(el=>el.classList.remove('invalid'));
+  // Reset country selector
+  selectedCountry=COUNTRIES[0];
+  const cf=document.getElementById('country-flag'); if(cf) cf.textContent=selectedCountry.flag;
+  const cc=document.getElementById('country-code'); if(cc) cc.textContent=selectedCountry.code;
   // reset autosave indicator
   const lbl=document.getElementById('autosave-label');
   if(lbl) lbl.textContent='Auto-save on';
