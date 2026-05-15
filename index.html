@@ -1264,7 +1264,10 @@ function renderSlots(){
     return;
   }
   const dayBookings=existingBookings.filter(b=>b.date===selectedDate);
-  const lockedZone=dayBookings.length?dayBookings[0].zone:null;
+  // Merge session-local + cross-device (calZoneByDate) to find locked zone
+  const _gcalZonesForLock=calZoneByDate[selectedDate]||[];
+  const _allLockedZones=[...new Set([...dayBookings.map(b=>b.zone), ..._gcalZonesForLock.map(z=>z.zone)])];
+  const lockedZone=_allLockedZones[0]||null;
   const dow=new Date(selectedDate+'T12:00:00').getDay();
   const dayStart=dow===3?DAY_START_WED:DAY_START;
   const MIN_DUR=30; // smallest duration option
@@ -1293,7 +1296,9 @@ function renderSlots(){
   });
   if(lockedZone){
     const z=ZONES[lockedZone];
-    const rem=z.maxPerDay-dayBookings.length;
+    const _gcalForZone=_gcalZonesForLock.find(g=>g.zone===lockedZone);
+    const _bookedCount=Math.max(dayBookings.filter(b=>b.zone===lockedZone).length, _gcalForZone?.bookedCount||0);
+    const rem=Math.max(0, z.maxPerDay-_bookedCount);
     showAlert('zone-info',`ℹ This day has ${z.name} bookings · Only ${z.name} stores available · ${rem} slot(s) remaining`,'info');
     filterDealerToZone(lockedZone);
   } else {
@@ -1425,10 +1430,11 @@ function comboBlur(){
 }
 function selectDealer(name){
   const zone=STORE_ZONE[name];
-  // check zone conflict
+  // check zone conflict — merge session + cross-device data
   if(selectedDate){
     const dayBookings=existingBookings.filter(b=>b.date===selectedDate);
-    const bookedZones=[...new Set(dayBookings.map(b=>b.zone))];
+    const gcalZones=calZoneByDate[selectedDate]||[];
+    const bookedZones=[...new Set([...dayBookings.map(b=>b.zone), ...gcalZones.map(z=>z.zone)])];
     if(bookedZones.length&&!bookedZones.includes(zone)){
       showAlert('dealership-alert',`${name} is in ${ZONES[zone].name} but this day already has ${ZONES[bookedZones[0]].name} bookings. Choose a different date or store.`,'error');
       document.getElementById('dealer-input').value='';
