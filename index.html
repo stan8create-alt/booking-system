@@ -1565,6 +1565,14 @@ function closeModal(){
     saveModalData(openPkg);
   }
   document.getElementById('modal-backdrop').classList.remove('open');
+  if(_adminPkgModalActive){
+    _adminPkgModalActive=false;
+    _adminPkgSnapshot=null;
+    document.getElementById('modal-backdrop').style.zIndex='';
+    document.body.style.overflow='hidden'; // admin edit modal still open
+    rerenderEditPkgGrid();
+    return;
+  }
   document.body.style.overflow='';
   updateFilledInfo();
   updatePkgBudget();
@@ -1573,6 +1581,11 @@ function closeModal(){
 }
 
 function dismissModal(){
+  // Admin per-package edit: discard reverts to snapshot, never deselects
+  if(_adminPkgModalActive){
+    showAdminDiscardConfirm();
+    return;
+  }
   // Called by × and backdrop — no validation; confirm only if user typed something
   const openPkg=getCurrentModalPkg();
   if(openPkg&&hasModalData(openPkg)){
@@ -1580,6 +1593,32 @@ function dismissModal(){
     return;
   }
   forceCloseModal();
+}
+function showAdminDiscardConfirm(){
+  if(document.getElementById('modal-discard-confirm')) return;
+  const wrap=document.createElement('div');
+  wrap.id='modal-discard-confirm';
+  wrap.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:16px;text-align:center;animation:fadeIn .18s ease';
+  wrap.innerHTML=`<p style="font-size:13px;font-weight:700;margin:0 0 12px;color:var(--text);font-family:Inter,sans-serif">Discard changes?<br><span style="font-weight:400;font-size:12px;color:var(--text-muted)">Your edits to this package won’t be saved.</span></p><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button type="button" onclick="adminDiscardPkgEdit()" style="padding:10px;border:1px solid var(--red);background:var(--red);color:#fff;border-radius:var(--radius-sm);font-weight:700;font-size:12.5px;cursor:pointer;font-family:Inter,sans-serif">Yes, Discard</button><button type="button" onclick="document.getElementById('modal-discard-confirm').remove()" style="padding:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:var(--radius-sm);font-weight:700;font-size:12.5px;cursor:pointer;font-family:Inter,sans-serif">No, Keep Editing</button></div>`;
+  const body=document.getElementById('modal-body');
+  body.insertBefore(wrap,body.firstChild);
+  wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function adminDiscardPkgEdit(){
+  const id=getCurrentModalPkg();
+  if(id) packageData[id]=_adminPkgSnapshot;
+  _adminPkgModalActive=false;
+  _adminPkgSnapshot=null;
+  document.getElementById('modal-backdrop').classList.remove('open');
+  document.getElementById('modal-backdrop').style.zIndex='';
+  document.body.style.overflow='hidden';
+}
+function openAdminPkgModal(id){
+  _adminPkgModalActive=true;
+  _adminPkgSnapshot=packageData[id]?JSON.parse(JSON.stringify(packageData[id])):null;
+  const mb=document.getElementById('modal-backdrop');
+  if(mb) mb.style.zIndex='950';
+  openModal(id);
 }
 function hasModalData(id){
   const body=document.getElementById('modal-body');
@@ -3536,6 +3575,9 @@ async function confirmReschedule(){
    EDIT BOOKING
 ════════════════════════════════════════════════════════ */
 let _editBookingId = null;
+let _editPkgDataBackup = null;
+let _adminPkgModalActive = false;
+let _adminPkgSnapshot = null;
 
 function openEditBooking(id){
   _editBookingId = id;
@@ -3551,24 +3593,66 @@ function openEditBooking(id){
   document.getElementById('edit-strategist-name').value=b.strategistName||'';
   document.getElementById('edit-strategist-email').value=b.strategistEmail||'';
   document.getElementById('edit-notes').value=b.notes||'';
-  const pkgGrid=document.getElementById('edit-packages-grid');
-  pkgGrid.innerHTML='';
-  PACKAGES.forEach(p=>{
-    const label=document.createElement('label');
-    label.style.cssText='display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;padding:8px 0;border-bottom:1px solid var(--border)';
-    const cb=document.createElement('input');
-    cb.type='checkbox';cb.value=p.id;cb.checked=(b.packages||[]).includes(p.id);
-    cb.style.cssText='width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0';
-    label.appendChild(cb);label.appendChild(document.createTextNode(p.icon+' '+p.label));
-    pkgGrid.appendChild(label);
-  });
+  // Backup public form's packageData and load this booking's detail into it
+  _editPkgDataBackup=JSON.parse(JSON.stringify(packageData));
+  Object.keys(packageData).forEach(k=>delete packageData[k]);
+  if(b.packageDetail) Object.assign(packageData, JSON.parse(JSON.stringify(b.packageDetail)));
+  rerenderEditPkgGrid(b.packages||[]);
   document.getElementById('edit-error').textContent='';
   document.getElementById('edit-booking-backdrop').classList.add('open');
   document.body.style.overflow='hidden';
 }
 
+function rerenderEditPkgGrid(initialChecked){
+  const pkgGrid=document.getElementById('edit-packages-grid');
+  if(!pkgGrid) return;
+  // Preserve current checked state if not given (called from package modal close)
+  let checkedSet;
+  if(initialChecked){
+    checkedSet=new Set(initialChecked);
+  } else {
+    checkedSet=new Set([...pkgGrid.querySelectorAll('input[type=checkbox]:checked')].map(cb=>cb.value));
+  }
+  pkgGrid.innerHTML='';
+  PACKAGES.forEach(p=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text);padding:8px 0;border-bottom:1px solid var(--border)';
+    const lbl=document.createElement('label');
+    lbl.style.cssText='display:flex;align-items:center;gap:8px;flex:1;cursor:pointer';
+    const cb=document.createElement('input');
+    cb.type='checkbox';cb.value=p.id;cb.checked=checkedSet.has(p.id);
+    cb.style.cssText='width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0';
+    lbl.appendChild(cb);
+    lbl.appendChild(document.createTextNode(p.icon+' '+p.label));
+    row.appendChild(lbl);
+    const editBtn=document.createElement('button');
+    editBtn.type='button';
+    editBtn.textContent='✏️ Edit details';
+    editBtn.style.cssText='padding:6px 10px;font-size:11px;font-weight:700;background:var(--surface);border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text-muted);font-family:Inter,sans-serif;display:'+(cb.checked?'inline-block':'none');
+    editBtn.onclick=()=>openAdminPkgModal(p.id);
+    row.appendChild(editBtn);
+    cb.onchange=()=>{
+      editBtn.style.display=cb.checked?'inline-block':'none';
+      if(cb.checked){
+        // Newly checked — open modal so admin fills in details
+        openAdminPkgModal(p.id);
+      } else {
+        // Unchecked — clear data for this package
+        delete packageData[p.id];
+      }
+    };
+    pkgGrid.appendChild(row);
+  });
+}
+
 function closeEditBooking(){
   _editBookingId=null;
+  // Restore public form packageData
+  if(_editPkgDataBackup){
+    Object.keys(packageData).forEach(k=>delete packageData[k]);
+    Object.assign(packageData, _editPkgDataBackup);
+    _editPkgDataBackup=null;
+  }
   document.getElementById('edit-booking-backdrop').classList.remove('open');
   document.body.style.overflow='hidden';
 }
@@ -3587,8 +3671,11 @@ async function confirmEditBooking(){
   const strategistEmail=document.getElementById('edit-strategist-email').value.trim();
   const notes=document.getElementById('edit-notes').value.trim();
   const packages=[...document.querySelectorAll('#edit-packages-grid input[type=checkbox]:checked')].map(cb=>cb.value);
+  // Build packageDetail from packageData, only for checked packages
+  const packageDetail={};
+  packages.forEach(pid=>{ if(packageData[pid]) packageDetail[pid]=packageData[pid]; });
   const zone=STORE_ZONE[store]||b.zone;
-  const updatedBooking={...b,store,zone,zoneName:ZONES[zone]?.name||zone,contact,contactPhone,strategistName,strategistEmail,notes,packages};
+  const updatedBooking={...b,store,zone,zoneName:ZONES[zone]?.name||zone,contact,contactPhone,strategistName,strategistEmail,notes,packages,packageDetail};
   const btn=document.getElementById('edit-confirm-btn');
   btn.disabled=true;btn.textContent='Saving…';
   try{
