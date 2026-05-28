@@ -185,7 +185,7 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
 .pkg-checkbox:checked ~ .pkg-deselect{display:flex}
 
 /* ── MODAL ── */
-.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);z-index:890;display:none;align-items:center;justify-content:center;padding:20px}
 .modal-backdrop.open{display:flex}
 .modal{background:var(--modal-bg);border-radius:var(--radius-xl);box-shadow:0 24px 60px rgba(0,0,0,.35);width:100%;max-width:560px;max-height:90vh;overflow-y:auto;padding:28px;position:relative;animation:modalIn .22s ease;border:1px solid var(--border);transition:background .3s}
 .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
@@ -340,8 +340,7 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
 .sidebar-link{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:11px;font-size:14px;font-weight:700;color:var(--text);cursor:pointer;font-family:'Inter',sans-serif;border:none;background:none;text-align:left;width:100%;transition:background .15s}
 .sidebar-link:hover{background:var(--surface)}
 .sidebar-link-icon{font-size:18px;flex-shrink:0}
-.sidebar-link-admin{margin-top:auto}
-.sidebar-foot{padding:14px 12px 18px;border-top:1px solid var(--border)}
+.sidebar-divider{height:1px;background:var(--border);margin:8px 2px 0}
 .sidebar-close{position:absolute;top:18px;right:16px;width:30px;height:30px;border:none;background:var(--surface);border-radius:8px;cursor:pointer;font-size:16px;color:var(--text-muted);display:flex;align-items:center;justify-content:center}
 /* Desktop: permanent sidebar on the main page */
 @media(min-width:900px){
@@ -2795,7 +2794,7 @@ function showAdminLogin(){
   document.querySelector('.header').style.display = 'none';
   document.querySelector('.rules-bar').style.display = 'none';
   document.querySelector('.container').style.display = 'none';
-  const tt = document.querySelector('.theme-toggle'); if(tt) tt.style.bottom = '80px';
+  const tt=document.querySelector('.theme-toggle'); if(tt) tt.style.display='none';
   const bd = document.querySelector('.backdoor-btn'); if(bd) bd.style.display = 'none';
   const st = document.getElementById('sidebar-toggle'); if(st) st.style.display = 'none';
   document.getElementById('admin-login-view').style.display = 'flex';
@@ -2810,7 +2809,7 @@ function _showAdminDashboard(){
   document.querySelector('.header').style.display = 'none';
   document.querySelector('.rules-bar').style.display = 'none';
   document.querySelector('.container').style.display = 'none';
-  const tt = document.querySelector('.theme-toggle'); if(tt) tt.style.bottom = '80px';
+  const tt=document.querySelector('.theme-toggle'); if(tt) tt.style.display='none';
   const bd = document.querySelector('.backdoor-btn'); if(bd) bd.style.display = 'none';
   const st = document.getElementById('sidebar-toggle'); if(st) st.style.display = 'none';
   document.getElementById('admin-login-view').style.display = 'none';
@@ -2832,7 +2831,7 @@ function hideAdmin(){
   document.querySelector('.header').style.display = '';
   document.querySelector('.rules-bar').style.display = '';
   document.querySelector('.container').style.display = '';
-  const tt = document.querySelector('.theme-toggle'); if(tt) tt.style.bottom = '';
+  const tt=document.querySelector('.theme-toggle'); if(tt) tt.style.display='';
   const bd = document.querySelector('.backdoor-btn'); if(bd) bd.style.display = '';
   const st = document.getElementById('sidebar-toggle'); if(st) st.style.display = '';
   window.scrollTo({top:0,behavior:'instant'});
@@ -3683,13 +3682,15 @@ function rerenderEditPkgGrid(initialChecked, gridId){
       const wrap=document.createElement('div');
       wrap.className='pkg-wrapper';
       wrap.innerHTML=`
-        <input type="checkbox" class="pkg-checkbox" id="mybcb-${p.id}" value="${p.id}" ${checked?'checked':''}>
+        <input type="checkbox" class="pkg-checkbox" id="mybcb-${p.id}" value="${p.id}">
         <label class="pkg-label" onclick="mybPkgCardClick(event,'${p.id}')">
           <span class="pkg-icon">${p.icon}</span>
           <span class="pkg-label-text">${p.label}</span>
           <span class="pkg-check">✓</span>
         </label>
         <button type="button" class="pkg-deselect" title="Remove" onclick="mybDeselectCard(event,'${p.id}')">×</button>`;
+      // set checked as a property so :checked matches and CSS highlights it immediately
+      const _cb=wrap.querySelector('.pkg-checkbox'); if(_cb) _cb.checked=checked;
       pkgGrid.appendChild(wrap);
     });
     updateMyEditBudget();
@@ -3812,7 +3813,7 @@ function showMyBookings(){
   document.querySelector('.container').style.display='none';
   const bd=document.querySelector('.backdoor-btn'); if(bd) bd.style.display='none';
   const st=document.getElementById('sidebar-toggle'); if(st) st.style.display='none';
-  const tt=document.querySelector('.theme-toggle'); if(tt) tt.style.bottom='80px';
+  const tt=document.querySelector('.theme-toggle'); if(tt) tt.style.display='none';
   document.getElementById('mybookings-view').style.display='block';
   document.body.style.overflow='';
   // reset to lookup screen
@@ -3829,7 +3830,7 @@ function hideMyBookings(){
   document.querySelector('.container').style.display='';
   const bd=document.querySelector('.backdoor-btn'); if(bd) bd.style.display='';
   const st=document.getElementById('sidebar-toggle'); if(st) st.style.display='';
-  const tt=document.querySelector('.theme-toggle'); if(tt) tt.style.bottom='';
+  const tt=document.querySelector('.theme-toggle'); if(tt) tt.style.display='';
   window.scrollTo({top:0,behavior:'instant'});
 }
 
@@ -3918,7 +3919,7 @@ function openMyBookingEdit(id){
   const b=myBookingsCache.find(x=>x.id===id);
   if(!b) return;
   _myEditBookingId=id;
-  _myEditDurMins=b.durMins||b.durLabel&&(DURATIONS.find(d=>d.label===b.durLabel)?.mins)||0;
+  _myEditDurMins=b.durMins||(DURATIONS.find(d=>d.label===b.durLabel)?.mins)||((b.endMin!=null&&b.startMin!=null)?(b.endMin-b.startMin):0);
   _activePkgGridId='mybooking-packages-grid';
   // Backup public form packageData and load this booking's detail
   _editPkgDataBackup=JSON.parse(JSON.stringify(packageData));
@@ -3934,7 +3935,8 @@ function openMyBookingEdit(id){
     <div class="bdetail-row"><span class="bdetail-key">Time</span><span class="bdetail-val">${minsToTime12(b.startMin)} – ${minsToTime12(b.endMin)} (${b.durLabel})</span></div>
     <div class="bdetail-row"><span class="bdetail-key">Location</span><span class="bdetail-val">${b.store}</span></div>
     <div class="bdetail-row"><span class="bdetail-key">Zone</span><span class="bdetail-val">${b.zoneName||''}</span></div>`;
-  rerenderEditPkgGrid(b.packages||[], 'mybooking-packages-grid');
+  const _pkgList=(b.packages&&b.packages.length)?b.packages:Object.keys(b.packageDetail||{});
+  rerenderEditPkgGrid(_pkgList, 'mybooking-packages-grid');
   document.getElementById('myb-edit-error').textContent='';
   document.getElementById('mybooking-edit-backdrop').classList.add('open');
   document.body.style.overflow='hidden';
@@ -4045,9 +4047,8 @@ async function confirmMyBookingEdit(){
   <div class="sidebar-links">
     <button class="sidebar-link" onclick="hideMyBookings();toggleSidebar(false);window.scrollTo({top:0})"><span class="sidebar-link-icon">📅</span> New Booking</button>
     <button class="sidebar-link" onclick="showMyBookings()"><span class="sidebar-link-icon">🔍</span> My Bookings</button>
-  </div>
-  <div class="sidebar-foot">
     <button class="sidebar-link" onclick="toggleSidebar(false);showAdmin()"><span class="sidebar-link-icon">⚙️</span> Admin</button>
+    <div class="sidebar-divider"></div>
   </div>
 </aside>
 
