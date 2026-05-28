@@ -1647,6 +1647,7 @@ function adminDiscardPkgEdit(){
   document.getElementById('modal-backdrop').classList.remove('open');
   document.getElementById('modal-backdrop').style.zIndex='';
   document.body.style.overflow='hidden';
+  rerenderEditPkgGrid();
 }
 function openAdminPkgModal(id){
   _adminPkgModalActive=true;
@@ -3674,6 +3675,28 @@ function rerenderEditPkgGrid(initialChecked, gridId){
     checkedSet=new Set([...pkgGrid.querySelectorAll('input[type=checkbox]:checked')].map(cb=>cb.value));
   }
   pkgGrid.innerHTML='';
+
+  // Card style (matches the main booking form) for the My Bookings editor
+  if(gridId==='mybooking-packages-grid'){
+    PACKAGES.forEach(p=>{
+      const checked=checkedSet.has(p.id);
+      const wrap=document.createElement('div');
+      wrap.className='pkg-wrapper';
+      wrap.innerHTML=`
+        <input type="checkbox" class="pkg-checkbox" id="mybcb-${p.id}" value="${p.id}" ${checked?'checked':''}>
+        <label class="pkg-label" onclick="mybPkgCardClick(event,'${p.id}')">
+          <span class="pkg-icon">${p.icon}</span>
+          <span class="pkg-label-text">${p.label}</span>
+          <span class="pkg-check">✓</span>
+        </label>
+        <button type="button" class="pkg-deselect" title="Remove" onclick="mybDeselectCard(event,'${p.id}')">×</button>`;
+      pkgGrid.appendChild(wrap);
+    });
+    updateMyEditBudget();
+    return;
+  }
+
+  // Simple list style for the admin editor
   PACKAGES.forEach(p=>{
     const row=document.createElement('div');
     row.style.cssText='display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text);padding:8px 0;border-bottom:1px solid var(--border)';
@@ -3698,11 +3721,25 @@ function rerenderEditPkgGrid(initialChecked, gridId){
       } else {
         delete packageData[p.id];
       }
-      if(gridId==='mybooking-packages-grid') updateMyEditBudget();
     };
     pkgGrid.appendChild(row);
   });
-  if(gridId==='mybooking-packages-grid') updateMyEditBudget();
+}
+
+/* Card click in My Bookings editor — select+open, or re-open to edit */
+function mybPkgCardClick(e, id){
+  if(e) e.preventDefault();
+  const cb=document.getElementById('mybcb-'+id);
+  if(!cb) return;
+  if(!cb.checked) cb.checked=true; // selecting
+  openAdminPkgModal(id);
+}
+function mybDeselectCard(e, id){
+  if(e){ e.preventDefault(); e.stopPropagation(); }
+  const cb=document.getElementById('mybcb-'+id);
+  if(cb) cb.checked=false;
+  delete packageData[id];
+  updateMyEditBudget();
 }
 
 function closeEditBooking(){
@@ -3887,12 +3924,43 @@ function openMyBookingEdit(id){
   _editPkgDataBackup=JSON.parse(JSON.stringify(packageData));
   Object.keys(packageData).forEach(k=>delete packageData[k]);
   if(b.packageDetail) Object.assign(packageData, JSON.parse(JSON.stringify(b.packageDetail)));
-  document.getElementById('myb-edit-sub').textContent=
-    b.store+' · '+new Date(b.date+'T12:00:00').toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'})+' · '+minsToTime12(b.startMin)+' – '+minsToTime12(b.endMin)+' ('+b.durLabel+')';
+  const prettyDate=new Date(b.date+'T12:00:00').toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  document.getElementById('myb-edit-sub').textContent='Only your content packages can be changed — date, time & location are fixed.';
+  // Read-only calendar highlighting today + the booking date
+  renderReadonlyCal(b.date, 'myb-edit-cal');
+  // Read-only summary of the locked values
+  document.getElementById('myb-edit-info').innerHTML=`
+    <div class="bdetail-row"><span class="bdetail-key">Date</span><span class="bdetail-val">${prettyDate}</span></div>
+    <div class="bdetail-row"><span class="bdetail-key">Time</span><span class="bdetail-val">${minsToTime12(b.startMin)} – ${minsToTime12(b.endMin)} (${b.durLabel})</span></div>
+    <div class="bdetail-row"><span class="bdetail-key">Location</span><span class="bdetail-val">${b.store}</span></div>
+    <div class="bdetail-row"><span class="bdetail-key">Zone</span><span class="bdetail-val">${b.zoneName||''}</span></div>`;
   rerenderEditPkgGrid(b.packages||[], 'mybooking-packages-grid');
   document.getElementById('myb-edit-error').textContent='';
   document.getElementById('mybooking-edit-backdrop').classList.add('open');
   document.body.style.overflow='hidden';
+}
+function renderReadonlyCal(dstr, containerId){
+  const cont=document.getElementById(containerId);
+  if(!cont) return;
+  const bd=new Date(dstr+'T12:00:00');
+  const y=bd.getFullYear(), m=bd.getMonth();
+  const todayStr=dateStr(new Date());
+  const monthLabel=new Date(y,m,1).toLocaleDateString('en-CA',{month:'long',year:'numeric'});
+  const firstDay=new Date(y,m,1).getDay();
+  const daysInMonth=new Date(y,m+1,0).getDate();
+  let cells='';
+  for(let i=0;i<firstDay;i++) cells+='<div class="cal-day cal-empty"></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    const cur=dateStr(new Date(y,m,d));
+    let cls='cal-day';
+    if(cur===todayStr) cls+=' cal-today';
+    if(cur===dstr) cls+=' cal-selected';
+    cells+=`<div class="${cls}" style="cursor:default"><span>${d}</span></div>`;
+  }
+  cont.innerHTML=`
+    <div class="cal-nav"><div class="cal-month-label">${monthLabel}</div></div>
+    <div class="cal-weekdays"><div class="cal-wd">Sun</div><div class="cal-wd">Mon</div><div class="cal-wd">Tue</div><div class="cal-wd">Wed</div><div class="cal-wd">Thu</div><div class="cal-wd">Fri</div><div class="cal-wd">Sat</div></div>
+    <div class="cal-grid">${cells}</div>`;
 }
 function closeMyBookingEdit(){
   _myEditBookingId=null;
@@ -4139,10 +4207,20 @@ async function confirmMyBookingEdit(){
 
 <!-- ══ MY BOOKING EDIT MODAL (content packages only) ══ -->
 <div class="reschedule-backdrop" id="mybooking-edit-backdrop" onclick="closeMyBookingEditOnBackdrop(event)">
-  <div class="reschedule-modal" style="max-height:88vh;overflow-y:auto">
-    <div class="reschedule-title">Edit Content Packages</div>
+  <div class="reschedule-modal" style="max-height:90vh;overflow-y:auto;max-width:560px">
+    <div class="reschedule-title">Edit Your Booking</div>
     <div class="reschedule-sub" id="myb-edit-sub"></div>
-    <div class="pkg-budget-wrap" style="margin-top:16px">
+
+    <!-- Read-only calendar context -->
+    <div class="admin-cal-card" id="myb-edit-cal" style="margin-top:16px"></div>
+
+    <!-- Read-only booking summary -->
+    <div id="myb-edit-info" style="margin-top:14px"></div>
+
+    <div style="border-top:1px solid var(--border);margin:18px 0 4px"></div>
+
+    <div class="section-label" style="margin-bottom:14px"><div class="section-num">04</div><div class="section-title">Content Packages</div><div class="section-hint">Tap to select · tap again to edit details</div></div>
+    <div class="pkg-budget-wrap">
       <div class="pkg-budget-header">
         <span class="pkg-budget-label">⏱ Time Budget</span>
         <span class="pkg-budget-counter" id="myb-budget-counter">0 / 0 min used</span>
@@ -4150,8 +4228,7 @@ async function confirmMyBookingEdit(){
       <div class="pkg-budget-bar"><div class="pkg-budget-fill" id="myb-budget-fill" style="width:0%"></div></div>
       <div class="pkg-budget-hint" id="myb-budget-hint"></div>
     </div>
-    <label style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);display:block;margin-bottom:8px;font-family:'Inter',sans-serif">Content Packages</label>
-    <div id="mybooking-packages-grid"></div>
+    <div id="mybooking-packages-grid" class="packages-grid"></div>
     <div class="reschedule-error" id="myb-edit-error"></div>
     <div class="reschedule-actions">
       <button class="reschedule-cancel-btn" onclick="closeMyBookingEdit()">Cancel</button>
