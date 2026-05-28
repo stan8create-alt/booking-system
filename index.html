@@ -313,7 +313,7 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
 .reset-modal-yes:hover{opacity:.88;box-shadow:3px 3px 14px rgba(239,68,68,.45)}
 
 /* ── DARK MODE TOGGLE ── */
-.theme-toggle{position:fixed;bottom:24px;left:24px;z-index:400;display:flex;align-items:center;gap:10px;background:var(--surface-raised);border:1px solid var(--border);border-radius:50px;padding:8px 14px 8px 10px;box-shadow:var(--shadow-card);cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:var(--text-muted);transition:all .25s;user-select:none}
+.theme-toggle{position:fixed;bottom:24px;left:24px;z-index:885;display:flex;align-items:center;gap:10px;background:var(--surface-raised);border:1px solid var(--border);border-radius:50px;padding:8px 14px 8px 10px;box-shadow:var(--shadow-card);cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:var(--text-muted);transition:all .25s;user-select:none}
 .theme-toggle:hover{border-color:var(--neon);box-shadow:var(--shadow-card),0 0 0 3px var(--neon-glow);color:var(--text)}
 .theme-toggle-track{width:36px;height:20px;background:var(--toggle-bg);border-radius:99px;position:relative;transition:background .3s;flex-shrink:0}
 .theme-toggle-knob{position:absolute;top:3px;left:3px;width:14px;height:14px;background:var(--toggle-knob);border-radius:50%;transition:transform .3s,background .3s;box-shadow:0 1px 4px rgba(0,0,0,.25)}
@@ -340,7 +340,17 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
 .sidebar-link{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:11px;font-size:14px;font-weight:700;color:var(--text);cursor:pointer;font-family:'Inter',sans-serif;border:none;background:none;text-align:left;width:100%;transition:background .15s}
 .sidebar-link:hover{background:var(--surface)}
 .sidebar-link-icon{font-size:18px;flex-shrink:0}
+.sidebar-link-admin{margin-top:auto}
+.sidebar-foot{padding:14px 12px 18px;border-top:1px solid var(--border)}
 .sidebar-close{position:absolute;top:18px;right:16px;width:30px;height:30px;border:none;background:var(--surface);border-radius:8px;cursor:pointer;font-size:16px;color:var(--text-muted);display:flex;align-items:center;justify-content:center}
+/* Desktop: permanent sidebar on the main page */
+@media(min-width:900px){
+  body.mainpage{padding-left:280px}
+  body.mainpage .app-sidebar{transform:none}
+  body.mainpage .sidebar-toggle{display:none}
+  body.mainpage .sidebar-overlay{display:none!important}
+  .sidebar-close{display:none}
+}
 .myb-lookup-card{max-width:420px;margin:48px auto 0;padding:0 20px}
 .myb-input{width:100%;padding:13px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;box-sizing:border-box}
 .myb-find-btn{width:100%;margin-top:14px;background:var(--accent);color:#fff;border:none;padding:14px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;border-radius:var(--radius-sm);cursor:pointer;transition:opacity .2s}
@@ -430,13 +440,13 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
 .admin-cal-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--text-muted)}
 
 /* ── BOOKING DETAIL MODAL ── */
-.bdetail-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(7px);z-index:700;display:none;align-items:flex-end;justify-content:center;padding:0}
+.bdetail-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(7px);z-index:700;display:none;align-items:center;justify-content:center;padding:20px}
 .bdetail-backdrop.open{display:flex}
-.bdetail-sheet{background:var(--surface-raised);border-radius:28px 28px 0 0;width:100%;max-width:680px;max-height:92vh;display:flex;flex-direction:column;animation:sheetUp .28s cubic-bezier(.22,.68,0,1.1) both;border-top:1px solid var(--border)}
+.bdetail-sheet{background:var(--surface-raised);border-radius:24px;width:100%;max-width:680px;max-height:92vh;display:flex;flex-direction:column;animation:modalIn .24s ease both;border:1px solid var(--border)}
 .bdetail-scroll{flex:1;overflow-y:auto;padding-bottom:16px}
 .bdetail-footer{padding:12px 22px 28px;border-top:1px solid var(--border);background:var(--surface-raised);flex-shrink:0;transition:background .3s}
 @keyframes sheetUp{from{transform:translateY(100%);opacity:.6}to{transform:translateY(0);opacity:1}}
-.bdetail-handle{width:40px;height:4px;background:rgba(128,128,128,.3);border-radius:99px;margin:14px auto 0}
+.bdetail-handle{display:none}
 .bdetail-header{padding:18px 22px 14px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface-raised);z-index:1;transition:background .3s}
 .bdetail-close{position:absolute;top:16px;right:18px;width:34px;height:34px;background:var(--surface);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:var(--text-muted);box-shadow:var(--shadow-out);transition:all .15s}
 .bdetail-close:hover{color:var(--text);border-color:var(--neon)}
@@ -533,7 +543,7 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
 
 </style>
 </head>
-<body>
+<body class="mainpage">
 
 <!-- ══ MODAL BACKDROP ══ -->
 <div class="modal-backdrop" id="modal-backdrop" onclick="closeModalOnBackdrop(event)">
@@ -673,9 +683,15 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
   <div id="packages-grid" class="packages-grid"></div>
 </div>
 
-<!-- 05 ADDITIONAL NOTES -->
+<!-- 05 SCRIPTS -->
+<div class="card" id="scripts-section" style="display:none">
+  <div class="section-label"><div class="section-num">05</div><div class="section-title">Scripts</div><div class="section-hint">Optional</div></div>
+  <div class="field"><label>Script Link</label><input type="text" id="script-link" placeholder="Google Doc, Drive, Notion… https://"></div>
+</div>
+
+<!-- 06 ADDITIONAL NOTES -->
 <div class="card" id="notes-section" style="display:none">
-  <div class="section-label"><div class="section-num">05</div><div class="section-title">Additional Notes</div><div class="section-hint">Optional</div></div>
+  <div class="section-label"><div class="section-num">06</div><div class="section-title">Additional Notes</div><div class="section-hint">Optional</div></div>
   <textarea id="additional-notes" placeholder="Parking info, access codes, anything else I should know…"></textarea>
 </div>
 
@@ -2094,7 +2110,7 @@ function getContentPieceCount(){
 
 /* ── REVEAL ── */
 function revealSections(){
-  ['info-section','dealership-section','content-section','notes-section'].forEach(id=>{
+  ['info-section','dealership-section','content-section','scripts-section','notes-section'].forEach(id=>{
     const el=document.getElementById(id);
     if(el && el.style.display==='none'){
       el.style.display='block';
@@ -2179,15 +2195,17 @@ async function handleSubmit(){
   const contactPhone   =document.getElementById('onsite-phone').value.trim();
   const packages       =getSelectedPackages();
   const notes          =document.getElementById('additional-notes').value.trim();
+  const scriptLink     =document.getElementById('script-link').value.trim();
   const zone           =STORE_ZONE[store];
   const endMin         =selectedSlot+selectedDuration;
   const durLabel       =DURATIONS.find(d=>d.mins===selectedDuration)?.label||'';
-  const bookingPayload ={id:'b_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),createdAt:Date.now(),status:'confirmed',date:selectedDate,startMin:selectedSlot,endMin,durLabel,durMins:selectedDuration,store,zone,zoneName:ZONES[zone]?.name||zone,contact,contactPhone,packages,packageDetail:{...packageData},notes,strategistName,strategistEmail};
+  const bookingPayload ={id:'b_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),createdAt:Date.now(),status:'confirmed',date:selectedDate,startMin:selectedSlot,endMin,durLabel,durMins:selectedDuration,store,zone,zoneName:ZONES[zone]?.name||zone,contact,contactPhone,packages,packageDetail:{...packageData},scriptLink,notes,strategistName,strategistEmail};
 
   const desc=[
     `📍 Store: ${store}`,`🏢 Zone: ${ZONES[zone].name}`,`⏱ Duration: ${durLabel}`,
     `👤 On-Site Contact: ${contact}${contactPhone?' · '+contactPhone:''}`,
     `📦 Content: ${packages.join(', ')}`,
+    scriptLink?`📝 Script: ${scriptLink}`:null,
     `\n📧 Booked by: ${strategistName} (${strategistEmail})`,
     notes?`\n📝 Notes: ${notes}`:null,
   ].filter(Boolean).join('\n');
@@ -2372,6 +2390,7 @@ function getFormSnapshot(){
     onsiteContact:document.getElementById('onsite-contact')?.value||'',
     onsitePhone:document.getElementById('onsite-phone')?.value||'',
     notes:document.getElementById('additional-notes')?.value||'',
+    scriptLink:document.getElementById('script-link')?.value||'',
     checkedPackages:PACKAGES.filter(p=>document.getElementById('pkg-'+p.id)?.checked).map(p=>p.id),
     packageData:{...packageData},
     countryCode:selectedCountry?.code||'+1',
@@ -2428,6 +2447,7 @@ function loadAutosave(){
   if(latest.onsiteContact){ const el=document.getElementById('onsite-contact'); if(el) el.value=latest.onsiteContact; }
   if(latest.onsitePhone){ const el=document.getElementById('onsite-phone'); if(el) el.value=latest.onsitePhone; }
   if(latest.notes){ const el=document.getElementById('additional-notes'); if(el) el.value=latest.notes; }
+  if(latest.scriptLink){ const el=document.getElementById('script-link'); if(el) el.value=latest.scriptLink; }
   if(latest.countryCode&&latest.countryFlag){
     const fc=COUNTRIES.find(c=>c.flag===latest.countryFlag&&c.code===latest.countryCode);
     if(fc) selectedCountry=fc;
@@ -2485,10 +2505,13 @@ function showSuccessScreen({strategistName,store,zone,contact,packages,durLabel}
   document.getElementById('main-form').style.display='none';
   document.getElementById('success-screen').classList.add('visible');
   const dateStr2=new Date(selectedDate+'T12:00:00').toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const _sl=document.getElementById('script-link')?.value?.trim();
   const rows=[
     {key:'Dealership',val:store},{key:'Zone',val:ZONES[zone].name},
     {key:'Date',val:dateStr2},{key:'Time',val:`${minsToTime12(selectedSlot)} – ${minsToTime12(selectedSlot+selectedDuration)} (${durLabel})`},
-    {key:'On-Site Contact',val:contact},{key:'Content',val:packages.join(', ')},{key:'Booked By',val:strategistName},
+    {key:'On-Site Contact',val:contact},{key:'Content',val:packages.join(', ')},
+    ...(_sl?[{key:'Script',val:_sl}]:[]),
+    {key:'Booked By',val:strategistName},
   ];
   document.getElementById('booking-summary').innerHTML=rows.map(r=>`<div class="summary-row"><span class="key">${r.key}</span><span class="val">${r.val}</span></div>`).join('');
 }
@@ -2501,11 +2524,11 @@ function resetForAnotherBooking(){
   document.querySelectorAll('.cal-day.cal-selected').forEach(c=>c.classList.remove('cal-selected'));
   document.getElementById('time-preview').style.display='none';
   renderSlots();
-  ['info-section','dealership-section','content-section','notes-section','submit-area','stats-dashboard'].forEach(id=>{
+  ['info-section','dealership-section','content-section','scripts-section','notes-section','submit-area','stats-dashboard'].forEach(id=>{
     const el=document.getElementById(id);
     if(el){ el.style.display='none'; el.classList.remove('revealed'); }
   });
-  ['strategist-name','strategist-email','onsite-contact','onsite-phone','additional-notes'].forEach(id=>{
+  ['strategist-name','strategist-email','onsite-contact','onsite-phone','additional-notes','script-link'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
   document.getElementById('dealer-input').value='';
@@ -2551,12 +2574,12 @@ function confirmReset(){
   document.querySelectorAll('.cal-day.cal-selected').forEach(c=>c.classList.remove('cal-selected'));
   document.getElementById('time-preview').style.display='none';
   renderSlots();
-  ['info-section','dealership-section','content-section','notes-section','submit-area','stats-dashboard'].forEach(id=>{
+  ['info-section','dealership-section','content-section','scripts-section','notes-section','submit-area','stats-dashboard'].forEach(id=>{
     const el=document.getElementById(id);
     if(el){ el.style.display='none'; el.classList.remove('revealed'); }
   });
   // Clear all text fields
-  ['strategist-name','strategist-email','onsite-contact','onsite-phone','additional-notes'].forEach(id=>{
+  ['strategist-name','strategist-email','onsite-contact','onsite-phone','additional-notes','script-link'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
   document.getElementById('dealer-input').value='';
@@ -2767,6 +2790,7 @@ function showAdmin(){
 }
 
 function showAdminLogin(){
+  document.body.classList.remove('mainpage');
   document.querySelector('.header').style.display = 'none';
   document.querySelector('.rules-bar').style.display = 'none';
   document.querySelector('.container').style.display = 'none';
@@ -2781,6 +2805,7 @@ function showAdminLogin(){
 }
 
 function _showAdminDashboard(){
+  document.body.classList.remove('mainpage');
   document.querySelector('.header').style.display = 'none';
   document.querySelector('.rules-bar').style.display = 'none';
   document.querySelector('.container').style.display = 'none';
@@ -2799,6 +2824,7 @@ function _showAdminDashboard(){
 }
 
 function hideAdmin(){
+  document.body.classList.add('mainpage');
   document.getElementById('admin-view').classList.remove('active');
   document.getElementById('admin-view').style.display = 'none';
   document.getElementById('admin-login-view').style.display = 'none';
@@ -3219,6 +3245,14 @@ function buildBDetailHTML(b){
 
   html += `</div>`; // close packages section
 
+  // ── SCRIPT ──
+  if(b.scriptLink){
+    html += `<div class="bdetail-section">
+      <div class="bdetail-section-title">Script</div>
+      <div class="bdetail-row"><span class="bdetail-key">Link</span><span class="bdetail-val" style="word-break:break-all"><a href="${b.scriptLink}" target="_blank" rel="noopener" style="color:var(--accent)">${b.scriptLink}</a></span></div>
+    </div>`;
+  }
+
   // ── NOTES ──
   if(b.notes){
     html += `<div class="bdetail-section">
@@ -3617,6 +3651,7 @@ function openEditBooking(id){
   document.getElementById('edit-strategist-name').value=b.strategistName||'';
   document.getElementById('edit-strategist-email').value=b.strategistEmail||'';
   document.getElementById('edit-notes').value=b.notes||'';
+  document.getElementById('edit-script-link').value=b.scriptLink||'';
   // Backup public form's packageData and load this booking's detail into it
   _editPkgDataBackup=JSON.parse(JSON.stringify(packageData));
   Object.keys(packageData).forEach(k=>delete packageData[k]);
@@ -3695,12 +3730,13 @@ async function confirmEditBooking(){
   const strategistName=document.getElementById('edit-strategist-name').value.trim();
   const strategistEmail=document.getElementById('edit-strategist-email').value.trim();
   const notes=document.getElementById('edit-notes').value.trim();
+  const scriptLink=document.getElementById('edit-script-link').value.trim();
   const packages=[...document.querySelectorAll('#edit-packages-grid input[type=checkbox]:checked')].map(cb=>cb.value);
   // Build packageDetail from packageData, only for checked packages
   const packageDetail={};
   packages.forEach(pid=>{ if(packageData[pid]) packageDetail[pid]=packageData[pid]; });
   const zone=STORE_ZONE[store]||b.zone;
-  const updatedBooking={...b,store,zone,zoneName:ZONES[zone]?.name||zone,contact,contactPhone,strategistName,strategistEmail,notes,packages,packageDetail};
+  const updatedBooking={...b,store,zone,zoneName:ZONES[zone]?.name||zone,contact,contactPhone,strategistName,strategistEmail,scriptLink,notes,packages,packageDetail};
   const btn=document.getElementById('edit-confirm-btn');
   btn.disabled=true;btn.textContent='Saving…';
   try{
@@ -3733,6 +3769,7 @@ function toggleSidebar(force){
 
 function showMyBookings(){
   toggleSidebar(false);
+  document.body.classList.remove('mainpage');
   document.querySelector('.header').style.display='none';
   document.querySelector('.rules-bar').style.display='none';
   document.querySelector('.container').style.display='none';
@@ -3749,6 +3786,7 @@ function showMyBookings(){
 }
 function hideMyBookings(){
   document.getElementById('mybookings-view').style.display='none';
+  document.body.classList.add('mainpage');
   document.querySelector('.header').style.display='';
   document.querySelector('.rules-bar').style.display='';
   document.querySelector('.container').style.display='';
@@ -3833,8 +3871,8 @@ function openMyBDetail(bookingId){
   const isPast=b.date<dateStr(new Date());
   const footer=document.getElementById('bdetail-footer');
   if(footer) footer.innerHTML = isPast
-    ? `<div class="bdetail-footer-btns"><p style="font-size:12px;color:var(--text-muted);text-align:center;margin:0">This shoot has already passed and can no longer be edited.</p></div>`
-    : `<div class="bdetail-footer-btns"><button class="bdetail-reschedule-btn" style="width:100%" onclick="openMyBookingEdit('${b.id}')">✏️ Edit Content Packages</button></div>`;
+    ? `<p style="font-size:12.5px;color:var(--text-muted);text-align:center;margin:0;width:100%;font-family:Inter,sans-serif">This shoot has already passed and can no longer be edited.</p>`
+    : `<button class="bdetail-reschedule-btn" style="width:100%" onclick="openMyBookingEdit('${b.id}')">✏️ Edit Content Packages</button>`;
   document.getElementById('bdetail-backdrop').classList.add('open');
   document.body.style.overflow='hidden';
 }
@@ -3940,6 +3978,9 @@ async function confirmMyBookingEdit(){
     <button class="sidebar-link" onclick="hideMyBookings();toggleSidebar(false);window.scrollTo({top:0})"><span class="sidebar-link-icon">📅</span> New Booking</button>
     <button class="sidebar-link" onclick="showMyBookings()"><span class="sidebar-link-icon">🔍</span> My Bookings</button>
   </div>
+  <div class="sidebar-foot">
+    <button class="sidebar-link" onclick="toggleSidebar(false);showAdmin()"><span class="sidebar-link-icon">⚙️</span> Admin</button>
+  </div>
 </aside>
 
 <!-- DARK MODE TOGGLE -->
@@ -3951,8 +3992,7 @@ async function confirmMyBookingEdit(){
   <span id="theme-label">Dark</span>
 </div>
 
-<!-- ══ BACK DOOR BUTTON ══ -->
-<button class="backdoor-btn" onclick="showAdmin()">⚙ Admin</button>
+<!-- Admin entry now lives in the sidebar -->
 
 <!-- ══ ADMIN LOGIN ══ -->
 <div id="admin-login-view" style="display:none;min-height:100vh;align-items:center;justify-content:center;flex-direction:column;background:var(--bg);padding:40px 20px;transition:background .3s">
@@ -4197,6 +4237,10 @@ async function confirmMyBookingEdit(){
       <div>
         <label style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);display:block;margin-bottom:8px;font-family:'Inter',sans-serif">Content Packages</label>
         <div id="edit-packages-grid"></div>
+      </div>
+      <div>
+        <label style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);display:block;margin-bottom:6px;font-family:'Inter',sans-serif">Script Link</label>
+        <input type="text" id="edit-script-link" placeholder="https://" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box">
       </div>
       <div>
         <label style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);display:block;margin-bottom:6px;font-family:'Inter',sans-serif">Additional Notes</label>

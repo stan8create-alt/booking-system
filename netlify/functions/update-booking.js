@@ -20,6 +20,7 @@ function buildDescription(b) {
     `⏱ Duration: ${b.durLabel}`,
     `👤 On-Site Contact: ${b.contact}${b.contactPhone ? ' · ' + b.contactPhone : ''}`,
     `📦 Content: ${(b.packages || []).join(', ')}`,
+    b.scriptLink ? `📝 Script: ${b.scriptLink}` : null,
     ``,
     `📧 Booked by: ${b.strategistName} (${b.strategistEmail})`,
     b.notes ? `📝 Notes: ${b.notes}` : null,
