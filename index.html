@@ -327,6 +327,25 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
 /* Back door button — bottom right, discreet */
 .backdoor-btn{position:fixed;bottom:24px;right:24px;z-index:400;background:var(--surface-raised);border:1px solid var(--border);border-radius:50px;padding:8px 14px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:var(--text-muted);cursor:pointer;box-shadow:var(--shadow-out);transition:all .2s;letter-spacing:.04em;text-transform:uppercase;opacity:.55}
 .backdoor-btn:hover{opacity:1;border-color:var(--neon);color:var(--text);box-shadow:var(--shadow-out),0 0 0 3px var(--neon-glow)}
+.sidebar-toggle{position:fixed;top:18px;left:18px;z-index:420;width:42px;height:42px;display:flex;align-items:center;justify-content:center;background:var(--surface-raised);border:1px solid var(--border);border-radius:12px;cursor:pointer;box-shadow:var(--shadow-out);transition:all .2s;flex-direction:column;gap:4px}
+.sidebar-toggle:hover{border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 3px var(--neon-glow)}
+.sidebar-toggle span{display:block;width:18px;height:2px;background:var(--text);border-radius:2px}
+.sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(2px);z-index:870;display:none}
+.app-sidebar{position:fixed;top:0;left:0;bottom:0;width:280px;max-width:82vw;background:var(--surface-raised);border-right:1px solid var(--border);box-shadow:8px 0 30px rgba(0,0,0,.18);z-index:880;transform:translateX(-100%);transition:transform .26s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;padding:0}
+.app-sidebar.open{transform:translateX(0)}
+.sidebar-head{padding:26px 22px 18px;border-bottom:1px solid var(--border)}
+.sidebar-head-title{font-size:17px;font-weight:900;letter-spacing:-.3px;font-family:'Inter',sans-serif}
+.sidebar-head-sub{font-size:11.5px;color:var(--text-muted);margin-top:3px;font-weight:500}
+.sidebar-links{padding:14px 12px;display:flex;flex-direction:column;gap:4px;flex:1}
+.sidebar-link{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:11px;font-size:14px;font-weight:700;color:var(--text);cursor:pointer;font-family:'Inter',sans-serif;border:none;background:none;text-align:left;width:100%;transition:background .15s}
+.sidebar-link:hover{background:var(--surface)}
+.sidebar-link-icon{font-size:18px;flex-shrink:0}
+.sidebar-close{position:absolute;top:18px;right:16px;width:30px;height:30px;border:none;background:var(--surface);border-radius:8px;cursor:pointer;font-size:16px;color:var(--text-muted);display:flex;align-items:center;justify-content:center}
+.myb-lookup-card{max-width:420px;margin:48px auto 0;padding:0 20px}
+.myb-input{width:100%;padding:13px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;box-sizing:border-box}
+.myb-find-btn{width:100%;margin-top:14px;background:var(--accent);color:#fff;border:none;padding:14px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;border-radius:var(--radius-sm);cursor:pointer;transition:opacity .2s}
+.myb-find-btn:hover{opacity:.88}
+.myb-find-btn:disabled{opacity:.6;cursor:default}
 
 /* Admin wrapper */
 #admin-view{display:none;min-height:100vh}@keyframes spin{to{transform:rotate(360deg)}}
@@ -2753,6 +2772,7 @@ function showAdminLogin(){
   document.querySelector('.container').style.display = 'none';
   const tt = document.querySelector('.theme-toggle'); if(tt) tt.style.bottom = '80px';
   const bd = document.querySelector('.backdoor-btn'); if(bd) bd.style.display = 'none';
+  const st = document.getElementById('sidebar-toggle'); if(st) st.style.display = 'none';
   document.getElementById('admin-login-view').style.display = 'flex';
   document.getElementById('admin-login-username').value = '';
   document.getElementById('admin-login-password').value = '';
@@ -2766,6 +2786,7 @@ function _showAdminDashboard(){
   document.querySelector('.container').style.display = 'none';
   const tt = document.querySelector('.theme-toggle'); if(tt) tt.style.bottom = '80px';
   const bd = document.querySelector('.backdoor-btn'); if(bd) bd.style.display = 'none';
+  const st = document.getElementById('sidebar-toggle'); if(st) st.style.display = 'none';
   document.getElementById('admin-login-view').style.display = 'none';
   document.getElementById('admin-view').classList.add('active');
   document.getElementById('admin-view').style.display = 'block';
@@ -2786,6 +2807,7 @@ function hideAdmin(){
   document.querySelector('.container').style.display = '';
   const tt = document.querySelector('.theme-toggle'); if(tt) tt.style.bottom = '';
   const bd = document.querySelector('.backdoor-btn'); if(bd) bd.style.display = '';
+  const st = document.getElementById('sidebar-toggle'); if(st) st.style.display = '';
   window.scrollTo({top:0,behavior:'instant'});
 }
 
@@ -3578,9 +3600,11 @@ let _editBookingId = null;
 let _editPkgDataBackup = null;
 let _adminPkgModalActive = false;
 let _adminPkgSnapshot = null;
+let _activePkgGridId = 'edit-packages-grid';
 
 function openEditBooking(id){
   _editBookingId = id;
+  _activePkgGridId = 'edit-packages-grid';
   const b = adminBookingsCache.find(x=>x.id===id);
   if(!b) return;
   document.getElementById('edit-booking-sub').textContent =
@@ -3603,8 +3627,9 @@ function openEditBooking(id){
   document.body.style.overflow='hidden';
 }
 
-function rerenderEditPkgGrid(initialChecked){
-  const pkgGrid=document.getElementById('edit-packages-grid');
+function rerenderEditPkgGrid(initialChecked, gridId){
+  gridId = gridId || _activePkgGridId || 'edit-packages-grid';
+  const pkgGrid=document.getElementById(gridId);
   if(!pkgGrid) return;
   // Preserve current checked state if not given (called from package modal close)
   let checkedSet;
@@ -3634,15 +3659,15 @@ function rerenderEditPkgGrid(initialChecked){
     cb.onchange=()=>{
       editBtn.style.display=cb.checked?'inline-block':'none';
       if(cb.checked){
-        // Newly checked — open modal so admin fills in details
         openAdminPkgModal(p.id);
       } else {
-        // Unchecked — clear data for this package
         delete packageData[p.id];
       }
+      if(gridId==='mybooking-packages-grid') updateMyEditBudget();
     };
     pkgGrid.appendChild(row);
   });
+  if(gridId==='mybooking-packages-grid') updateMyEditBudget();
 }
 
 function closeEditBooking(){
@@ -3690,7 +3715,233 @@ async function confirmEditBooking(){
   }
 }
 
+/* ════════════════════════════════════════════════════════
+   MY BOOKINGS — public email lookup + package-only editing
+════════════════════════════════════════════════════════ */
+let myBookingsCache = [];
+let _myEditBookingId = null;
+let _myEditDurMins = 0;
+let _myEditEmail = '';
+
+function toggleSidebar(force){
+  const sb=document.getElementById('app-sidebar');
+  const ov=document.getElementById('sidebar-overlay');
+  const open = force!=null ? force : !sb.classList.contains('open');
+  sb.classList.toggle('open', open);
+  ov.style.display = open ? 'block' : 'none';
+}
+
+function showMyBookings(){
+  toggleSidebar(false);
+  document.querySelector('.header').style.display='none';
+  document.querySelector('.rules-bar').style.display='none';
+  document.querySelector('.container').style.display='none';
+  const bd=document.querySelector('.backdoor-btn'); if(bd) bd.style.display='none';
+  const st=document.getElementById('sidebar-toggle'); if(st) st.style.display='none';
+  const tt=document.querySelector('.theme-toggle'); if(tt) tt.style.bottom='80px';
+  document.getElementById('mybookings-view').style.display='block';
+  document.body.style.overflow='';
+  // reset to lookup screen
+  document.getElementById('myb-results').style.display='none';
+  document.getElementById('myb-lookup').style.display='block';
+  document.getElementById('myb-error').textContent='';
+  window.scrollTo({top:0,behavior:'instant'});
+}
+function hideMyBookings(){
+  document.getElementById('mybookings-view').style.display='none';
+  document.querySelector('.header').style.display='';
+  document.querySelector('.rules-bar').style.display='';
+  document.querySelector('.container').style.display='';
+  const bd=document.querySelector('.backdoor-btn'); if(bd) bd.style.display='';
+  const st=document.getElementById('sidebar-toggle'); if(st) st.style.display='';
+  const tt=document.querySelector('.theme-toggle'); if(tt) tt.style.bottom='';
+  window.scrollTo({top:0,behavior:'instant'});
+}
+
+async function lookupMyBookings(){
+  const email=document.getElementById('myb-email').value.trim();
+  const errEl=document.getElementById('myb-error');
+  if(!email||!email.includes('@')){ errEl.textContent='Please enter a valid email address.'; return; }
+  errEl.textContent='';
+  const btn=document.getElementById('myb-lookup-btn');
+  btn.disabled=true; btn.textContent='Searching…';
+  try{
+    const res=await fetch(`/.netlify/functions/get-my-bookings?email=${encodeURIComponent(email)}`);
+    const d=await res.json();
+    if(!res.ok) throw new Error(d.error||'Lookup failed');
+    myBookingsCache=d.bookings||[];
+    _myEditEmail=email;
+    renderMyBookingList();
+    document.getElementById('myb-lookup').style.display='none';
+    document.getElementById('myb-results').style.display='block';
+    document.getElementById('myb-results-email').textContent=email;
+  }catch(err){
+    errEl.textContent='Could not load bookings: '+err.message;
+  }finally{
+    btn.disabled=false; btn.textContent='Find My Bookings';
+  }
+}
+function mybBackToLookup(){
+  document.getElementById('myb-results').style.display='none';
+  document.getElementById('myb-lookup').style.display='block';
+}
+
+function renderMyBookingList(){
+  const todayStr=dateStr(new Date());
+  const upcoming=myBookingsCache.filter(b=>b.date>=todayStr).sort((a,b)=>a.date.localeCompare(b.date)||a.startMin-b.startMin);
+  const past=myBookingsCache.filter(b=>b.date<todayStr).sort((a,b)=>b.date.localeCompare(a.date));
+  const sorted=[...upcoming,...past];
+  const wrap=document.getElementById('myb-booking-list');
+  if(!sorted.length){
+    wrap.innerHTML=`<div class="admin-empty"><div class="admin-empty-icon">📭</div><div class="admin-empty-title">No bookings found</div><div class="admin-empty-sub">We couldn't find any shoots booked with that email.</div></div>`;
+    return;
+  }
+  let html=''; let shownPast=false;
+  sorted.forEach(b=>{
+    const isPast=b.date<todayStr, isToday=b.date===todayStr;
+    if(isPast&&!shownPast){ html+=`<div class="admin-section-head" style="margin-top:20px">Past Shoots</div>`; shownPast=true; }
+    const dt=new Date(b.date+'T12:00:00');
+    const prettyDate=dt.toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric'});
+    const dow=dt.toLocaleDateString('en-CA',{weekday:'long'});
+    const statusCls=isPast?'status-past':isToday?'status-today':'status-upcoming';
+    const statusLabel=isPast?'Completed':isToday?'Today':'Upcoming';
+    const pkgTags=(b.packages||[]).map(p=>`<span class="pkg-tag">${p}</span>`).join('');
+    html+=`
+    <div class="booking-card${isPast?' past':''}" onclick="openMyBDetail('${b.id}')">
+      <div class="booking-card-header">
+        <div><div class="booking-card-date">${prettyDate}</div><div class="booking-card-dow">${dow}</div></div>
+        <span class="booking-card-status ${statusCls}">${statusLabel}</span>
+      </div>
+      <div class="booking-card-store">${b.store}</div>
+      <div class="booking-card-time">${minsToTime12(b.startMin)} – ${minsToTime12(b.endMin)} &nbsp;·&nbsp; ${b.durLabel} &nbsp;·&nbsp; ${b.zoneName}</div>
+      <div class="booking-card-pkgs">${pkgTags}</div>
+      <div class="tap-hint" style="margin-top:10px">👆 Tap to view or edit content</div>
+    </div>`;
+  });
+  wrap.innerHTML=html;
+}
+
+function openMyBDetail(bookingId){
+  const b=myBookingsCache.find(x=>x.id===bookingId);
+  if(!b) return;
+  const dt=new Date(b.date+'T12:00:00');
+  const prettyDate=dt.toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  document.getElementById('bdetail-store').textContent=b.store;
+  document.getElementById('bdetail-meta').textContent=prettyDate+' · '+minsToTime12(b.startMin)+' – '+minsToTime12(b.endMin)+' ('+b.durLabel+')';
+  document.getElementById('bdetail-body').innerHTML=buildBDetailHTML(b);
+  // Footer — only edit content packages (no reschedule, no delete)
+  const isPast=b.date<dateStr(new Date());
+  const footer=document.getElementById('bdetail-footer');
+  if(footer) footer.innerHTML = isPast
+    ? `<div class="bdetail-footer-btns"><p style="font-size:12px;color:var(--text-muted);text-align:center;margin:0">This shoot has already passed and can no longer be edited.</p></div>`
+    : `<div class="bdetail-footer-btns"><button class="bdetail-reschedule-btn" style="width:100%" onclick="openMyBookingEdit('${b.id}')">✏️ Edit Content Packages</button></div>`;
+  document.getElementById('bdetail-backdrop').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function openMyBookingEdit(id){
+  const b=myBookingsCache.find(x=>x.id===id);
+  if(!b) return;
+  _myEditBookingId=id;
+  _myEditDurMins=b.durMins||b.durLabel&&(DURATIONS.find(d=>d.label===b.durLabel)?.mins)||0;
+  _activePkgGridId='mybooking-packages-grid';
+  // Backup public form packageData and load this booking's detail
+  _editPkgDataBackup=JSON.parse(JSON.stringify(packageData));
+  Object.keys(packageData).forEach(k=>delete packageData[k]);
+  if(b.packageDetail) Object.assign(packageData, JSON.parse(JSON.stringify(b.packageDetail)));
+  document.getElementById('myb-edit-sub').textContent=
+    b.store+' · '+new Date(b.date+'T12:00:00').toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'})+' · '+minsToTime12(b.startMin)+' – '+minsToTime12(b.endMin)+' ('+b.durLabel+')';
+  rerenderEditPkgGrid(b.packages||[], 'mybooking-packages-grid');
+  document.getElementById('myb-edit-error').textContent='';
+  document.getElementById('mybooking-edit-backdrop').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeMyBookingEdit(){
+  _myEditBookingId=null;
+  if(_editPkgDataBackup){
+    Object.keys(packageData).forEach(k=>delete packageData[k]);
+    Object.assign(packageData, _editPkgDataBackup);
+    _editPkgDataBackup=null;
+  }
+  document.getElementById('mybooking-edit-backdrop').classList.remove('open');
+  document.body.style.overflow='hidden';
+}
+function closeMyBookingEditOnBackdrop(e){
+  if(e.target===document.getElementById('mybooking-edit-backdrop')) closeMyBookingEdit();
+}
+
+function getMyEditPkgMins(){
+  const checked=[...document.querySelectorAll('#mybooking-packages-grid input[type=checkbox]:checked')].map(cb=>cb.value);
+  return checked.reduce((sum,id)=>sum+getPkgTimeCost(id),0);
+}
+function updateMyEditBudget(){
+  const used=getMyEditPkgMins();
+  const total=_myEditDurMins||0;
+  const counter=document.getElementById('myb-budget-counter');
+  const fill=document.getElementById('myb-budget-fill');
+  const hint=document.getElementById('myb-budget-hint');
+  if(!counter||!fill) return;
+  counter.textContent=`${used} / ${total} min used`;
+  const pct=total?Math.min(100,Math.round(used/total*100)):0;
+  fill.style.width=pct+'%';
+  const over=used>total;
+  fill.style.background=over?'var(--red)':pct>=80?'var(--orange)':'var(--green)';
+  if(hint) hint.textContent=over
+    ? `⚠ Over your booked time by ${used-total} min. Remove some content to fit within ${total} min.`
+    : `${total-used} min still available within your booked session.`;
+}
+
+async function confirmMyBookingEdit(){
+  if(!_myEditBookingId) return;
+  const b=myBookingsCache.find(x=>x.id===_myEditBookingId);
+  if(!b) return;
+  const errEl=document.getElementById('myb-edit-error');
+  // Enforce time budget
+  const used=getMyEditPkgMins();
+  if(used>_myEditDurMins){
+    errEl.textContent=`Your selections need ${used} min but your booked session is only ${_myEditDurMins} min. Remove some content to continue.`;
+    return;
+  }
+  const packages=[...document.querySelectorAll('#mybooking-packages-grid input[type=checkbox]:checked')].map(cb=>cb.value);
+  if(!packages.length){ errEl.textContent='Please keep at least one content package.'; return; }
+  const packageDetail={};
+  packages.forEach(pid=>{ if(packageData[pid]) packageDetail[pid]=packageData[pid]; });
+  const btn=document.getElementById('myb-edit-confirm-btn');
+  btn.disabled=true; btn.textContent='Saving…';
+  try{
+    const res=await fetch('/.netlify/functions/update-my-booking',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventId:b.eventId,email:_myEditEmail,packages,packageDetail})});
+    const d=await res.json();
+    if(!res.ok) throw new Error(d.error||'Update failed');
+    // Update local cache so the detail view reflects changes
+    b.packages=packages; b.packageDetail=packageDetail;
+    closeMyBookingEdit();
+    closeBDetailDirect();
+    renderMyBookingList();
+  }catch(err){
+    errEl.textContent='Save failed: '+err.message;
+  }finally{
+    btn.disabled=false; btn.textContent='Save Changes';
+  }
+}
+
 </script>
+<!-- ══ SIDEBAR ══ -->
+<div class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Menu">
+  <span></span><span></span><span></span>
+</div>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar(false)"></div>
+<aside class="app-sidebar" id="app-sidebar">
+  <button class="sidebar-close" onclick="toggleSidebar(false)">×</button>
+  <div class="sidebar-head">
+    <div class="sidebar-head-title">Content Shoots</div>
+    <div class="sidebar-head-sub">Book &amp; manage your sessions</div>
+  </div>
+  <div class="sidebar-links">
+    <button class="sidebar-link" onclick="hideMyBookings();toggleSidebar(false);window.scrollTo({top:0})"><span class="sidebar-link-icon">📅</span> New Booking</button>
+    <button class="sidebar-link" onclick="showMyBookings()"><span class="sidebar-link-icon">🔍</span> My Bookings</button>
+  </div>
+</aside>
+
 <!-- DARK MODE TOGGLE -->
 <div class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">
   <div class="theme-toggle-track">
@@ -3810,6 +4061,62 @@ async function confirmEditBooking(){
       <div class="bdetail-body" id="bdetail-body"></div>
     </div>
     <div class="bdetail-footer" id="bdetail-footer"></div>
+  </div>
+</div>
+
+
+<!-- ══ MY BOOKINGS VIEW (public email lookup) ══ -->
+<div id="mybookings-view" style="display:none;min-height:100vh;background:var(--bg);transition:background .3s">
+  <div class="admin-header">
+    <div class="admin-header-back" onclick="hideMyBookings()">&#8592;</div>
+    <div class="admin-header-info">
+      <div class="admin-header-title">My Bookings</div>
+      <div class="admin-header-sub">Look up your shoots by email</div>
+    </div>
+  </div>
+
+  <!-- Lookup screen -->
+  <div id="myb-lookup">
+    <div class="myb-lookup-card">
+      <p style="font-size:13.5px;color:var(--text-muted);line-height:1.5;margin:0 0 16px;font-family:'Inter',sans-serif">Enter the email you used when booking to see your upcoming and past shoots, and to edit the content packages.</p>
+      <label style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);display:block;margin-bottom:6px;font-family:'Inter',sans-serif">Your Email</label>
+      <input type="email" id="myb-email" class="myb-input" placeholder="you@agency.com" onkeydown="if(event.key==='Enter')lookupMyBookings()">
+      <button class="myb-find-btn" id="myb-lookup-btn" onclick="lookupMyBookings()">Find My Bookings</button>
+      <p class="reschedule-error" id="myb-error" style="text-align:center"></p>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="myb-results" class="admin-container" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:6px 0 4px">
+      <div class="admin-section-head" style="margin:0">Bookings for <span id="myb-results-email" style="color:var(--accent)"></span></div>
+      <button onclick="mybBackToLookup()" style="background:none;border:none;color:var(--text-muted);font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif">Change email</button>
+    </div>
+    <div id="myb-booking-list"></div>
+  </div>
+</div>
+
+
+<!-- ══ MY BOOKING EDIT MODAL (content packages only) ══ -->
+<div class="reschedule-backdrop" id="mybooking-edit-backdrop" onclick="closeMyBookingEditOnBackdrop(event)">
+  <div class="reschedule-modal" style="max-height:88vh;overflow-y:auto">
+    <div class="reschedule-title">Edit Content Packages</div>
+    <div class="reschedule-sub" id="myb-edit-sub"></div>
+    <div class="pkg-budget-wrap" style="margin-top:16px">
+      <div class="pkg-budget-header">
+        <span class="pkg-budget-label">⏱ Time Budget</span>
+        <span class="pkg-budget-counter" id="myb-budget-counter">0 / 0 min used</span>
+      </div>
+      <div class="pkg-budget-bar"><div class="pkg-budget-fill" id="myb-budget-fill" style="width:0%"></div></div>
+      <div class="pkg-budget-hint" id="myb-budget-hint"></div>
+    </div>
+    <label style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);display:block;margin-bottom:8px;font-family:'Inter',sans-serif">Content Packages</label>
+    <div id="mybooking-packages-grid"></div>
+    <div class="reschedule-error" id="myb-edit-error"></div>
+    <div class="reschedule-actions">
+      <button class="reschedule-cancel-btn" onclick="closeMyBookingEdit()">Cancel</button>
+      <button class="reschedule-confirm-btn ready" id="myb-edit-confirm-btn" onclick="confirmMyBookingEdit()">Save Changes</button>
+    </div>
   </div>
 </div>
 
