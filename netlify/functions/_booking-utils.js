@@ -34,6 +34,26 @@ const SOURCE_URL = 'https://zanchin-booking.netlify.app';
 const SOURCE_TITLE = 'Zanchin Content Shoot Booking';
 const BLOB_STORE_NAME = 'bookings';
 
+/* Mirrors the PACKAGES array in index.html. Used to map the friendly labels
+   found in a stripped event's description back to canonical package ids. */
+const PACKAGE_LABEL_TO_ID = {
+  'Ethnic Videos': 'ethnic',
+  'Sales Video': 'salesvideo',
+  'Walkaround': 'walkaround',
+  'Service Video': 'service',
+  'Headshots': 'headshots',
+  'Photo Session': 'gmb',
+  'Event Coverage': 'event',
+  'Lifestyle Content': 'event', // legacy label that mapped to the same slot
+  'Social Media Content': 'social',
+  'Sales Rep. Intro Video': 'salesrep',
+};
+function packageLabelToId(label) {
+  // Strip "3× " / "10× " count prefixes the success-screen / admin-view formatters add
+  const stripped = (label || '').replace(/^\d+\s*[x×]\s*/i, '').trim();
+  return PACKAGE_LABEL_TO_ID[stripped] || null;
+}
+
 /* Convert an ISO datetime + IANA tz to {dateStr, mins} in that tz. */
 function isoToET(iso) {
   const d = new Date(iso);
@@ -118,7 +138,11 @@ function parseDescriptionAsBookingData(description, event) {
   const em = bookedByLine.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
   if (em) { strategistName = em[1].trim(); strategistEmail = em[2].trim(); }
 
-  const packages = packagesLine ? packagesLine.split(',').map((s) => s.trim()).filter(Boolean) : [];
+  // Convert friendly labels in the description (e.g. "3× Headshots, Walkaround")
+  // back to canonical package ids. Unknown labels are kept verbatim so the admin
+  // tag list still shows something rather than silently dropping them.
+  const rawPackageLabels = packagesLine ? packagesLine.split(',').map((s) => s.trim()).filter(Boolean) : [];
+  const packages = rawPackageLabels.map((lbl) => packageLabelToId(lbl) || lbl);
   const zone = zoneKeyFromName(zoneName);
 
   // Date/time from the event itself
