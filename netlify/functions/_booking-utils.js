@@ -58,23 +58,45 @@ function zoneKeyFromName(name) {
   return '';
 }
 
-/* A description is "portal-shaped" if its first non-empty line starts with
-   the Store emoji marker AND it has the Zone marker somewhere. This pattern
-   is specific enough that random unrelated events won't be misidentified. */
+/* Google Calendar's web UI sometimes saves descriptions as HTML (rich-text
+   editor converts newlines to <br> / <p>). Normalize to plain text with \n
+   separators so our parsing works the same way regardless. */
+function descToPlain(description) {
+  if (!description || typeof description !== 'string') return '';
+  return description
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>\s*<p[^>]*>/gi, '\n')
+    .replace(/<p[^>]*>/gi, '')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<\/?(div|span|b|i|u|strong|em|font)[^>]*>/gi, '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)));
+}
+
+/* A description is "portal-shaped" if it contains BOTH the Store and Zone
+   markers. Order and surrounding formatting don't matter (handles the case
+   where GCal's rich-text editor re-wraps the text on save). This pattern is
+   specific enough that unrelated events won't be misidentified. */
 function isPortalDescription(description) {
   if (!description || typeof description !== 'string') return false;
-  const trimmed = description.replace(/^\s+/, '');
-  if (!trimmed.startsWith('📍 Store:')) return false;
-  return /\n🏢 Zone:/.test(description);
+  const plain = descToPlain(description);
+  return plain.includes('📍 Store:') && plain.includes('🏢 Zone:');
 }
 
 /* Parse the structured portal description into a partial bookingData.
    Per-package detail (headshot names, video entries, etc.) cannot be recovered
    from the description — only the top-level metadata. */
 function parseDescriptionAsBookingData(description, event) {
+  const plain = descToPlain(description);
   const get = (label) => {
     const re = new RegExp('^' + label + '(.*)$', 'm');
-    const m = description.match(re);
+    const m = plain.match(re);
     return m ? m[1].trim() : '';
   };
   const store = get('📍 Store:\\s*');
@@ -84,7 +106,7 @@ function parseDescriptionAsBookingData(description, event) {
   const packagesLine = get('📦 Content:\\s*');
   const scriptLink = get('📝 Script:\\s*');
   const bookedByLine = get('📧 Booked by:\\s*');
-  const notesMatch = description.match(/📝 Notes:\s*([\s\S]*?)$/);
+  const notesMatch = plain.match(/📝 Notes:\s*([\s\S]*?)$/);
 
   // Contact + phone: "Name · 416-555-0100"
   let contact = contactLine, contactPhone = '';
