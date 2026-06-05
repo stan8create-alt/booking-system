@@ -1,4 +1,8 @@
 const { google } = require('googleapis');
+const {
+  SOURCE_TAG, SOURCE_URL, SOURCE_TITLE,
+  bookingsBlobStore, writeBookingBlob,
+} = require('./_booking-utils');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
@@ -19,14 +23,22 @@ exports.handler = async (event) => {
         start: { dateTime: startDateTime, timeZone: 'America/Toronto' },
         end: { dateTime: endDateTime, timeZone: 'America/Toronto' },
         attendees: [{ email: 'stan@8create.ca' }],
+        // Durable secondary identifier — survives GCal UI edits much better than
+        // extendedProperties.private (which guest accept-sync can strip).
+        source: { title: SOURCE_TITLE, url: SOURCE_URL },
         extendedProperties: {
           private: {
-            source: 'zanchin-booking',
+            source: SOURCE_TAG,
             bookingData: JSON.stringify(bookingData || {}),
           },
         },
       },
     });
+    // Mirror to Netlify Blob — the durable backup for full bookingData
+    // (incl. per-package details that can't be recovered from the description).
+    const store = bookingsBlobStore();
+    await writeBookingBlob(store, ev.data.id, bookingData || {});
+
     return { statusCode: 200, body: JSON.stringify({ success: true, eventId: ev.data.id }) };
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };

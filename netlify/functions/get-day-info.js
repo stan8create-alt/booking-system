@@ -1,4 +1,7 @@
 const { google } = require('googleapis');
+const {
+  isOurEvent, hydrateBooking, selfHealEvent, bookingsBlobStore, isoToET,
+} = require('./_booking-utils');
 
 exports.handler = async (event) => {
   const { date, from, to } = event.queryStringParameters || {};
@@ -6,6 +9,7 @@ exports.handler = async (event) => {
   const auth = new google.auth.OAuth2(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
   auth.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
   const calendar = google.calendar({ version: 'v3', auth });
+  const store = bookingsBlobStore();
 
   let timeMin, timeMax, rangeMode = false;
   if (from && to) {
@@ -20,32 +24,43 @@ exports.handler = async (event) => {
   }
 
   try {
+    // No more hard `privateExtendedProperty` filter — identify via isOurEvent()
+    // so tag-stripped events still count toward the zone lock.
     const res = await calendar.events.list({
       calendarId: 'primary',
       timeMin, timeMax,
       singleEvents: true,
       maxResults: 250,
-      privateExtendedProperty: 'source=zanchin-booking',
     });
+    const ours = (res.data.items || []).filter(isOurEvent);
 
-    const events = res.data.items || [];
+    const healTasks = [];
+    const enriched = [];
+    for (const ev of ours) {
+      const hydrated = await hydrateBooking(ev, store);
+      if (!hydrated || !hydrated.bookingData?.zone) continue;
+      enriched.push({ ev, bookingData: hydrated.bookingData });
+      if (hydrated.needsExtendedProps || hydrated.needsBlob) {
+        healTasks.push(
+          selfHealEvent(calendar, ev, hydrated.bookingData, store, {
+            restoreExtendedProps: hydrated.needsExtendedProps,
+            restoreBlob: hydrated.needsBlob,
+          })
+        );
+      }
+    }
+    Promise.all(healTasks).catch(() => null);
 
     if (rangeMode) {
-      // Return { byDate: { 'YYYY-MM-DD': [{zone, bookedCount}] } }
+      // Group counts by ET date and zone.
       const byDate = {};
-      events.forEach(ev => {
-        let bd = {};
-        try { bd = JSON.parse(ev.extendedProperties?.private?.bookingData || '{}'); } catch {}
-        const zone = bd.zone;
-        if (!zone) return;
-        // Determine the ET date of the event
+      enriched.forEach(({ ev, bookingData }) => {
         const start = ev.start?.dateTime || ev.start?.date;
         if (!start) return;
-        const etDate = new Date(start).toLocaleDateString('en-CA', { timeZone: 'America/Toronto' });
+        const etDate = isoToET(start).dateStr;
         if (!byDate[etDate]) byDate[etDate] = {};
-        byDate[etDate][zone] = (byDate[etDate][zone] || 0) + 1;
+        byDate[etDate][bookingData.zone] = (byDate[etDate][bookingData.zone] || 0) + 1;
       });
-      // Flatten to {date: [{zone, bookedCount}]}
       const result = {};
       Object.entries(byDate).forEach(([d, zones]) => {
         result[d] = Object.entries(zones).map(([zone, bookedCount]) => ({ zone, bookedCount }));
@@ -53,11 +68,8 @@ exports.handler = async (event) => {
       return { statusCode: 200, body: JSON.stringify({ byDate: result }) };
     } else {
       const zones = {};
-      events.forEach(ev => {
-        let bd = {};
-        try { bd = JSON.parse(ev.extendedProperties?.private?.bookingData || '{}'); } catch {}
-        const zone = bd.zone;
-        if (zone) zones[zone] = (zones[zone] || 0) + 1;
+      enriched.forEach(({ bookingData }) => {
+        zones[bookingData.zone] = (zones[bookingData.zone] || 0) + 1;
       });
       const summary = Object.entries(zones).map(([zone, bookedCount]) => ({ zone, bookedCount }));
       return { statusCode: 200, body: JSON.stringify({ summary }) };

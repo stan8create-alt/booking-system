@@ -1,4 +1,8 @@
 const { google } = require('googleapis');
+const {
+  SOURCE_TAG, SOURCE_URL, SOURCE_TITLE,
+  bookingsBlobStore, writeBookingBlob,
+} = require('./_booking-utils');
 
 function checkAuth(event) {
   const token = event.headers['x-admin-token'];
@@ -40,9 +44,12 @@ exports.handler = async (event) => {
   const patch = {
     summary: `📷 ${bookingData.store} — Content Shoot`,
     description: buildDescription(bookingData),
+    // Always re-set our identifying fields. If a prior outside-the-portal edit
+    // stripped extendedProperties.private, this restores them.
+    source: { title: SOURCE_TITLE, url: SOURCE_URL },
     extendedProperties: {
       private: {
-        source: 'zanchin-booking',
+        source: SOURCE_TAG,
         bookingData: JSON.stringify(bookingData),
       },
     },
@@ -53,6 +60,9 @@ exports.handler = async (event) => {
 
   try {
     await calendar.events.patch({ calendarId: 'primary', eventId, requestBody: patch });
+    // Mirror to blob — durable backup for the full bookingData incl. per-package detail.
+    const store = bookingsBlobStore();
+    await writeBookingBlob(store, eventId, bookingData);
     return { statusCode: 200, body: JSON.stringify({ success: true }) };
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };

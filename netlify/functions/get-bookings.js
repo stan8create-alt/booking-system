@@ -1,4 +1,7 @@
 const { google } = require('googleapis');
+const {
+  isOurEvent, hydrateBooking, selfHealEvent, bookingsBlobStore,
+} = require('./_booking-utils');
 
 function checkAuth(event) {
   const token = event.headers['x-admin-token'];
@@ -24,7 +27,14 @@ exports.handler = async (event) => {
   const timeMin = new Date(now); timeMin.setMonth(timeMin.getMonth() - 6);
   const timeMax = new Date(now); timeMax.setMonth(timeMax.getMonth() + 12);
 
+  const store = bookingsBlobStore();
+
   try {
+    // We no longer hard-filter by `privateExtendedProperty: 'source=zanchin-booking'`
+    // server-side, because that tag can be stripped by outside-the-portal edits
+    // (e.g. a non-Google guest accepting an invite). Instead, fetch everything in
+    // range and identify our events via any of: source tag, event.source.url,
+    // or portal-shaped description (see _booking-utils.isOurEvent).
     let allEvents = [];
     let pageToken;
     do {
@@ -35,19 +45,34 @@ exports.handler = async (event) => {
         singleEvents: true,
         maxResults: 250,
         pageToken,
-        privateExtendedProperty: 'source=zanchin-booking',
       });
       allEvents = allEvents.concat(res.data.items || []);
       pageToken = res.data.nextPageToken;
     } while (pageToken);
 
-    const bookings = allEvents.map(ev => {
-      let bookingData = {};
-      try { bookingData = JSON.parse(ev.extendedProperties?.private?.bookingData || '{}'); } catch {}
-      return { ...bookingData, eventId: ev.id };
-    }).filter(b => b.id);
+    const ours = allEvents.filter(isOurEvent);
 
-    return { statusCode: 200, body: JSON.stringify({ bookings }) };
+    const healTasks = [];
+    const bookings = [];
+    for (const ev of ours) {
+      const hydrated = await hydrateBooking(ev, store);
+      if (!hydrated) continue;
+      bookings.push({ ...hydrated.bookingData, eventId: ev.id });
+      // Self-heal in background: restore stripped tag and/or missing blob.
+      if (hydrated.needsExtendedProps || hydrated.needsBlob) {
+        healTasks.push(
+          selfHealEvent(calendar, ev, hydrated.bookingData, store, {
+            restoreExtendedProps: hydrated.needsExtendedProps,
+            restoreBlob: hydrated.needsBlob,
+          })
+        );
+      }
+    }
+    // Fire-and-forget — don't block the response on healing.
+    Promise.all(healTasks).catch(() => null);
+
+    // Frontend filters on `b.id`; keep that contract.
+    return { statusCode: 200, body: JSON.stringify({ bookings: bookings.filter((b) => b.id) }) };
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }

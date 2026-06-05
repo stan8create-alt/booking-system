@@ -1,4 +1,5 @@
 const { google } = require('googleapis');
+const { bookingsBlobStore, deleteBookingBlob } = require('./_booking-utils');
 
 function checkAuth(event) {
   const token = event.headers['x-admin-token'];
@@ -25,6 +26,9 @@ exports.handler = async (event) => {
 
   try {
     await calendar.events.delete({ calendarId: 'primary', eventId });
+    // Clean up the durable backup so we don't leak stale records.
+    const store = bookingsBlobStore();
+    await deleteBookingBlob(store, eventId);
     return { statusCode: 200, body: JSON.stringify({ success: true }) };
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
