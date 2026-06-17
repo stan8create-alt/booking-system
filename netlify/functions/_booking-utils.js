@@ -269,6 +269,25 @@ function bookingsBlobStore() {
   try { return getStore(BLOB_STORE_NAME); } catch { return null; }
 }
 
+/* ── Authorized booker allowlist ──
+   The dozen-or-so emails permitted to CREATE or EDIT bookings, sourced from the
+   AUTHORIZED_EMAILS env var (comma / semicolon / whitespace separated).
+   IMPORTANT: if the env var is unset or empty the allowlist is DISABLED and
+   booking stays open to anyone — set AUTHORIZED_EMAILS in Netlify to engage the
+   lock. (This fail-open default avoids locking everyone out on a misconfigured
+   deploy; it matches the current behaviour until the env var is configured.) */
+function authorizedEmails() {
+  return (process.env.AUTHORIZED_EMAILS || '')
+    .split(/[\s,;]+/)
+    .map(e => e.trim().toLowerCase())
+    .filter(Boolean);
+}
+function isEmailAuthorized(email) {
+  const list = authorizedEmails();
+  if (list.length === 0) return true; // not configured → don't lock anyone out
+  return list.includes((email || '').trim().toLowerCase());
+}
+
 module.exports = {
   ZONES,
   SOURCE_TAG,
@@ -285,4 +304,6 @@ module.exports = {
   deleteBookingBlob,
   selfHealEvent,
   bookingsBlobStore,
+  authorizedEmails,
+  isEmailAuthorized,
 };

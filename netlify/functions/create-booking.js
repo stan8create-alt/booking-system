@@ -1,13 +1,23 @@
 const { google } = require('googleapis');
 const {
   SOURCE_TAG, SOURCE_URL, SOURCE_TITLE,
-  bookingsBlobStore, writeBookingBlob,
+  bookingsBlobStore, writeBookingBlob, isEmailAuthorized,
 } = require('./_booking-utils');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
 
   const { summary, description, startDateTime, endDateTime, bookingData } = JSON.parse(event.body);
+
+  // Authorization gate: only allowlisted emails may create bookings. This is the
+  // real lock — the client form can be bypassed by POSTing here directly.
+  const bookerEmail = (bookingData && bookingData.strategistEmail) || '';
+  if (!isEmailAuthorized(bookerEmail)) {
+    return {
+      statusCode: 403,
+      body: JSON.stringify({ error: 'This email is not authorized to book. Please contact your administrator.' }),
+    };
+  }
 
   const auth = new google.auth.OAuth2(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
   auth.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });

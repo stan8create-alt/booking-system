@@ -1,7 +1,7 @@
 const { google } = require('googleapis');
 const {
   SOURCE_TAG, SOURCE_URL, SOURCE_TITLE,
-  bookingsBlobStore, writeBookingBlob, hydrateBooking,
+  bookingsBlobStore, writeBookingBlob, hydrateBooking, isEmailAuthorized,
 } = require('./_booking-utils');
 
 // Public endpoint: lets the person who made a booking edit ONLY the content
@@ -29,6 +29,11 @@ exports.handler = async (event) => {
   const { eventId, email, packages, packageDetail, notes } = payload;
   if (!eventId || !email) return { statusCode: 400, body: JSON.stringify({ error: 'Missing eventId or email' }) };
   const target = email.trim().toLowerCase();
+
+  // Same allowlist gate as create — only authorized emails may edit bookings.
+  if (!isEmailAuthorized(target)) {
+    return { statusCode: 403, body: JSON.stringify({ error: 'This email is not authorized to book. Please contact your administrator.' }) };
+  }
 
   const auth = new google.auth.OAuth2(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
   auth.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
