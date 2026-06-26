@@ -1,7 +1,7 @@
 const { google } = require('googleapis');
 const {
   SOURCE_TAG, SOURCE_URL, SOURCE_TITLE,
-  bookingsBlobStore, writeBookingBlob, isEmailAuthorized,
+  bookingsBlobStore, writeBookingBlob, isEmailAuthorized, ensureEditingBlocks,
 } = require('./_booking-utils');
 
 exports.handler = async (event) => {
@@ -48,6 +48,12 @@ exports.handler = async (event) => {
     // (incl. per-package details that can't be recovered from the description).
     const store = bookingsBlobStore();
     await writeBookingBlob(store, ev.data.id, bookingData || {});
+
+    // Auto-manage "Full Day Editing" blocks for this booking's week. Best-effort:
+    // the booking already succeeded, so never fail the request over this.
+    try {
+      await ensureEditingBlocks(calendar, (bookingData && bookingData.date) || null);
+    } catch (e) { /* ignore — editing-block automation is non-critical */ }
 
     return { statusCode: 200, body: JSON.stringify({ success: true, eventId: ev.data.id }) };
   } catch (err) {

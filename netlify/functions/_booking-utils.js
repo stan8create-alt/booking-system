@@ -288,6 +288,95 @@ function isEmailAuthorized(email) {
   return list.includes((email || '').trim().toLowerCase());
 }
 
+/* ── Auto "Full Day Editing" blocks ──
+   Goal: cap each week at 3 booking days + 2 editing days, so the studio always
+   keeps 2 days for editing. Strategy (staged): as distinct booked days accrue,
+   auto-create all-day "Full Day Editing" events on still-open weekdays so the
+   booking calendar grays them out (they surface via the free/busy channel, carry
+   no zone, and are NOT isOurEvent — so they never count as bookings or against
+   the weekly cap). Target editing days = clamp(distinctBookedDays - 1, 0, 2):
+     1 booked day  → 0 editing      2 booked days → 1 editing
+     3+ booked days → 2 editing
+   Any full-day block you place by hand counts toward that target too, so manual
+   blocks simply reduce how many we auto-create — and we NEVER touch an existing
+   block, we only ever insert on a fully-open weekday. */
+
+// First Monday this automation applies to. Weeks starting before this are left
+// completely alone (no auto blocks created for them).
+const EDITING_BLOCKS_START_WEEK = '2026-07-20';
+const EDITING_BLOCK_SUMMARY = 'Full Day Editing';
+
+function weekStartMonday(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  const dow = d.getUTCDay();               // 0=Sun..6=Sat
+  d.setUTCDate(d.getUTCDate() + (dow === 0 ? -6 : 1 - dow));
+  return d.toISOString().slice(0, 10);
+}
+function addDaysStr(dateStr, n) {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+async function ensureEditingBlocks(calendar, bookingDateStr) {
+  if (!bookingDateStr) return;
+  const weekStart = weekStartMonday(bookingDateStr);
+  if (weekStart < EDITING_BLOCKS_START_WEEK) return; // feature starts week of 2026-07-20
+
+  const weekdays = [0, 1, 2, 3, 4].map(i => addDaysStr(weekStart, i)); // Mon..Fri
+  // Pad the query ±1 day and bucket by exact ET date below, so DST/offset edge
+  // cases at the week boundary can't drop an event.
+  const res = await calendar.events.list({
+    calendarId: 'primary',
+    timeMin: new Date(`${addDaysStr(weekStart, -1)}T00:00:00-05:00`).toISOString(),
+    timeMax: new Date(`${addDaysStr(weekStart, 6)}T00:00:00-05:00`).toISOString(),
+    singleEvents: true,
+    maxResults: 250,
+  });
+  const items = res.data.items || [];
+
+  const booked = new Set();
+  const blocked = new Set();
+  // The just-created booking may not be in the list yet (eventual consistency) —
+  // count its day explicitly.
+  if (weekdays.includes(bookingDateStr)) booked.add(bookingDateStr);
+
+  for (const ev of items) {
+    const isAllDay = !!(ev.start && ev.start.date && !ev.start.dateTime);
+    const evDate = isAllDay
+      ? ev.start.date
+      : (ev.start && ev.start.dateTime ? isoToET(ev.start.dateTime).dateStr : null);
+    if (!evDate || !weekdays.includes(evDate)) continue;
+    if (isOurEvent(ev)) booked.add(evDate);             // a real booking
+    else if (isAllDay) blocked.add(evDate);             // manual or prior auto editing block
+  }
+  for (const d of booked) blocked.delete(d);            // a booked day is never an editing day
+
+  const target = Math.max(0, Math.min(2, booked.size - 1)); // staged 0,0,1,2,2...
+  const open = weekdays.filter(d => !booked.has(d) && !blocked.has(d));
+  const toCreate = Math.max(0, Math.min(target - blocked.size, open.length));
+  if (toCreate <= 0) return;
+
+  // Random placement among the open weekdays.
+  const pick = [...open];
+  for (let i = pick.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pick[i], pick[j]] = [pick[j], pick[i]];
+  }
+  const chosen = pick.slice(0, toCreate);
+
+  await Promise.all(chosen.map(day => calendar.events.insert({
+    calendarId: 'primary',
+    requestBody: {
+      summary: EDITING_BLOCK_SUMMARY,
+      start: { date: day },
+      end: { date: addDaysStr(day, 1) },
+      transparency: 'opaque',                            // show as busy → grays the date
+      extendedProperties: { private: { autoEditingBlock: '1' } },
+    },
+  })));
+}
+
 module.exports = {
   ZONES,
   SOURCE_TAG,
@@ -306,4 +395,5 @@ module.exports = {
   bookingsBlobStore,
   authorizedEmails,
   isEmailAuthorized,
+  ensureEditingBlocks,
 };
