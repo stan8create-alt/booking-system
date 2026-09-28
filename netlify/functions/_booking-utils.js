@@ -26,6 +26,7 @@ const ZONES = {
   maple:       { name: 'Maple Auto Mall',       maxPerDay: 3 },
   stouffville: { name: 'Stouffville Auto Mall', maxPerDay: 4 },
   mississauga: { name: 'Mississauga Auto Mall', maxPerDay: 2 },
+  oakville:    { name: 'Oakville Auto Mall',    maxPerDay: 2 },
   fullday:     { name: 'Full-Day Location',     maxPerDay: 1 },
 };
 
@@ -46,7 +47,8 @@ const PACKAGE_LABEL_TO_ID = {
   'Event Coverage': 'event',
   'Lifestyle Content': 'event', // legacy label that mapped to the same slot
   'Social Media Content': 'social',
-  'Sales Rep. Intro Video': 'salesrep',
+  'Intro Video': 'salesrep',
+  'Sales Rep. Intro Video': 'salesrep', // legacy label that mapped to the same slot
 };
 function packageLabelToId(label) {
   // Strip "3× " / "10× " count prefixes the success-screen / admin-view formatters add

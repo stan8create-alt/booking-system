@@ -1,6 +1,9 @@
 {
   "name": "zanchin-booking",
   "version": "1.0.0",
+  "scripts": {
+    "dev:local": "node local-dev/server.js"
+  },
   "dependencies": {
     "@netlify/blobs": "^7.4.0",
     "googleapis": "^144.0.0"

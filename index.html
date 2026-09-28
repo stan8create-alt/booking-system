@@ -10,8 +10,9 @@
 :root {
   --bg:#eceef1; --surface:#e8eaed; --surface-raised:#f0f2f5; --white:#fff;
   --accent:#1a1a1a; --accent2:#3a7bd5; --green:#22c55e; --red:#ef4444; --orange:#f59e0b;
-  --text:#1a1a1a; --text-muted:#8a8f9a; --border:rgba(255,255,255,0.85);
+  --text:#1a1a1a; --text-muted:#4b5563; --border:rgba(255,255,255,0.85);
   --shadow-out:5px 5px 12px rgba(170,176,190,.5),-3px -3px 8px rgba(255,255,255,.92);
+  --shadow-out-soft:5px 5px 12px rgba(170,176,190,.35),-3px -3px 8px rgba(255,255,255,.64);
   --shadow-in:inset 3px 3px 7px rgba(170,176,190,.4),inset -2px -2px 6px rgba(255,255,255,.88);
   --shadow-card:8px 8px 20px rgba(160,168,185,.4),-5px -5px 14px rgba(255,255,255,.95);
   --radius-sm:10px; --radius:14px; --radius-xl:26px;
@@ -26,8 +27,9 @@
 [data-theme="dark"] {
   --bg:#0f1117; --surface:#1a1d27; --surface-raised:#1f2330; --white:#1f2330;
   --accent:#FC6E20; --accent2:#FC6E20; --green:#39ff14; --red:#ff4d6d; --orange:#ffd700;
-  --text:#e8edf5; --text-muted:#6b7280; --border:rgba(255,255,255,.07);
+  --text:#e8edf5; --text-muted:#9ca3af; --border:rgba(255,255,255,.07);
   --shadow-out:5px 5px 16px rgba(0,0,0,.55),-2px -2px 6px rgba(255,255,255,.03);
+  --shadow-out-soft:5px 5px 16px rgba(0,0,0,.385),-2px -2px 6px rgba(255,255,255,.021);
   --shadow-in:inset 3px 3px 10px rgba(0,0,0,.5),inset -2px -2px 4px rgba(255,255,255,.03);
   --shadow-card:0 8px 32px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.04);
   --neon:#FC6E20; --neon-glow:rgba(252,110,32,.22);
@@ -65,7 +67,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-
 .rule-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
 
 /* ── LAYOUT ── */
-.container{max-width:680px;margin:0 auto;padding:0 18px 100px}
+.container{max-width:850px;margin:0 auto;padding:0 18px 100px}
 .card{background:var(--surface-raised);border-radius:var(--radius-xl);box-shadow:var(--shadow-card);padding:26px 26px 22px;margin-bottom:18px;border:1px solid var(--border);transition:background .3s,box-shadow .3s}
 .section-label{display:flex;align-items:center;gap:10px;margin-bottom:20px}
 .section-num{width:28px;height:28px;background:var(--accent);color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;transition:background .3s}
@@ -77,6 +79,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-
 .field:last-child{margin-bottom:0}
 label{display:block;font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;letter-spacing:.06em;text-transform:uppercase;font-family:'Inter',sans-serif}
 label .req{color:var(--accent2);margin-left:2px}
+/* Sits inside a form-field <label> but is explanatory copy, not the label
+   itself — normal case so it reads as an aside, not a second shouted label. */
+.duration-auto-hint{text-transform:none;letter-spacing:normal;font-weight:500}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:500px){.two-col{grid-template-columns:1fr}}
 
@@ -118,48 +123,163 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
 /* ── CALENDAR ── */
 .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
 .cal-month-label{font-size:16px;font-weight:800;letter-spacing:-.3px;font-family:'Inter',sans-serif}
-.cal-nav-btn{width:34px;height:34px;background:var(--surface);border:1px solid var(--border);border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:var(--shadow-out);transition:all .15s;color:var(--text-muted);font-family:'Inter',sans-serif}
+.cal-nav-btn{width:34px;height:34px;background:var(--surface-raised);border:1px solid var(--border);border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:var(--shadow-out-soft);transition:all .15s;color:var(--text-muted);font-family:'Inter',sans-serif}
 .cal-nav-btn:hover{color:var(--text);border-color:var(--neon)}
+.cal-nav-btn:focus-visible{outline:none;color:var(--text);border-color:var(--neon);box-shadow:var(--shadow-out-soft),0 0 0 2px var(--neon-glow)}
 .cal-nav-btn:disabled{opacity:.3;cursor:not-allowed}
 .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px}
-.cal-wd{text-align:center;font-size:10.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;padding:4px 0;font-family:'Inter',sans-serif}
+.cal-wd{text-align:center;font-size:10.5px;font-weight:700;color:var(--text-muted);padding:4px 0;font-family:'Inter',sans-serif}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+/* Flat at rest — shadow is reserved for hover/selected so it reads as a
+   signal, not a texture. With ~35 cells on screen at once, giving every one
+   its own resting shadow was what made the grid feel muddy. */
 .cal-day{
   aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
   border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;position:relative;
-  transition:all .15s;background:var(--surface);border:1px solid var(--border);
-  box-shadow:var(--shadow-out);gap:3px;font-family:'Inter',sans-serif
+  transition:all .15s;background:var(--surface-raised);border:1px solid var(--border);
+  box-shadow:var(--shadow-out-soft);
+  gap:3px;font-family:'Inter',sans-serif
 }
-.cal-day:hover:not(.cal-disabled):not(.cal-selected){background:var(--surface-raised);border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
-.cal-day.cal-selected{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 0 3px var(--neon-glow),3px 3px 10px rgba(0,0,0,.25)}
+/* A soft resting shadow gives bookable days the same floating-chip illusion
+   as the time picker — kept at the reduced-strength token (not full
+   shadow-out) and stripped from disabled cells below, since those make up
+   most of any given month and stacking it on all of them is what read as
+   "muddy" before. Hover/selected still step up to the fuller shadow. */
+.cal-day:hover:not(.cal-disabled):not(.cal-selected){border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
+.cal-day:focus-visible{outline:none}
+.cal-day:not(.cal-disabled):not(.cal-selected):focus-visible{border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
+/* Selected = one signal (solid fill), not fill + glow ring + dot stacked. */
+.cal-day.cal-selected{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:var(--shadow-out)}
+/* Keyboard focus is a different state grammar than "selected" (same exception
+   the input focus ring gets in §5) — it has to stay visible even once a day
+   is chosen, or a keyboard user tabbing through the grid loses their place. */
+.cal-day.cal-selected:focus-visible{box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
 .cal-day.cal-today:not(.cal-selected){border-color:var(--neon);color:var(--accent2);font-weight:800}
-.cal-day.cal-disabled{opacity:.32;cursor:not-allowed;box-shadow:var(--shadow-in);background:var(--surface)}
+.cal-day.cal-disabled{opacity:.32;cursor:not-allowed;box-shadow:none}
 .cal-day.cal-empty{background:transparent;border-color:transparent;box-shadow:none;cursor:default}
 .cal-day.cal-other-month{opacity:.35}
 .avail-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
 .dot-green{background:var(--green)}
 .dot-yellow{background:var(--orange)}
 .dot-red{background:var(--red)}
-.cal-day.cal-selected .avail-dot{opacity:.7}
+/* Once a day is selected, "selected" already implies "was bookable" — the
+   dot's job (conveying availability) is redundant, so drop it rather than
+   dim it under the fill. */
+.cal-day.cal-selected .avail-dot{display:none}
+/* A suggestion-card hover previews a day, it doesn't select it — same
+   Signal-Blue hover language as the day's own native :hover two rules up,
+   never the Onyx fill reserved for a real selection. */
+.cal-day.cal-suggest-hi:not(.cal-selected){border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
 
-/* ── DURATION PICKER ── */
-.duration-row{display:flex;gap:8px;flex-wrap:wrap}
-.dur-btn{flex:1;min-width:68px;background:var(--surface);border:1px solid var(--border);color:var(--text-muted);padding:12px 6px 10px;border-radius:var(--radius-sm);cursor:pointer;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;text-align:center;box-shadow:var(--shadow-out);transition:all .16s}
-.dur-btn:hover:not(.disabled):not(.selected){color:var(--text);border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
-.dur-btn.selected{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 0 3px var(--neon-glow),3px 3px 8px rgba(0,0,0,.2);font-weight:800}
-.dur-btn.disabled{opacity:.32;cursor:not-allowed;box-shadow:var(--shadow-in)}
-.dur-sub{display:block;font-size:9px;font-weight:600;margin-top:3px;text-transform:uppercase;letter-spacing:.06em;opacity:.65}
-.dur-btn.selected .dur-sub{opacity:.85}
+/* ── SUGGESTED DATES — same 3-column grid and gap as .dt-columns below, on
+   purpose: the calendar spans 2 of those columns and the time picker spans
+   the 3rd, so the two rows' edges line up exactly instead of approximating
+   it with an fr-ratio that happens to look close. ── */
+.suggest-cards-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+@media(max-width:560px){.suggest-cards-grid{grid-template-columns:1fr;gap:10px}}
 
-/* ── SLOT GRID ── */
-.slots-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:14px}
-@media(max-width:480px){.slots-grid{grid-template-columns:repeat(2,1fr)}}
-.slot-btn{background:var(--surface);border:1px solid var(--border);color:var(--text-muted);padding:13px 5px 11px;border-radius:var(--radius-sm);cursor:pointer;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;text-align:center;box-shadow:var(--shadow-out);transition:all .16s}
+/* ── DATE + TIME layout — same grid/gap as .suggest-cards-grid above (see
+   comment there); calendar spans 2 columns, time picker spans 1, so their
+   edges align with the suggestion cards above them by construction, not by
+   coincidence. ── */
+.dt-columns{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:start}
+.dt-cal-col{grid-column:span 2}
+.dt-time-col{grid-column:span 1}
+@media(max-width:560px){.dt-columns{grid-template-columns:1fr;gap:22px}.dt-cal-col,.dt-time-col{grid-column:span 1}}
+/* Calendar column — scoped so the admin/reschedule calendars (which reuse
+   the base .cal-grid/.cal-day rules) are untouched. It now has the majority
+   of the row, so cells run larger than the shared base size, not smaller. */
+.dt-cal-col .cal-nav{margin-bottom:18px}
+.dt-cal-col .cal-month-label{font-size:20px}
+.dt-cal-col .cal-nav-btn{width:40px;height:40px;font-size:16px}
+.dt-cal-col .cal-weekdays{gap:8px;margin-bottom:10px}
+.dt-cal-col .cal-wd{font-size:12.5px}
+.dt-cal-col .cal-grid{gap:8px}
+.dt-cal-col .cal-day{font-size:17px}
+.dt-time-col{min-width:0}
+
+/* ── DURATION SLIDER ── */
+.duration-row{padding:2px 8px 0}
+.dur-slider{position:relative;height:22px;margin:0 11px;outline:none;touch-action:none}
+.dur-slider:focus-visible .dur-slider-track{box-shadow:var(--shadow-in),0 0 0 2px var(--neon-glow)}
+.dur-slider:focus-visible .dur-slider-thumb{box-shadow:0 2px 8px rgba(0,0,0,.3),0 0 0 4px var(--neon-glow)}
+.dur-slider.disabled{opacity:.5}
+.dur-slider-track{position:absolute;top:50%;left:0;right:0;height:6px;transform:translateY(-50%);background:var(--surface);border-radius:99px;box-shadow:var(--shadow-in)}
+.dur-slider-fill{position:absolute;top:0;left:0;height:100%;border-radius:99px;background:var(--accent);transition:width .22s cubic-bezier(.22,1,.36,1)}
+.dur-slider.dragging .dur-slider-fill,.dur-slider.dragging .dur-slider-thumb{transition:none}
+.dur-slider-disabled{position:absolute;top:0;right:0;height:100%;border-radius:0 99px 99px 0;background:repeating-linear-gradient(135deg,rgba(128,128,128,.24),rgba(128,128,128,.24) 3px,transparent 3px,transparent 7px)}
+.dur-slider-dots{position:absolute;inset:0}
+.dur-slider-dot{position:absolute;top:50%;width:9px;height:9px;margin-left:-4.5px;border-radius:50%;background:var(--surface-raised);border:2px solid var(--border);transform:translateY(-50%);transition:background .18s,border-color .18s}
+.dur-slider-dot.reached{background:var(--accent);border-color:var(--accent)}
+.dur-slider-dot.blocked{opacity:.4}
+.dur-slider-thumb{position:absolute;top:50%;width:22px;height:22px;margin-left:-11px;border-radius:50%;background:var(--accent);border:3px solid var(--surface-raised);box-shadow:0 2px 8px rgba(0,0,0,.3),0 0 0 3px var(--neon-glow);transform:translateY(-50%);transition:left .22s cubic-bezier(.22,1,.36,1);cursor:grab;z-index:3;display:none}
+.dur-slider-thumb:active{cursor:grabbing}
+/* Same 11px side margin as .dur-slider so each tick's `left%` lines up
+   pixel-for-pixel with the dot at the same index on the track above. */
+.dur-slider-labels{position:relative;height:32px;margin:8px 11px 0}
+.dur-tick{position:absolute;top:0;background:none;border:none;padding:4px 2px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:'Inter',sans-serif;color:var(--text-muted);border-radius:8px;transition:color .15s;white-space:nowrap}
+.dur-tick:hover:not(.disabled){color:var(--text)}
+.dur-tick-label{font-size:11px;font-weight:700}
+.dur-tick-sub{font-size:8.5px;font-weight:600;text-transform:capitalize;opacity:.6}
+/* At narrow widths the 5 duration ticks compress enough that "Half day" and
+   "Full day" — the two longest sub-labels, sitting right next to each
+   other — start overlapping by a couple of px. Trim size rather than touch
+   the tick positioning math. Must come after the base rule above to
+   actually win the cascade at equal specificity. */
+@media(max-width:560px){.dur-tick-sub{font-size:7.5px}}
+.dur-tick.selected{color:var(--accent)}
+.dur-tick:focus-visible{outline:none;background:var(--surface);box-shadow:0 0 0 2px var(--neon-glow)}
+.dur-tick.disabled{pointer-events:none;opacity:.32;cursor:not-allowed}
+
+/* ── SLOT LIST (vertical, right column) ── */
+/* Two columns paired by hour (:00 on the left, :30 on the right) instead of
+   one long scrolling list — reads as a compact hour grid, not a menu. */
+/* Padding on every side (not just the scrollbar gutter) so each button's
+   resting shadow has room to render — an auto-overflow container clips both
+   axes, so a shadow that touches the edge gets a hard, boxy cutoff instead
+   of fading out. */
+/* Padding must clear the shadow's full offset+blur reach (5px+12px ≈ 17px
+   on the trailing edge), not just a token gutter — 8px still let the
+   bottom-right corner of each button clip against the scroll container. */
+.slots-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 -18px;max-height:410px;overflow-y:auto;padding:18px}
+.slots-empty-hint{grid-column:1/-1;color:var(--text-muted);font-size:13px;padding:10px 0}
+.slot-btn{background:var(--surface-raised);box-shadow:var(--shadow-out-soft);border:1px solid var(--border);color:var(--text-muted);padding:11px 6px;border-radius:9px;cursor:pointer;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;transition:all .16s;display:flex;align-items:center;justify-content:center;width:100%;white-space:nowrap}
 .slot-btn:hover:not(.disabled):not(.selected){color:var(--text);border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
-.slot-btn.selected{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;box-shadow:0 0 0 3px var(--neon-glow),3px 3px 8px rgba(0,0,0,.2)}
+.slot-btn:focus-visible{outline:none}
+.slot-btn:not(.disabled):not(.selected):focus-visible{color:var(--text);border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
+.slot-btn.selected{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;box-shadow:var(--shadow-out)}
+.slot-btn.selected:focus-visible{box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
+/* Taken slots stay visible, just greyed out — never hidden. */
 .slot-btn.disabled{opacity:.3;cursor:not-allowed;box-shadow:var(--shadow-in)}
-.slot-status{display:block;font-size:9px;font-weight:600;margin-top:3px;text-transform:uppercase;letter-spacing:.06em;opacity:.65}
-.slot-btn.selected .slot-status{opacity:.85}
+/* Non-interactive peek shown while hovering a suggestion card for a date
+   other than the one currently selected — never an actual selection. */
+.slot-btn.preview{cursor:default;opacity:.65}
+.slot-btn.preview.disabled{opacity:.3}
+/* Reads as "this is the one a click would land on" — the same Signal-Blue
+   hover language every other preview/hover state in this card uses, never
+   the Onyx fill reserved for an actual selection (One Selected Rule). */
+.slot-btn.preview.suggest-preview{opacity:1;color:var(--text);border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
+
+/* ── SUGGESTION STRIP CARDS (decoupled from .slot-btn — that's now a
+   full-width vertical-list item and would break this horizontal row) ── */
+.suggest-card{background:var(--surface-raised);box-shadow:var(--shadow-out-soft);border:1px solid var(--border);color:var(--text-muted);padding:10px 10px;border-radius:9px;cursor:pointer;font-family:'Inter',sans-serif;text-align:center;transition:all .16s;width:100%;min-width:0}
+.suggest-card:hover:not(.selected){color:var(--text);border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
+.suggest-card:focus-visible{outline:none}
+.suggest-card:focus-visible:not(.selected){color:var(--text);border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
+/* Focus is a different state grammar than selected (same exception as the
+   calendar day) — the ring layers on top without overriding the Onyx border. */
+.suggest-card.selected:focus-visible{box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
+/* Selected = one signal (solid fill), same formula as every other selected
+   control — never a ring stacked on top of it. */
+.suggest-card.selected{background:var(--accent);border-color:var(--accent);box-shadow:var(--shadow-out)}
+.suggest-card.selected:focus-visible{box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
+.suggest-card.selected .suggest-card-date,.suggest-card.selected .suggest-card-sub{color:#fff}
+.suggest-card.selected .suggest-card-sub{opacity:.85}
+.suggest-card.selected .avail-dot{display:none}
+.suggest-card-date{display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:700;color:var(--text)}
+/* No extra opacity stacked on top of the already-muted text color — that
+   compounding is what pushed this under 2:1 contrast. */
+.suggest-card-sub{display:block;font-size:9.5px;font-weight:600;margin-top:3px}
 
 /* ── TIME PREVIEW ── */
 .time-preview{margin-top:12px;padding:11px 14px;background:var(--surface);border-radius:var(--radius-sm);box-shadow:var(--shadow-in);font-size:13px;font-weight:600;color:var(--text-muted);display:none;font-family:'Inter',sans-serif;transition:background .3s}
@@ -230,14 +350,17 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
 .submit-area{margin-top:6px}
 #field-error-summary{display:none;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.22);color:#f87171;border-radius:var(--radius-sm);padding:13px 16px;font-size:13px;margin-bottom:12px;line-height:1.7;font-weight:500}
 #field-error-summary.visible{display:block}
-.submit-btn{width:100%;background:var(--accent);color:#fff;border:none;padding:16px;font-family:'Inter',sans-serif;font-size:15px;font-weight:800;border-radius:var(--radius);cursor:pointer;box-shadow:0 0 0 0 var(--neon-glow);transition:opacity .2s,transform .1s,box-shadow .3s;letter-spacing:.01em}
+.submit-btn{width:100%;display:inline-flex;justify-content:center;align-items:center;gap:8px;background:var(--accent);color:#fff;border:1px solid var(--accent);padding:12px 16px;font-family:'Inter',sans-serif;font-size:15px;font-weight:800;border-radius:var(--radius-sm);cursor:pointer;box-shadow:0 0 0 0 var(--neon-glow);transition:opacity .2s,transform .1s,box-shadow .3s;letter-spacing:.01em}
 .submit-btn:hover{opacity:.88;box-shadow:0 0 0 5px var(--neon-glow)}
+.submit-btn:focus-visible{outline:none;opacity:.88;box-shadow:0 0 0 5px var(--neon-glow)}
 .submit-btn:active{transform:scale(.993)}
-.submit-btn:disabled{opacity:.42;cursor:not-allowed}
+.submit-btn:disabled{opacity:.42;cursor:not-allowed;pointer-events:none}
 
 /* ── RESET BUTTON ── */
-.reset-btn{width:100%;background:var(--red);color:#fff;border:none;padding:13px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;border-radius:var(--radius-sm);cursor:pointer;box-shadow:3px 3px 10px rgba(239,68,68,.35);transition:all .18s;letter-spacing:.01em}
+.reset-btn{width:100%;display:inline-flex;justify-content:center;align-items:center;gap:8px;background:var(--red);color:#fff;border:1px solid var(--red);padding:12px 16px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;border-radius:var(--radius-sm);cursor:pointer;box-shadow:3px 3px 10px rgba(239,68,68,.35);transition:all .18s;letter-spacing:.01em}
 .reset-btn:hover{opacity:.88;box-shadow:0 0 0 4px rgba(239,68,68,.2),3px 3px 10px rgba(239,68,68,.35)}
+.reset-btn:focus-visible{outline:none;opacity:.88;box-shadow:0 0 0 4px rgba(239,68,68,.2),3px 3px 10px rgba(239,68,68,.35)}
+.reset-btn:disabled{opacity:.42;cursor:not-allowed;pointer-events:none}
 
 /* ── SUCCESS ── */
 #success-screen{display:none;text-align:center;padding:56px 24px 80px}
@@ -251,16 +374,18 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
 .summary-row:first-child{padding-top:0}
 .summary-row .key{color:var(--text-muted);font-weight:600;white-space:nowrap}
 .summary-row .val{color:var(--text);font-weight:700;text-align:right}
-.book-another-btn{display:inline-flex;align-items:center;gap:7px;margin-top:18px;background:var(--white);border:1px solid var(--border);color:var(--text);padding:13px 28px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;border-radius:var(--radius);cursor:pointer;box-shadow:var(--shadow-out);transition:all .2s}
+.book-another-btn{display:inline-flex;justify-content:center;align-items:center;gap:8px;margin-top:18px;background:var(--white);border:1px solid var(--border);color:var(--text);padding:12px 20px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;border-radius:var(--radius-sm);cursor:pointer;box-shadow:var(--shadow-out);transition:all .2s}
 .book-another-btn:hover{border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 3px var(--neon-glow)}
+.book-another-btn:focus-visible{outline:none;border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 3px var(--neon-glow)}
+.book-another-btn:disabled{opacity:.5;cursor:not-allowed;pointer-events:none}
 
 /* ── CALENDAR DIVIDER ── */
 .cal-divider{border:none;border-top:1px solid rgba(128,128,128,.12);margin:20px 0}
 
 /* ── CALENDAR DOT LEGEND ── */
-.cal-legend{display:flex;gap:14px;margin-top:14px;flex-wrap:wrap}
-.cal-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--text-muted)}
-.cal-legend-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.cal-legend{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+.cal-legend-item{display:flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;color:var(--text-muted)}
+.cal-legend-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 
 /* ── EDIT DATE CHIP ── */
 
@@ -540,6 +665,10 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
 .bdetail-reschedule-btn{background:var(--surface);border:1.5px solid var(--border);color:var(--text);padding:13px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;border-radius:var(--radius-sm);cursor:pointer;transition:all .18s;letter-spacing:.01em;box-shadow:var(--shadow-out)}
 .bdetail-reschedule-btn:hover{border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 3px var(--neon-glow)}
 
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+
 </style>
 </head>
 <body class="mainpage">
@@ -572,72 +701,14 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
 <div class="container">
 <div id="main-form">
 
-<!-- 01 DATE & TIME (with calendar) -->
-<div class="card">
-  <div class="section-label"><div class="section-num">01</div><div class="section-title">Date & Time</div></div>
-
-  <!-- Calendar -->
-  <div class="cal-nav">
-    <button class="cal-nav-btn" id="cal-prev" onclick="calPrev()">‹</button>
-    <div class="cal-month-label" id="cal-month-label"></div>
-    <button class="cal-nav-btn" id="cal-next" onclick="calNext()">›</button>
-  </div>
-  <div class="cal-weekdays">
-    <div class="cal-wd">Sun</div><div class="cal-wd">Mon</div><div class="cal-wd">Tue</div>
-    <div class="cal-wd">Wed</div><div class="cal-wd">Thu</div><div class="cal-wd">Fri</div><div class="cal-wd">Sat</div>
-  </div>
-  <div class="cal-grid" id="cal-grid"></div>
-
-  <div id="date-alert" class="alert error" style="margin-top:14px"><span id="date-alert-msg"></span></div>
-  <div id="date-zone-info" class="alert info" style="margin-top:10px;display:none"></div>
-
-  <hr class="cal-divider" style="margin:20px 0">
-
-  <!-- Date → Start Time → Duration -->
-  <div id="duration-field">
-    <!-- Start time — appears after date selected -->
-    <div id="slot-field">
-      <label style="margin-bottom:10px">Start Time <span class="req">*</span></label>
-      <div id="zone-info" class="alert info"></div>
-      <div class="slots-grid" id="slots-grid">
-        <p style="color:var(--text-muted);font-size:13px;grid-column:1/-1;padding:10px 0">Select a date on the calendar above to see available start times.</p>
-      </div>
-    </div>
-
-    <!-- Duration — appears after start time selected -->
-    <div class="field" id="duration-row-wrap" style="margin-top:18px;display:none">
-      <label style="margin-bottom:10px">Session Duration <span class="req">*</span></label>
-      <div class="duration-row" id="duration-row"></div>
-    </div>
-
-    <!-- Time preview — appears after duration selected -->
-    <div class="time-preview" id="time-preview">
-      Session: <strong id="preview-range">—</strong>
-      <div class="remaining-bar"><div class="remaining-bar-fill" id="remaining-fill" style="width:0%"></div></div>
-    </div>
-  </div>
-
-  <!-- dot legend — below the slot grid, with breathing room -->
-  <div class="cal-legend" style="margin-top:20px">
-    <div class="cal-legend-item"><span class="cal-legend-dot dot-green"></span>Available</div>
-    <div class="cal-legend-item"><span class="cal-legend-dot dot-yellow"></span>Filling up</div>
-    <div class="cal-legend-item"><span class="cal-legend-dot dot-red"></span>Full</div>
-  </div>
-
-</div>
-
-<!-- 02 YOUR INFO -->
-<div class="card" id="info-section" style="display:none">
-  <div class="section-label"><div class="section-num">02</div><div class="section-title">Your Info</div></div>
+<!-- 01 YOUR DETAILS -->
+<div class="card" id="details-section">
+  <div class="section-label"><div class="section-num">01</div><div class="section-title">Your Details</div></div>
+  <div id="details-alert" class="alert error"><span id="details-alert-msg"></span></div>
   <div class="two-col">
     <div class="field"><label>Your Name <span class="req">*</span></label><input type="text" id="strategist-name" placeholder="Full name"></div>
-    <div class="field"><label>Your Email <span class="req">*</span></label><input type="email" id="strategist-email" placeholder="you@agency.com"></div>
+    <div class="field"><label>Your Email <span class="req">*</span></label><input type="email" id="strategist-email" placeholder="you@agency.com" oninput="onIdentityFieldChanged()"></div>
   </div>
-</div>
-
-<!-- 03 DEALERSHIP -->
-<div class="card" id="dealership-section" style="display:none">
-  <div class="section-label"><div class="section-num">03</div><div class="section-title">Dealership</div></div>
   <div id="dealership-alert" class="alert error"><span id="dealership-alert-msg"></span></div>
   <div class="field">
     <label>Select Dealership <span class="req">*</span></label>
@@ -648,6 +719,73 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
     </div>
     <input type="hidden" id="dealership-select">
   </div>
+  <button type="button" class="submit-btn" id="verify-btn" onclick="verifyAndContinue()" style="margin-top:6px">Verify &amp; Continue</button>
+</div>
+
+<!-- 02 DATE & TIME (with calendar) -->
+<div class="card" id="datetime-section" style="display:none">
+  <div class="section-label"><div class="section-num">02</div><div class="section-title">Date & Time</div></div>
+
+  <!-- Suggested dates — up to 3 cards, ranked to favour dates already holding a
+       same-mall booking so strategists can group shoots into one trip -->
+  <div id="suggest-strip" style="display:none;margin-bottom:18px">
+    <div class="section-hint" style="margin-bottom:8px" id="suggest-title">Suggested dates</div>
+    <div id="suggest-cards" class="suggest-cards-grid"></div>
+  </div>
+
+  <!-- Calendar (left) + Start Time list (right) -->
+  <div class="dt-columns">
+    <div class="dt-cal-col">
+      <div class="cal-nav">
+        <button class="cal-nav-btn" id="cal-prev" onclick="calPrev()">‹</button>
+        <div class="cal-month-label" id="cal-month-label"></div>
+        <button class="cal-nav-btn" id="cal-next" onclick="calNext()">›</button>
+      </div>
+      <div class="cal-weekdays">
+        <div class="cal-wd">Su</div><div class="cal-wd">Mo</div><div class="cal-wd">Tu</div>
+        <div class="cal-wd">We</div><div class="cal-wd">Th</div><div class="cal-wd">Fr</div><div class="cal-wd">Sa</div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div class="cal-legend">
+        <div class="cal-legend-item"><span class="cal-legend-dot dot-green"></span>Available</div>
+        <div class="cal-legend-item"><span class="cal-legend-dot dot-yellow"></span>Filling up</div>
+        <div class="cal-legend-item"><span class="cal-legend-dot dot-red"></span>Full</div>
+      </div>
+    </div>
+
+    <div class="dt-time-col" id="slot-field">
+      <label style="margin-bottom:10px">Start Time <span class="req">*</span></label>
+      <div class="slots-grid" id="slots-grid">
+        <p class="slots-empty-hint">Select a date to see available start times.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="date-alert" class="alert error" style="margin-top:14px"><span id="date-alert-msg"></span></div>
+  <div id="date-zone-info" class="alert info" style="margin-top:10px;display:none"></div>
+
+  <hr class="cal-divider" style="margin:20px 0">
+
+  <!-- Date → Start Time → Duration -->
+  <div id="duration-field">
+    <!-- Duration — appears after start time selected -->
+    <div class="field" id="duration-row-wrap" style="margin-top:0;display:none">
+      <label style="margin-bottom:14px">Session Duration <span class="req">*</span><span class="duration-auto-hint" id="duration-auto-hint" style="display:none"> — defaulted to 30 min, tap to change</span></label>
+      <div class="duration-row" id="duration-row"></div>
+    </div>
+
+    <!-- Time preview — appears after duration selected -->
+    <div class="time-preview" id="time-preview">
+      Session: <strong id="preview-range">—</strong>
+      <div class="remaining-bar"><div class="remaining-bar-fill" id="remaining-fill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 03 ON-SITE CONTACT -->
+<div class="card" id="contact-section" style="display:none">
+  <div class="section-label"><div class="section-num">03</div><div class="section-title">On-Site Contact</div></div>
   <div class="two-col">
     <div class="field"><label>On-Site Contact Name <span class="req">*</span></label><input type="text" id="onsite-contact" placeholder="Who will meet us?"></div>
     <div class="field">
@@ -807,7 +945,13 @@ const ZONES = {
   maple:       { name:'Maple Auto Mall',        maxPerDay:3, stores:['Mercedes-Benz Maple','Mercedes-Benz Maple (Van Centre)','Maple Honda','Maple Toyota','Lexus of Vaughan','Maple Nissan','Maple Hyundai','Genesis Maple','Maple Acura','Maple VW','Maple Mazda'] },
   stouffville: { name:'Stouffville Auto Mall',  maxPerDay:4, stores:['Nissan Stouffville','VW Stouffville','Hyundai Stouffville','Stouffville Chrysler'] },
   mississauga: { name:'Mississauga Auto Mall',  maxPerDay:2, stores:['Erin Mills Acura','VW Mississauga'] },
-  fullday:     { name:'Full-Day Location',      maxPerDay:1, stores:['Richmond Hill Nissan','Mercedes-Benz Newmarket','Jaguar Land Rover Brampton','Mercedes-Benz Mississauga','Mercedes-Benz Toronto Queensway','Lexus of Oakville'] },
+  // `exclusive: true` means a booking in this zone claims the ENTIRE day
+  // across the whole network — no other zone (mall or exclusive) can book
+  // that date. Oakville's two stores are next door to each other, so they're
+  // exclusive to everyone else but still allowed to share a day between
+  // themselves (up to maxPerDay), same as a normal mall would.
+  oakville:    { name:'Oakville Auto Mall',     maxPerDay:2, exclusive:true, stores:['Lexus of Oakville','Acura Oakville'] },
+  fullday:     { name:'Full-Day Location',      maxPerDay:1, exclusive:true, stores:['Richmond Hill Nissan','Mercedes-Benz Newmarket','Jaguar Land Rover Brampton','Mercedes-Benz Mississauga','Mercedes-Benz Toronto Queensway'] },
 };
 const STORE_ZONE = {};
 const ALL_STORES = [];
@@ -822,8 +966,8 @@ const PACKAGES = [
   { id:'service',    label:'Service Video',          icon:'🔧' },
   { id:'headshots',  label:'Headshots',              icon:'📸' },
   { id:'gmb',        label:'Photo Session',          icon:'📷' },
-  { id:'salesrep',   label:'Sales Rep. Intro Video', icon:'🎤' },
-  { id:'event',      label:'Event Coverage',         icon:'✨' },
+  { id:'salesrep',   label:'Intro Video',            icon:'🎤' },
+  { id:'event',      label:'Event Coverage',         icon:'🎪' },
   { id:'social',     label:'Social Media Content',   icon:'📱' },
 ];
 
@@ -988,12 +1132,29 @@ function getEaster(y){
 let selectedDate     = null;
 let selectedDuration = null;
 let selectedSlot     = null;
+// True from the moment a slot auto-picks the 30-min default until the user
+// actually touches a duration tick/slider themselves — drives the inline
+// "defaulted, tap to change" hint so the auto-pick is never silent.
+let durationAutoPicked = false;
 let existingBookings = []; // {date,startMin,endMin,zone,store}
 let googleBusyRanges = []; // busy windows from Google Calendar for selected date
 let calBusyByDate = {}; // {dateStr: [{start,end},...]} for dot coloring, cross-device
 let calZoneByDate = {}; // {dateStr: [{zone,bookedCount}]} from get-day-info
+let calMonthsLoaded = new Set(); // "YYYY-MM" months already fetched via fetchCalMonthBusy
+let calLoadedFrom = null, calLoadedTo = null; // dateStr bounds actually covered by fetched data
 let calYear, calMonth;
 let holidayCache = {};
+
+// Stage-1 = calendar only; Stage-2 = everything after a start time is picked.
+const STAGE1_SECTIONS   = ['datetime-section'];
+const STAGE2_SECTIONS   = ['contact-section','content-section','scripts-section','notes-section'];
+const HIDEABLE_SECTIONS = [...STAGE1_SECTIONS, ...STAGE2_SECTIONS, 'submit-area', 'stats-dashboard'];
+
+// Email-verification gate — see verifyAndContinue(). Not a security boundary
+// (that's the server-side isEmailAuthorized check in create-booking); this is
+// purely what unlocks stage 1 in the UI.
+let verifyState   = 'idle'; // 'idle' | 'checking' | 'verified' | 'denied'
+let verifiedEmail = '';
 
 /* ── INIT ── */
 document.addEventListener('DOMContentLoaded',()=>{
@@ -1018,6 +1179,75 @@ document.addEventListener('DOMContentLoaded',()=>{
 /* ═══════════════════════════════════════════════════════
    CALENDAR
 ═══════════════════════════════════════════════════════ */
+
+/* Which zone the user's chosen dealership belongs to — null before block 01
+   is complete. This is what the calendar locks dates against once a store is
+   picked, inverting the old date-first flow. */
+function getUserZone(){
+  const store = document.getElementById('dealership-select')?.value;
+  return STORE_ZONE[store] || null;
+}
+
+const BLOCK_LABELS = {
+  weekend: 'Weekends are not bookable',
+  holiday: 'Studio holiday',
+  toosoon: 'Inside the 72-hour notice window',
+  weekfull: 'This week is already at the 6-shoot cap',
+  dayfull: 'This day is already fully booked',
+  nofreetime: 'No time left in the working day',
+  'fullday-taken': 'A full-day shoot has this date',
+  zonefull: 'Every mall booked this day is full',
+  'needs-empty-day': 'Full-day locations need a completely open day',
+  'other-mall': "This day already has a different mall's bookings",
+  'mall-full': 'This mall is full for the day',
+};
+
+/* Single source of truth for "can this date be booked, for this zone".
+   Both renderCalendar() and the suggestion engine call this — nothing else
+   is allowed to re-derive eligibility. Returns null when bookable, else a
+   short reason key from BLOCK_LABELS. */
+function dateBlockReason(dstr, userZone){
+  const dt  = new Date(dstr+'T00:00:00');
+  const dow = dt.getDay(); // 0=Sun,6=Sat
+  if(dow===0||dow===6) return 'weekend';
+  const yr = dt.getFullYear();
+  const holidays = holidayCache[yr] || (holidayCache[yr]=getHolidays(yr));
+  if(holidays.has(dstr)) return 'holiday';
+  const minDate = new Date(Date.now() + 72*60*60*1000);
+  if(dt < minDate) return 'toosoon';
+  if(isWeekFull(dstr)) return 'weekfull';
+  if(isDayFull(dstr)) return 'dayfull';
+
+  const dayStart = dow===3 ? DAY_START_WED : DAY_START;
+  if(getGcalUsedMins(dstr) >= (DAY_END - dayStart - 30)) return 'nofreetime';
+
+  const counts    = getZoneCountsForDate(dstr);
+  const zonesHere = Object.keys(counts).filter(z => counts[z] > 0);
+  // An exclusive zone (fullday, oakville) already booked that day claims the
+  // WHOLE day across the network — every other zone is locked out. It only
+  // stays open to more bookings within that same exclusive zone (so
+  // Oakville's two stores can share a day, up to its own maxPerDay).
+  const exclusiveZoneHere = zonesHere.find(z => ZONES[z]?.exclusive);
+
+  if(exclusiveZoneHere && exclusiveZoneHere !== userZone) return 'fullday-taken';
+
+  if(!userZone){
+    // Pre-verification / no dealership chosen yet — same rule as before this
+    // feature existed (renderCalendar runs before block 01 is filled in).
+    return zonesHere.some(z => ZONES[z] && counts[z] >= ZONES[z].maxPerDay) ? 'zonefull' : null;
+  }
+  if(ZONES[userZone]?.exclusive){
+    // Needs a completely empty day UNLESS this same exclusive zone already
+    // owns the day (then just check its own capacity, like a normal mall).
+    if(!exclusiveZoneHere && (zonesHere.length || getGcalUsedMins(dstr) > 0)) return 'needs-empty-day';
+    if((counts[userZone]||0) >= ZONES[userZone].maxPerDay) return 'mall-full';
+    return null;
+  }
+  if(zonesHere.some(z => z !== userZone)) return 'other-mall';
+  if((counts[userZone]||0) >= ZONES[userZone].maxPerDay) return 'mall-full';
+  return null;
+}
+
 function renderCalendar(){
   const now   = new Date();
   const label = new Date(calYear,calMonth,1).toLocaleDateString('en-CA',{month:'long',year:'numeric'});
@@ -1039,6 +1269,7 @@ function renderCalendar(){
   const holidays = holidayCache[calYear] || getHolidays(calYear);
   const todayStr = dateStr(now);
   const minDate  = new Date(now.getTime() + 72*60*60*1000);
+  const userZone = getUserZone();
 
   for(let d=1;d<=daysInMonth;d++){
     const dt   = new Date(calYear,calMonth,d);
@@ -1047,46 +1278,57 @@ function renderCalendar(){
     const isWeekend  = dow===0||dow===6;
     const isHoliday  = holidays.has(dstr);
     const isTooSoon  = dt < minDate;
-    const weekFull   = isWeekFull(dstr);
-    const dayFull    = isDayFull(dstr);
 
-    // Cross-device availability checks
-    const gcalZones    = calZoneByDate[dstr] || [];
-    const gcalZoneFull = gcalZones.some(z => { const zDef=ZONES[z.zone]; return zDef&&z.bookedCount>=zDef.maxPerDay; });
-    // Fallback if zone cache not yet loaded: use raw busy minutes
-    const gcalUsedMins = getGcalUsedMins(dstr);
-    const _dayStart    = dt.getDay()===3 ? DAY_START_WED : DAY_START;
-    const gcalDayFull  = gcalUsedMins >= (DAY_END - _dayStart - 30);
-    const gcalBlocked  = gcalZoneFull || gcalDayFull;
+    const reason   = dateBlockReason(dstr, userZone);
+    const disabled = !!reason;
 
     const cell = document.createElement('div');
     cell.className = 'cal-day';
+    cell.dataset.date = dstr;
     if(dstr===todayStr) cell.classList.add('cal-today');
     if(dstr===selectedDate) cell.classList.add('cal-selected');
 
-    const disabled = isWeekend||isHoliday||isTooSoon||weekFull||dayFull||gcalBlocked;
+    // The calendar is the primary control on this card — every day needs to
+    // be a real keyboard target, not just a clickable div, or a keyboard
+    // user can't book at all.
+    const dateLabel = dt.toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric'});
+    cell.setAttribute('role','button');
+
     if(disabled){
       cell.classList.add('cal-disabled');
+      cell.setAttribute('aria-disabled','true');
+      const reasonLabel = BLOCK_LABELS[reason];
+      if(reasonLabel) cell.title = reasonLabel;
+      cell.setAttribute('aria-label', reasonLabel ? `${dateLabel}, unavailable — ${reasonLabel}` : `${dateLabel}, unavailable`);
     } else {
+      cell.tabIndex = 0;
+      cell.setAttribute('aria-pressed', dstr===selectedDate ? 'true' : 'false');
       cell.onclick=()=>selectCalDay(dstr,cell);
+      cell.onkeydown=(e)=>{
+        if(e.key==='Enter'||e.key===' '){ e.preventDefault(); selectCalDay(dstr,cell); }
+      };
     }
 
     // availability dot — uses GCal zone + busy data for cross-device accuracy
     let dotClass='';
     if(!isWeekend&&!isHoliday&&!isTooSoon){
+      const gcalUsedMins = getGcalUsedMins(dstr);
       const sessionUsedMins = getUsedMinutesForDate(dstr);
       const usedMins = Math.max(gcalUsedMins, sessionUsedMins);
       const gcalWeekCount = getGcalWeekCount(dstr);
       const sessionWeekCount = getWeekBookingCount(dstr);
       const weekCount = Math.max(gcalWeekCount, sessionWeekCount);
-      const combinedDayFull = dayFull || gcalBlocked;
-      const combinedWeekFull = weekCount >= WEEKLY_CAP;
-      if(combinedDayFull||combinedWeekFull) dotClass='dot-red';
+      if(reason) dotClass='dot-red';
       else if(usedMins>180||weekCount>=4) dotClass='dot-yellow';
       else dotClass='dot-green';
     }
 
     cell.innerHTML = `<span>${d}</span>${dotClass?`<span class="avail-dot ${dotClass}"></span>`:''}`;
+    if(!disabled){
+      const availLabel = dotClass==='dot-yellow' ? 'filling up' : 'available';
+      cell.dataset.availLabel = availLabel;
+      cell.setAttribute('aria-label', dstr===selectedDate ? `${dateLabel}, selected` : `${dateLabel}, ${availLabel}`);
+    }
     grid.appendChild(cell);
   }
 }
@@ -1123,23 +1365,31 @@ async function fetchDayZoneInfo(dstr){
     if(!res.ok) return;
     const {summary}=await res.json();
     if(!summary||!summary.length) return;
-    // Build message for each zone
-    const parts=summary.map(({zone,bookedCount})=>{
+    // Other malls are unreachable once a dealership is chosen (see
+    // dateBlockReason's 'other-mall' rule), so only surface the user's own zone.
+    const userZone=getUserZone();
+    const relevant=userZone?summary.filter(s=>s.zone===userZone):summary;
+    const parts=relevant.map(({zone,bookedCount})=>{
       const z=ZONES[zone];
       if(!z) return null;
       const rem=Math.max(0,z.maxPerDay-bookedCount);
       return `${z.name}: ${bookedCount} booked, ${rem} slot${rem!==1?'s':''} remaining`;
     }).filter(Boolean);
     if(!parts.length) return;
-    el.textContent=`⚠️ ${parts.join(' · ')} — only matching stores available`;
+    el.textContent=`ℹ️ ${parts.join(' · ')}`;
     el.style.display='block';
   }catch(e){}
 }
-function selectCalDay(dstr,cell){// Fetch Google Calendar busy times for selected date
-fetchGoogleBusy(dstr);
-fetchDayZoneInfo(dstr);
-  document.querySelectorAll('.cal-day.cal-selected').forEach(c=>c.classList.remove('cal-selected'));
+async function selectCalDay(dstr,cell){// Fetch Google Calendar busy times for selected date
+  document.querySelectorAll('.cal-day.cal-selected').forEach(c=>{
+    c.classList.remove('cal-selected');
+    if(c.hasAttribute('aria-pressed')) c.setAttribute('aria-pressed','false');
+    if(c.dataset.availLabel) c.setAttribute('aria-label', c.getAttribute('aria-label').replace(/, selected$/, `, ${c.dataset.availLabel}`));
+  });
   cell.classList.add('cal-selected');
+  if(cell.hasAttribute('aria-pressed')) cell.setAttribute('aria-pressed','true');
+  cell.setAttribute('aria-label', cell.getAttribute('aria-label').replace(/, (available|filling up)$/,', selected'));
+  syncSuggestCardSelection(dstr);
   selectedDate     = dstr;
   selectedDuration = null;
   selectedSlot     = null;
@@ -1148,7 +1398,10 @@ fetchDayZoneInfo(dstr);
 
   document.getElementById('time-preview').style.display='none';
   const _drw=document.getElementById('duration-row-wrap'); if(_drw) _drw.style.display='none';
-  renderSlots();
+  renderSlots(); // instant feedback before fresh GCal data lands
+  fetchDayZoneInfo(dstr);
+
+  await fetchGoogleBusy(dstr); // re-renders slots with fresh busy data; also awaited by selectSuggestion()
 
   setTimeout(()=>document.getElementById('slot-field').scrollIntoView({behavior:'smooth',block:'nearest'}),50);
 }
@@ -1189,6 +1442,20 @@ function isDayFull(dstr){
 }
 function getUsedMinutesForDate(date){ return existingBookings.filter(b=>b.date===date).reduce((s,b)=>s+(b.endMin-b.startMin),0); }
 
+/* Merged zone→bookedCount for a date, combining cross-device calZoneByDate
+   with session-local existingBookings (the same merge that used to be done
+   ad hoc in three places — renderSlots, selectDealer, and the old dot logic). */
+function getZoneCountsForDate(dstr){
+  const counts = {};
+  (calZoneByDate[dstr]||[]).forEach(z => { if(z.zone) counts[z.zone] = z.bookedCount||0; });
+  const dayBookings = existingBookings.filter(b => b.date===dstr);
+  new Set(dayBookings.map(b=>b.zone)).forEach(zone => {
+    const sessionCount = dayBookings.filter(b=>b.zone===zone).length;
+    counts[zone] = Math.max(counts[zone]||0, sessionCount);
+  });
+  return counts;
+}
+
 /* ── GCAL BUSY HELPERS (cross-device dot coloring) ── */
 function busyDateET(isoStr){
   // Convert UTC ISO string to ET wall-clock date string YYYY-MM-DD
@@ -1203,6 +1470,13 @@ function getBusyForDate(dstr){
 }
 function getGcalUsedMins(dstr){
   return getBusyForDate(dstr).reduce((s,r)=>s+busyDurMins(r),0);
+}
+/* True once cross-device data has actually been fetched for this date.
+   Outside the loaded range calBusyByDate/calZoneByDate silently read as
+   empty, which looks identical to "confirmed free" — the suggestion engine
+   must never treat an unloaded date as available. */
+function isDateLoaded(dstr){
+  return !!(calLoadedFrom && calLoadedTo && dstr>=calLoadedFrom && dstr<=calLoadedTo);
 }
 function getGcalWeekCount(dstr){
   const ws=getWeekStart(dstr);
@@ -1219,12 +1493,24 @@ function getGcalWeekCount(dstr){
   return count;
 }
 async function fetchCalMonthBusy(year,month){
+  // Skip a re-fetch if this month is already loaded (calPrev/calNext used to
+  // hit the network on every navigation, including revisits). Suggestions
+  // still need refreshing off the cached data even on a skip.
+  const monthKey = `${year}-${String(month+1).padStart(2,'0')}`;
+  if(calMonthsLoaded.has(monthKey)){ renderSuggestions(); return; }
+  calMonthsLoaded.add(monthKey);
+
   // Fetch busy ranges for the visible month ±7 days
   const first=new Date(year,month,1);
   const last=new Date(year,month+1,0);
   const fromD=new Date(first); fromD.setDate(fromD.getDate()-7);
   const toD=new Date(last); toD.setDate(toD.getDate()+7);
   const from=dateStr(fromD), to=dateStr(toD);
+  // Track the union of fetched ranges — relies on calPrev/calNext only ever
+  // moving one month at a time, so consecutive ±7-day-padded windows always
+  // overlap and the loaded span stays contiguous (see isDateLoaded).
+  if(!calLoadedFrom || from<calLoadedFrom) calLoadedFrom=from;
+  if(!calLoadedTo   || to>calLoadedTo)     calLoadedTo=to;
   try{
     const res=await fetch(`/.netlify/functions/get-busy?from=${from}&to=${to}`);
     if(!res.ok) return;
@@ -1261,105 +1547,285 @@ async function fetchCalMonthBusy(year,month){
       }
     }
   }catch(e){}
+  renderSuggestions();
+}
+
+/* Convert an ISO datetime to ET minutes-since-midnight. Was inlined
+   identically in renderDurationPicker and renderSlots; hoisted so the
+   suggestion engine can reuse it too. */
+function isoToMinsET(iso){
+  const d=new Date(iso);
+  const p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(d);
+  return parseInt(p.find(x=>x.type==='hour').value)*60+parseInt(p.find(x=>x.type==='minute').value);
 }
 
 /* ── DURATION PICKER ── */
+/* Duration is now a discrete slider (5 fixed stops matching DURATIONS)
+   instead of a button row. Gate-keeping requirement: it must be physically
+   impossible to drag/click/key past the last duration that actually fits —
+   not just visually disabled. That's enforced by clamping every commit path
+   (drag, tick click, keyboard) to maxIdx computed here. */
+function buildDurSliderHTML(){
+  const n=DURATIONS.length;
+  return `
+    <div class="dur-slider" id="dur-slider" tabindex="0" role="slider"
+         aria-label="Session duration" aria-valuemin="0" aria-valuemax="${n-1}" aria-valuenow="-1" aria-valuetext="none selected">
+      <div class="dur-slider-track" id="dur-slider-track">
+        <div class="dur-slider-fill" id="dur-slider-fill" style="width:0%"></div>
+        <div class="dur-slider-disabled" id="dur-slider-disabled"></div>
+        <div class="dur-slider-dots" id="dur-slider-dots">
+          ${DURATIONS.map((d,i)=>`<span class="dur-slider-dot" data-idx="${i}" style="left:${i/(n-1)*100}%"></span>`).join('')}
+        </div>
+      </div>
+      <div class="dur-slider-thumb" id="dur-slider-thumb"></div>
+    </div>
+    <div class="dur-slider-labels">
+      ${DURATIONS.map((d,i)=>{
+        // Positioned to match the dot at the same index exactly (same
+        // left-margin coordinate space as .dur-slider) — edge ticks are
+        // clamped so their text doesn't overhang outside the control.
+        const left=i/(n-1)*100;
+        const tx=i===0?'0':i===n-1?'-100%':'-50%';
+        return `<button type="button" class="dur-tick" data-idx="${i}" style="left:${left}%;transform:translateX(${tx})">
+        <span class="dur-tick-label">${d.label}</span><span class="dur-tick-sub">${d.sub}</span>
+      </button>`;
+      }).join('')}
+    </div>`;
+}
+function wireDurSlider(host){
+  const slider=host.querySelector('#dur-slider');
+  const track=host.querySelector('#dur-slider-track');
+  if(!slider||!track) return;
+  const n=DURATIONS.length;
+  const maxIdx=()=>parseInt(slider.dataset.maxIdx||'-1',10);
+  const idxFromClientX=(clientX)=>{
+    const rect=track.getBoundingClientRect();
+    const ratio=Math.min(1,Math.max(0,(clientX-rect.left)/rect.width));
+    return Math.round(ratio*(n-1));
+  };
+  const commitFromClientX=(clientX)=>{
+    const gated=Math.min(idxFromClientX(clientX), maxIdx()); // ← the actual gate
+    if(gated<0) return;
+    durationAutoPicked=false; renderDurationAutoHint();
+    selectDuration(DURATIONS[gated].mins);
+  };
+  let dragging=false;
+  slider.addEventListener('pointerdown', e=>{
+    if(maxIdx()<0) return;
+    dragging=true;
+    slider.classList.add('dragging');
+    slider.setPointerCapture?.(e.pointerId);
+    commitFromClientX(e.clientX);
+  });
+  slider.addEventListener('pointermove', e=>{ if(dragging) commitFromClientX(e.clientX); });
+  const endDrag=e=>{
+    if(!dragging) return;
+    dragging=false;
+    slider.classList.remove('dragging');
+    slider.releasePointerCapture?.(e.pointerId);
+  };
+  slider.addEventListener('pointerup', endDrag);
+  slider.addEventListener('pointercancel', endDrag);
+  slider.addEventListener('keydown', e=>{
+    const cur=parseInt(slider.getAttribute('aria-valuenow')||'-1',10);
+    const map={ArrowRight:cur+1,ArrowUp:cur+1,ArrowLeft:cur-1,ArrowDown:cur-1,Home:0,End:maxIdx()};
+    if(!(e.key in map)) return;
+    e.preventDefault();
+    const gated=Math.min(Math.max(map[e.key],0), maxIdx());
+    if(gated<0) return;
+    durationAutoPicked=false; renderDurationAutoHint();
+    selectDuration(DURATIONS[gated].mins);
+  });
+  host.querySelectorAll('.dur-tick').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const idx=parseInt(btn.dataset.idx,10);
+      if(idx>maxIdx()) return; // gated — a disabled tick is inert, not just dim
+      durationAutoPicked=false; renderDurationAutoHint();
+      selectDuration(DURATIONS[idx].mins);
+    });
+  });
+}
+function durSliderSetMaxIndex(host,maxIdx){
+  const slider=host.querySelector('#dur-slider');
+  if(!slider) return;
+  const n=DURATIONS.length;
+  slider.dataset.maxIdx=String(maxIdx);
+  slider.classList.toggle('disabled',maxIdx<0);
+  const disabledEl=host.querySelector('#dur-slider-disabled');
+  if(disabledEl){
+    const pct=maxIdx<0?0:(maxIdx/(n-1))*100;
+    disabledEl.style.left=pct+'%';
+    disabledEl.style.width=(100-pct)+'%';
+    disabledEl.style.display=maxIdx>=n-1?'none':'block';
+  }
+  host.querySelectorAll('.dur-tick').forEach((btn,i)=>btn.classList.toggle('disabled',i>maxIdx));
+  host.querySelectorAll('.dur-slider-dot').forEach((dot,i)=>dot.classList.toggle('blocked',i>maxIdx));
+}
+function durSliderRenderIndex(host,idx){
+  const slider=host.querySelector('#dur-slider');
+  const fill=host.querySelector('#dur-slider-fill');
+  const thumb=host.querySelector('#dur-slider-thumb');
+  if(!slider) return;
+  const n=DURATIONS.length;
+  const pct=idx<0?0:(idx/(n-1))*100;
+  if(fill) fill.style.width=pct+'%';
+  if(thumb){ thumb.style.left=pct+'%'; thumb.style.display=idx<0?'none':'block'; }
+  slider.setAttribute('aria-valuenow',String(idx));
+  slider.setAttribute('aria-valuetext',idx<0?'none selected':DURATIONS[idx].label);
+  host.querySelectorAll('.dur-tick').forEach((btn,i)=>btn.classList.toggle('selected',i===idx));
+  host.querySelectorAll('.dur-slider-dot').forEach((dot,i)=>dot.classList.toggle('reached',idx>=0&&i<=idx));
+}
+
 function renderDurationPicker(){
-  const row=document.getElementById('duration-row');
-  if(!row) return;
-  row.innerHTML='';
+  const host=document.getElementById('duration-row');
+  if(!host) return;
   // Duration only meaningful once a slot is picked
-  if(!selectedDate || selectedSlot===null) return;
+  if(!selectedDate || selectedSlot===null){
+    host.innerHTML='';
+    delete host.dataset.built;
+    return;
+  }
   const dayBookings=existingBookings.filter(b=>b.date===selectedDate);
   const isFullDayBooked=dayBookings.some(b=>b.zone==='fullday');
-  const toET=iso=>{const d=new Date(iso);const p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(d);return parseInt(p.find(x=>x.type==='hour').value)*60+parseInt(p.find(x=>x.type==='minute').value);};
-  DURATIONS.forEach(dur=>{
-    const btn=document.createElement('button');
-    btn.type='button'; btn.className='dur-btn';
-    btn.innerHTML=`${dur.label}<span class="dur-sub">${dur.sub}</span>`;
+  const fitsArr=DURATIONS.map(dur=>{
     const endMin=selectedSlot+dur.mins;
     const fitsInDay=endMin<=DAY_END;
     const overlapsBooking=dayBookings.some(b=>selectedSlot<b.endMin&&endMin>b.startMin);
-    const overlapsGcal=googleBusyRanges.some(b=>selectedSlot<toET(b.end)&&endMin>toET(b.start));
-    const fits=fitsInDay&&!overlapsBooking&&!overlapsGcal&&!isFullDayBooked;
-    if(!fits) btn.classList.add('disabled');
-    if(fits) btn.onclick=()=>selectDuration(dur.mins,btn);
-    if(selectedDuration===dur.mins && fits) btn.classList.add('selected');
-    row.appendChild(btn);
+    const overlapsGcal=googleBusyRanges.some(b=>selectedSlot<isoToMinsET(b.end)&&endMin>isoToMinsET(b.start));
+    return fitsInDay&&!overlapsBooking&&!overlapsGcal&&!isFullDayBooked;
   });
+  // Fits is monotonic non-increasing in duration: extending a session (same
+  // start, later end) can only add overlaps or push past DAY_END, never
+  // remove one — so the leading run of `true` is exactly the allowed range,
+  // and that's also the definition of "the slider doesn't go past it".
+  let maxIdx=-1;
+  for(let i=0;i<fitsArr.length;i++){ if(!fitsArr[i]) break; maxIdx=i; }
+
+  if(host.dataset.built!=='1'){
+    host.innerHTML=buildDurSliderHTML();
+    host.dataset.built='1';
+    wireDurSlider(host);
+  }
+  durSliderSetMaxIndex(host,maxIdx);
+
+  let selIdx=DURATIONS.findIndex(d=>d.mins===selectedDuration);
+  if(selIdx<0||selIdx>maxIdx) selIdx=-1; // e.g. slot changed and old pick no longer fits
+  durSliderRenderIndex(host,selIdx);
 }
 
-/* ── SLOT GRID ── */
+/* ── SLOT LIST ── */
 function renderSlots(){
   const grid=document.getElementById('slots-grid');
   grid.innerHTML='';
   if(!selectedDate){
-    grid.innerHTML='<p style="color:var(--text-muted);font-size:13px;grid-column:1/-1;padding:10px 0">Select a date on the calendar above to see available start times.</p>';
+    grid.innerHTML='<p class="slots-empty-hint">Select a date to see available start times.</p>';
     return;
   }
   const dayBookings=existingBookings.filter(b=>b.date===selectedDate);
-  // Merge session-local + cross-device (calZoneByDate) to find locked zone
-  const _gcalZonesForLock=calZoneByDate[selectedDate]||[];
-  const _allLockedZones=[...new Set([...dayBookings.map(b=>b.zone), ..._gcalZonesForLock.map(z=>z.zone)])];
-  const lockedZone=_allLockedZones[0]||null;
   const dow=new Date(selectedDate+'T12:00:00').getDay();
   const dayStart=dow===3?DAY_START_WED:DAY_START;
   const MIN_DUR=30; // smallest duration option
   const starts=[];
   for(let t=dayStart;t+MIN_DUR<=DAY_END;t+=30) starts.push(t);
   if(!starts.length){
-    grid.innerHTML='<p style="color:var(--text-muted);font-size:13px;grid-column:1/-1">No available start times today.</p>';
+    grid.innerHTML='<p class="slots-empty-hint">No available start times today.</p>';
     return;
   }
-  const toET=iso=>{const d=new Date(iso);const p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(d);return parseInt(p.find(x=>x.type==='hour').value)*60+parseInt(p.find(x=>x.type==='minute').value);};
-  starts.forEach(startMin=>{
-    const endMin=startMin+MIN_DUR;
-    const btn=document.createElement('button');
-    btn.type='button'; btn.className='slot-btn';
-    const overlaps=dayBookings.some(b=>startMin<b.endMin&&endMin>b.startMin);
-    const gcalBusy=googleBusyRanges.some(b=>startMin<toET(b.end)&&endMin>toET(b.start));
-    if(overlaps||gcalBusy){
-      btn.classList.add('disabled');
-      btn.innerHTML=`${minsToTime12(startMin)}<span class="slot-status">booked</span>`;
-    } else {
-      btn.innerHTML=`${minsToTime12(startMin)}<span class="slot-status">open</span>`;
-      btn.onclick=()=>selectSlot(startMin,btn);
-    }
-    if(selectedSlot===startMin) btn.classList.add('selected');
-    grid.appendChild(btn);
-  });
-  if(lockedZone){
-    const z=ZONES[lockedZone];
-    const _gcalForZone=_gcalZonesForLock.find(g=>g.zone===lockedZone);
-    const _bookedCount=Math.max(dayBookings.filter(b=>b.zone===lockedZone).length, _gcalForZone?.bookedCount||0);
-    const rem=Math.max(0, z.maxPerDay-_bookedCount);
-    showAlert('zone-info',`ℹ This day has ${z.name} bookings · Only ${z.name} stores available · ${rem} slot(s) remaining`,'info');
-    filterDealerToZone(lockedZone);
-  } else {
-    hideAlert('zone-info');
-    filterDealerToZone(null);
+  // Two columns, paired by hour — on-the-hour starts on the left (bare
+  // number, e.g. "11"), half-past on the right (e.g. "11:30") — instead of
+  // one long scrolling list. Always equal-length since DAY_START/DAY_END
+  // land on exact hours, so every hour has both a :00 and a :30 start.
+  const hourStarts = starts.filter(t=>t%60===0);
+  const halfStarts = starts.filter(t=>t%60===30);
+  const rows = Math.max(hourStarts.length, halfStarts.length);
+  for(let i=0;i<rows;i++){
+    [hourStarts[i], halfStarts[i]].forEach(startMin=>{
+      if(startMin===undefined){ grid.appendChild(document.createElement('div')); return; }
+      const endMin=startMin+MIN_DUR;
+      const btn=document.createElement('button');
+      btn.type='button'; btn.className='slot-btn';
+      btn.dataset.start=startMin;
+      const overlaps=dayBookings.some(b=>startMin<b.endMin&&endMin>b.startMin);
+      const gcalBusy=googleBusyRanges.some(b=>startMin<isoToMinsET(b.end)&&endMin>isoToMinsET(b.start));
+      const full=minsToTime12(startMin);
+      btn.innerHTML=`<span class="slot-time">${slotDisplayLabel(startMin)}</span>`;
+      if(overlaps||gcalBusy){
+        btn.classList.add('disabled');
+        btn.disabled=true;
+        btn.setAttribute('aria-label',`${full}, booked`);
+      } else {
+        btn.setAttribute('aria-label',full);
+        btn.onclick=()=>selectSlot(startMin,btn);
+      }
+      if(selectedSlot===startMin) btn.classList.add('selected');
+      grid.appendChild(btn);
+    });
   }
+  // Grouping info is shown once, in #date-zone-info (populated by
+  // fetchDayZoneInfo) below the calendar/time columns — no second alert here.
+}
+
+/* Non-interactive preview of another date's slots — used when hovering a
+   suggestion card whose date isn't the one currently selected. Never
+   touches selectedDate/selectedSlot; mouseleave restores via renderSlots(). */
+function renderSlotsPreview(dstr,highlightStartMin){
+  const grid=document.getElementById('slots-grid');
+  if(!grid) return;
+  const dayBookings=existingBookings.filter(b=>b.date===dstr);
+  const dow=new Date(dstr+'T12:00:00').getDay();
+  const dayStart=dow===3?DAY_START_WED:DAY_START;
+  const busy=getBusyForDate(dstr).map(r=>({s:isoToMinsET(r.start),e:isoToMinsET(r.end)}));
+  const starts=[];
+  for(let t=dayStart;t+30<=DAY_END;t+=30) starts.push(t);
+  const hourStarts = starts.filter(t=>t%60===0);
+  const halfStarts  = starts.filter(t=>t%60===30);
+  const rows = Math.max(hourStarts.length, halfStarts.length);
+  const cells=[];
+  for(let i=0;i<rows;i++){
+    [hourStarts[i], halfStarts[i]].forEach(startMin=>{
+      if(startMin===undefined){ cells.push('<div></div>'); return; }
+      const endMin=startMin+30;
+      const overlaps=dayBookings.some(b=>startMin<b.endMin&&endMin>b.startMin) || busy.some(b=>startMin<b.e&&endMin>b.s);
+      const isHi=startMin===highlightStartMin;
+      const full=minsToTime12(startMin);
+      cells.push(`<button type="button" class="slot-btn preview${overlaps?' disabled':''}${isHi?' suggest-preview':''}" disabled data-start="${startMin}" aria-label="${full}${overlaps?', booked':''}">
+        <span class="slot-time">${slotDisplayLabel(startMin)}</span>
+      </button>`);
+    });
+  }
+  grid.innerHTML = cells.join('') || '<p class="slots-empty-hint">No available start times.</p>';
 }
 
 function selectSlot(startMin,btn){
   document.querySelectorAll('.slot-btn').forEach(b=>b.classList.remove('selected'));
   btn.classList.add('selected');
   selectedSlot=startMin;
-  selectedDuration=null; // changing slot resets duration
   document.getElementById('time-preview').style.display='none';
   // Show duration picker now
   const drw=document.getElementById('duration-row-wrap');
   if(drw) drw.style.display='block';
   renderDurationPicker();
-  // Reveal the rest of the form so the user can keep filling
+  // Default to the shortest option so the slider reads as an actual control
+  // with a thumb on it, not a bare disabled-looking track. Always fits —
+  // every generated start time already reserves at least MIN_DUR(30) before
+  // the next boundary. selectDuration() covers preview/budget/stats/autosave.
+  // Flagged as auto-picked (not a silent default) until the user actually
+  // touches a tick/slider — see durationAutoPicked.
+  selectDuration(30);
+  durationAutoPicked=true;
+  renderDurationAutoHint();
+  // Reveal stage-2 sections (contact, packages, scripts, notes) now that a
+  // start time is picked.
   revealSections();
-  updateStats();
-  scheduleAutosave();
 }
 
-function selectDuration(mins,btn){
-  document.querySelectorAll('.dur-btn').forEach(b=>b.classList.remove('selected'));
-  btn.classList.add('selected');
+function renderDurationAutoHint(){
+  const hint=document.getElementById('duration-auto-hint');
+  if(hint) hint.style.display=durationAutoPicked?'inline':'none';
+}
+function selectDuration(mins){
+  const host=document.getElementById('duration-row');
+  if(host) durSliderRenderIndex(host, DURATIONS.findIndex(d=>d.mins===mins));
   selectedDuration=mins;
   if(selectedSlot!==null){
     const endMin=selectedSlot+mins;
@@ -1383,6 +1849,156 @@ function minsToTime12(mins){
   let h=Math.floor(mins/60),m=mins%60;
   const ap=h>=12?'PM':'AM'; h=h%12||12;
   return `${h}:${String(m).padStart(2,'0')} ${ap}`;
+}
+/* Compact slot-button label — full h:mm plus lowercase am/pm, no space,
+   e.g. "11:00am" / "12:30pm". Minutes always two digits. */
+function slotDisplayLabel(mins){
+  let h=Math.floor(mins/60),m=mins%60;
+  const ap=h>=12?'pm':'am'; h=h%12||12;
+  return `${h}:${String(m).padStart(2,'0')}${ap}`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SAME-MALL DATE SUGGESTIONS
+   Ranks upcoming dates so strategists can group a new booking onto a day
+   that already has a shoot at the same auto mall — one trip, multiple
+   stores. Every eligibility rule is inherited from dateBlockReason(); this
+   section only ranks and presents dates that function already says are
+   bookable.
+═══════════════════════════════════════════════════════ */
+const SUGGEST_HORIZON_DAYS = 45;
+
+/* Make sure calBusyByDate/calZoneByDate actually cover the suggestion
+   horizon. Reuses fetchCalMonthBusy (no new fetch path) — cheap to call
+   repeatedly since it early-returns for months already loaded. */
+async function ensureRangeLoaded(){
+  const today=new Date();
+  const horizonEnd=new Date(today); horizonEnd.setDate(horizonEnd.getDate()+SUGGEST_HORIZON_DAYS);
+  await fetchCalMonthBusy(today.getFullYear(), today.getMonth());
+  let ny=today.getFullYear(), nm=today.getMonth();
+  while(!calLoadedTo || dateStr(horizonEnd) > calLoadedTo){
+    nm++; if(nm>11){nm=0;ny++;}
+    const before=calLoadedTo;
+    await fetchCalMonthBusy(ny,nm);
+    if(calLoadedTo===before) break; // safety valve against an infinite loop
+  }
+}
+
+/* First free 30-min start on a date, honouring the Wednesday noon start.
+   Must only ever be called after dateBlockReason has already cleared the
+   date — an all-day "Full Day Editing" block has no start/end to compare
+   against here and is only caught by dateBlockReason's nofreetime check. */
+function earliestFreeStart(dstr){
+  const dow=new Date(dstr+'T12:00:00').getDay();
+  const dayStart=dow===3?DAY_START_WED:DAY_START;
+  const busy=getBusyForDate(dstr).map(r=>({s:isoToMinsET(r.start),e:isoToMinsET(r.end)}))
+    .concat(existingBookings.filter(b=>b.date===dstr).map(b=>({s:b.startMin,e:b.endMin})));
+  for(let t=dayStart; t+30<=DAY_END; t+=30){
+    if(!busy.some(b=>t<b.e && t+30>b.s)) return t;
+  }
+  return null;
+}
+
+function computeSuggestions(userZone){
+  if(!userZone) return [];
+  const group=[], next=[];
+  const today=new Date();
+  for(let i=0;i<SUGGEST_HORIZON_DAYS;i++){
+    const dt=new Date(today); dt.setDate(dt.getDate()+i);
+    const dstr=dateStr(dt);
+    if(!isDateLoaded(dstr)) continue; // never guess about data we haven't fetched
+    if(dateBlockReason(dstr,userZone)) continue; // every exclusion inherited from here
+    const startMin=earliestFreeStart(dstr);
+    if(startMin===null) continue;
+    const sameMallCount=getZoneCountsForDate(dstr)[userZone]||0;
+    (sameMallCount>0?group:next).push({date:dstr,startMin,sameMallCount});
+  }
+  // Up to 2 grouping days soonest-first, top up to 3 total from `next`, then
+  // any remaining grouping days — reserving a `next` slot guarantees a
+  // near-term option even when every grouping day is weeks out.
+  const picks=[...group.slice(0,2)];
+  for(const n of next){ if(picks.length>=3) break; picks.push(n); }
+  for(const g of group.slice(2)){ if(picks.length>=3) break; picks.push(g); }
+  return picks.sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+function renderSuggestions(){
+  const strip=document.getElementById('suggest-strip');
+  const cardsEl=document.getElementById('suggest-cards');
+  if(!strip||!cardsEl) return;
+  const userZone=getUserZone();
+  if(!userZone){ strip.style.display='none'; return; }
+
+  const picks=computeSuggestions(userZone);
+  strip.style.display='block';
+  if(!picks.length){
+    cardsEl.innerHTML='<div class="alert info" style="display:flex">No dates available in the next 45 days — use the calendar below to look further ahead.</div>';
+    return;
+  }
+  cardsEl.innerHTML=picks.map(p=>{
+    const d=new Date(p.date+'T12:00:00');
+    const label=d.toLocaleDateString('en-CA',{weekday:'short',month:'short',day:'numeric'});
+    // Sub-text is always the same short shape across every card — the
+    // same-mall grouping detail (variable-length: dealership name + count)
+    // used to be inlined here and made this one card visibly longer/heavier
+    // than its siblings. It now lives in the title tooltip instead, behind
+    // the dot that already signals "this one groups with an existing
+    // booking."
+    const sub=`next available · ${minsToTime12(p.startMin)}`;
+    const dot=p.sameMallCount>0?'<span class="avail-dot dot-green"></span>':'';
+    const groupTitle=p.sameMallCount>0
+      ? ` title="Groups with ${p.sameMallCount} existing ${ZONES[userZone].name} shoot${p.sameMallCount!==1?'s':''} this day"`
+      : '';
+    const isSelected=p.date===selectedDate;
+    return `<button type="button" class="suggest-card${isSelected?' selected':''}" data-date="${p.date}"${groupTitle}
+      onmouseenter="highlightSuggestDate('${p.date}',true,${p.startMin})" onmouseleave="highlightSuggestDate('${p.date}',false)"
+      onfocus="highlightSuggestDate('${p.date}',true,${p.startMin})" onblur="highlightSuggestDate('${p.date}',false)"
+      onclick="selectSuggestion('${p.date}',${p.startMin})">
+      <span class="suggest-card-date">${dot}${label}</span><span class="suggest-card-sub">${sub}</span></button>`;
+  }).join('');
+}
+
+/* Keeps the suggestion strip in sync with whichever date is actually
+   selected — pressed Onyx like any other selected control, and picking a
+   different date (via a suggestion or the calendar itself) automatically
+   depresses whichever one was pressed before. Single source of truth is
+   selectedDate, so this covers both entry points from one call site. */
+function syncSuggestCardSelection(dstr){
+  document.querySelectorAll('.suggest-card').forEach(c=>{
+    c.classList.toggle('selected', c.dataset.date===dstr);
+  });
+}
+
+/* Hovering a suggestion highlights both the calendar cell AND, since the
+   time list only ever shows one date at a time, a non-interactive preview
+   of that date's slots with the suggested start time picked out. Neither
+   touches selectedDate/selectedSlot — mouseleave restores the real state
+   via renderSlots(). */
+function highlightSuggestDate(dstr,on,startMin){
+  const cell=document.querySelector(`.cal-day[data-date="${dstr}"]`);
+  if(cell) cell.classList.toggle('cal-suggest-hi',on);
+  if(on) renderSlotsPreview(dstr,startMin);
+  else renderSlots();
+}
+
+/* A suggested date may be in a month the calendar isn't currently showing —
+   navigate there first, then select the date and its suggested start time. */
+async function selectSuggestion(dstr,startMin){
+  const d=new Date(dstr+'T12:00:00');
+  if(d.getFullYear()!==calYear || d.getMonth()!==calMonth){
+    calYear=d.getFullYear(); calMonth=d.getMonth();
+    holidayCache[calYear]=holidayCache[calYear]||getHolidays(calYear);
+    renderCalendar();
+    await fetchCalMonthBusy(calYear,calMonth);
+  }
+  const cell=document.querySelector(`.cal-day[data-date="${dstr}"]`);
+  if(!cell || cell.classList.contains('cal-disabled')){
+    renderSuggestions(); // data may have shifted since this card was rendered
+    return;
+  }
+  await selectCalDay(dstr,cell);
+  const slotBtn=document.querySelector(`#slots-grid .slot-btn[data-start="${startMin}"]:not(.disabled)`);
+  if(slotBtn) slotBtn.click();
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1463,26 +2079,28 @@ function comboBlur(){
   },180);
 }
 function selectDealer(name){
-  const zone=STORE_ZONE[name];
-  // check zone conflict — merge session + cross-device data
-  if(selectedDate){
-    const dayBookings=existingBookings.filter(b=>b.date===selectedDate);
-    const gcalZones=calZoneByDate[selectedDate]||[];
-    const bookedZones=[...new Set([...dayBookings.map(b=>b.zone), ...gcalZones.map(z=>z.zone)])];
-    if(bookedZones.length&&!bookedZones.includes(zone)){
-      showAlert('dealership-alert',`${name} is in ${ZONES[zone].name} but this day already has ${ZONES[bookedZones[0]].name} bookings. Choose a different date or store.`,'error');
-      document.getElementById('dealer-input').value='';
-      document.getElementById('dealership-select').value='';
-      document.getElementById('dealer-dropdown').classList.remove('open');
-      return;
-    }
-  }
+  // The store is the primary choice now (block 01, before the calendar), so
+  // it's always accepted. If a date was already picked and no longer fits
+  // this store's zone, the DATE is what gives way — inverted from the old
+  // date-first flow, where the store used to be rejected instead.
   hideAlert('dealership-alert');
   document.getElementById('dealer-input').value=name;
   document.getElementById('dealership-select').value=name;
   document.getElementById('dealer-dropdown').classList.remove('open');
-  // re-highlight
   renderComboDropdown('');
+
+  const zone=STORE_ZONE[name];
+  if(selectedDate && dateBlockReason(selectedDate, zone)){
+    selectedDate=null; selectedSlot=null; selectedDuration=null;
+    document.querySelectorAll('.cal-day.cal-selected').forEach(c=>c.classList.remove('cal-selected'));
+    document.getElementById('time-preview').style.display='none';
+    const _drw=document.getElementById('duration-row-wrap'); if(_drw) _drw.style.display='none';
+    renderSlots();
+    renderDurationPicker();
+    showAlert('dealership-alert',`Your previously selected date isn't available for ${ZONES[zone].name} — pick a new date below.`,'error');
+  }
+  renderCalendar();
+  renderSuggestions();
   updateStats();
   scheduleAutosave();
 }
@@ -2109,30 +2727,22 @@ function getContentPieceCount(){
 }
 
 /* ── REVEAL ── */
+function revealEl(id){
+  const el=document.getElementById(id);
+  if(!el || el.style.display!=='none') return;
+  el.style.display='block';
+  el.classList.remove('revealed');
+  void el.offsetWidth; // reflow — retriggers the CSS reveal animation
+  el.classList.add('revealed');
+}
+// Stage 1 = the calendar, unlocked once block 01 (identity + dealership) is
+// verified. Stage 2 = everything after a start time is picked — kept as
+// revealSections() so selectSlot() and loadAutosave() call sites need no edit.
+function revealStage1(){ STAGE1_SECTIONS.forEach(revealEl); }
 function revealSections(){
-  ['info-section','dealership-section','content-section','scripts-section','notes-section'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el && el.style.display==='none'){
-      el.style.display='block';
-      el.classList.remove('revealed');
-      void el.offsetWidth; // reflow
-      el.classList.add('revealed');
-    }
-  });
-  const sa=document.getElementById('submit-area');
-  const sd=document.getElementById('stats-dashboard');
-  if(sa && sa.style.display==='none'){
-    sa.style.display='block';
-    sa.classList.remove('revealed');
-    void sa.offsetWidth;
-    sa.classList.add('revealed');
-  }
-  if(sd && sd.style.display==='none'){
-    sd.style.display='block';
-    sd.classList.remove('revealed');
-    void sd.offsetWidth;
-    sd.classList.add('revealed');
-  }
+  STAGE2_SECTIONS.forEach(revealEl);
+  revealEl('submit-area');
+  revealEl('stats-dashboard');
 }
 
 /* ── ALERTS ── */
@@ -2146,21 +2756,30 @@ function hideAlert(id){
 }
 
 /* ── VALIDATION ── */
-function validate(){
+function mark(id,bad){ const el=document.getElementById(id); if(el) el.classList.toggle('invalid',bad); }
+
+// Block-01-only checks — shared by verifyAndContinue() and validate() so the
+// submit-time gate can't drift from what the Verify button already checked.
+function validateDetails(){
   const errors=[];
-  const mark=(id,bad)=>{const el=document.getElementById(id);if(el) el.classList.toggle('invalid',bad);};
   const name=document.getElementById('strategist-name').value.trim();
   mark('strategist-name',!name); if(!name) errors.push('Strategist name is required.');
   const email=document.getElementById('strategist-email').value.trim();
   const emailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   mark('strategist-email',!emailOk); if(!emailOk) errors.push('Valid email is required.');
-  if(!selectedDate) errors.push('Please select a shoot date from the calendar.');
-  if(!selectedDuration) errors.push('Please select a session duration.');
-  if(selectedSlot===null) errors.push('Please select a start time.');
   const store=document.getElementById('dealership-select').value;
   const inputEl=document.getElementById('dealer-input');
   if(inputEl) inputEl.classList.toggle('invalid',!store);
   if(!store) errors.push('Please select a dealership.');
+  return errors;
+}
+
+function validate(){
+  const errors=[...validateDetails()];
+  if(verifyState!=='verified') errors.push('Please verify your email above before booking.');
+  if(!selectedDate) errors.push('Please select a shoot date from the calendar.');
+  if(!selectedDuration) errors.push('Please select a session duration.');
+  if(selectedSlot===null) errors.push('Please select a start time.');
   const contact=document.getElementById('onsite-contact').value.trim();
   mark('onsite-contact',!contact); if(!contact) errors.push('On-site contact name is required.');
   if(getSelectedPackages().length===0) errors.push('Please select at least one content package.');
@@ -2168,6 +2787,67 @@ function validate(){
     errors.push(`Selected packages need ~${getTotalPkgMins()} min but session is only ${selectedDuration} min. Deselect a package or choose a longer duration.`);
   }
   return errors;
+}
+
+/* ── VERIFY (block 01 gate) ──
+   Not a security boundary — that's the server-side isEmailAuthorized check
+   inside create-booking.js, which runs again regardless of this. This only
+   controls what the UI unlocks, which is why a network failure here fails
+   OPEN rather than blocking the whole portal over a Netlify blip. */
+// Shared by verifyAndContinue() (interactive) and loadAutosave() (silent
+// restore) — flips the state and unlocks stage 1 identically either way.
+async function markVerified(email){
+  verifyState='verified'; verifiedEmail=email;
+  const btn=document.getElementById('verify-btn');
+  if(btn){ btn.disabled=false; btn.textContent='Verified ✓'; }
+  revealStage1();
+  renderCalendar();
+  await ensureRangeLoaded();
+  renderSuggestions();
+}
+
+async function verifyAndContinue(){
+  const errors=validateDetails();
+  if(errors.length){
+    showAlert('details-alert', errors.map(e=>`• ${e}`).join('<br>'));
+    return;
+  }
+  hideAlert('details-alert');
+  const email=document.getElementById('strategist-email').value.trim();
+  const btn=document.getElementById('verify-btn');
+  verifyState='checking';
+  if(btn){ btn.disabled=true; btn.textContent='Checking…'; }
+  try{
+    const res=await fetch('/.netlify/functions/check-email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    if(!res.ok) throw new Error('check-email non-200');
+    const {authorized}=await res.json();
+    if(authorized){
+      hideAlert('details-alert');
+      await markVerified(email);
+      document.getElementById('datetime-section')?.scrollIntoView({behavior:'smooth',block:'start'});
+    } else {
+      verifyState='denied';
+      if(btn){ btn.disabled=false; btn.textContent='Verify & Continue'; }
+      showAlert('details-alert',"This email isn't authorized to book. Contact your administrator.");
+    }
+  }catch(e){
+    showAlert('details-alert',"Couldn't verify right now — continuing anyway.",'warning');
+    await markVerified(email);
+  }
+  updateStats();
+  scheduleAutosave();
+}
+
+/* Editing email/dealership after verifying must never hide a revealed
+   section or clear a field — downgrade to a submit-time gate instead. */
+function onIdentityFieldChanged(){
+  if(verifyState!=='verified') return;
+  const email=document.getElementById('strategist-email').value.trim();
+  if(email===verifiedEmail) return;
+  verifyState='idle';
+  const btn=document.getElementById('verify-btn');
+  if(btn){ btn.disabled=false; btn.textContent='Re-verify'; }
+  showAlert('details-alert','Email changed — click Re-verify to continue.','warning');
 }
 
 /* ── SUBMIT ── */
@@ -2374,7 +3054,10 @@ function selectCountry(idx){
 }
 
 /* ── AUTOSAVE ── */
-const AUTOSAVE_KEY='booking_autosave';
+// Bumped for the block reorder — an old-shape draft (info/dealership-section
+// ids, no verifiedEmail) is discarded rather than migrated.
+const AUTOSAVE_KEY='booking_autosave_v2';
+const AUTOSAVE_KEY_LEGACY='booking_autosave';
 const AUTOSAVE_INTERVAL=90000; // 90s
 const MAX_SAVES=2;
 let autosaveTimer=null;
@@ -2395,6 +3078,9 @@ function getFormSnapshot(){
     packageData:{...packageData},
     countryCode:selectedCountry?.code||'+1',
     countryFlag:selectedCountry?.flag||'🇨🇦',
+    // Not restored as authorization on its own — loadAutosave() re-checks
+    // this against the server before trusting it (see markVerified()).
+    verifiedEmail: verifyState==='verified' ? verifiedEmail : '',
   };
 }
 
@@ -2424,12 +3110,13 @@ function scheduleAutosave(){
 }
 
 function initAutosave(){
+  try{ localStorage.removeItem(AUTOSAVE_KEY_LEGACY); }catch(e){} // orphaned pre-reorder draft
   setInterval(()=>{if(autosaveScheduled) doAutosave();},AUTOSAVE_INTERVAL);
   // also auto-save on input changes
   document.addEventListener('input',()=>scheduleAutosave());
 }
 
-function loadAutosave(){
+async function loadAutosave(){
   let saves=[];
   try{ saves=JSON.parse(localStorage.getItem(AUTOSAVE_KEY)||'[]'); }catch(e){ return; }
   if(!saves.length) return;
@@ -2437,6 +3124,19 @@ function loadAutosave(){
   if(!latest||!latest.ts) return;
   const age=(Date.now()-latest.ts)/1000/60; // minutes
   if(age>120) return; // discard if older than 2 hours
+  // Re-verify against the server before trusting a saved verified state —
+  // a localStorage flag alone is never authorization (see markVerified()).
+  // Must resolve before the stage-2 restore below, since that assumes stage
+  // 1 (the calendar) is already unlocked.
+  if(latest.verifiedEmail){
+    try{
+      const res=await fetch('/.netlify/functions/check-email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:latest.verifiedEmail})});
+      if(res.ok){
+        const {authorized}=await res.json();
+        if(authorized) await markVerified(latest.verifiedEmail);
+      }
+    }catch(e){}
+  }
   // restore
   if(latest.strategistName){ const el=document.getElementById('strategist-name'); if(el) el.value=latest.strategistName; }
   if(latest.strategistEmail){ const el=document.getElementById('strategist-email'); if(el) el.value=latest.strategistEmail; }
@@ -2524,7 +3224,7 @@ function resetForAnotherBooking(){
   document.querySelectorAll('.cal-day.cal-selected').forEach(c=>c.classList.remove('cal-selected'));
   document.getElementById('time-preview').style.display='none';
   renderSlots();
-  ['info-section','dealership-section','content-section','scripts-section','notes-section','submit-area','stats-dashboard'].forEach(id=>{
+  HIDEABLE_SECTIONS.forEach(id=>{
     const el=document.getElementById(id);
     if(el){ el.style.display='none'; el.classList.remove('revealed'); }
   });
@@ -2542,6 +3242,11 @@ function resetForAnotherBooking(){
   document.getElementById('submit-btn').disabled=false;
   document.getElementById('submit-btn').textContent='Confirm Booking';
   document.querySelectorAll('.invalid').forEach(el=>el.classList.remove('invalid'));
+  // Block 01 must be redone for a fresh booking — full reset, same as before.
+  verifyState='idle'; verifiedEmail='';
+  const vbtn=document.getElementById('verify-btn');
+  if(vbtn){ vbtn.disabled=false; vbtn.textContent='Verify & Continue'; }
+  hideAlert('details-alert'); hideAlert('dealership-alert');
   // Reset country selector
   selectedCountry=COUNTRIES[0];
   const cf=document.getElementById('country-flag'); if(cf) cf.textContent=selectedCountry.flag;
@@ -2554,6 +3259,7 @@ function resetForAnotherBooking(){
   localStorage.removeItem(AUTOSAVE_KEY);
   const _drw=document.getElementById('duration-row-wrap'); if(_drw) _drw.style.display='none';
   renderDurationPicker();
+  renderCalendar();
   updateStats();
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -2574,7 +3280,7 @@ function confirmReset(){
   document.querySelectorAll('.cal-day.cal-selected').forEach(c=>c.classList.remove('cal-selected'));
   document.getElementById('time-preview').style.display='none';
   renderSlots();
-  ['info-section','dealership-section','content-section','scripts-section','notes-section','submit-area','stats-dashboard'].forEach(id=>{
+  HIDEABLE_SECTIONS.forEach(id=>{
     const el=document.getElementById(id);
     if(el){ el.style.display='none'; el.classList.remove('revealed'); }
   });
@@ -2596,6 +3302,11 @@ function confirmReset(){
   // Reset submit button
   const btn=document.getElementById('submit-btn');
   btn.disabled=false; btn.textContent='Confirm Booking';
+  // Block 01 must be redone
+  verifyState='idle'; verifiedEmail='';
+  const vbtn=document.getElementById('verify-btn');
+  if(vbtn){ vbtn.disabled=false; vbtn.textContent='Verify & Continue'; }
+  hideAlert('details-alert'); hideAlert('dealership-alert');
   // Reset country selector
   selectedCountry=COUNTRIES[0];
   document.getElementById('country-flag').textContent=selectedCountry.flag;
@@ -2606,6 +3317,7 @@ function confirmReset(){
   localStorage.removeItem(AUTOSAVE_KEY);
   const _drw=document.getElementById('duration-row-wrap'); if(_drw) _drw.style.display='none';
   renderDurationPicker();
+  renderCalendar();
   updateStats();
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -2667,7 +3379,7 @@ function attachValidationGlow(){
 function updateSubmitPulse(){
   const btn = document.getElementById('submit-btn');
   if(!btn) return;
-  const ready = !!selectedDate && !!selectedDuration && selectedSlot !== null
+  const ready = verifyState==='verified' && !!selectedDate && !!selectedDuration && selectedSlot !== null
     && !!(document.getElementById('dealership-select')?.value)
     && !!(document.getElementById('strategist-name')?.value?.trim())
     && !!(document.getElementById('strategist-email')?.value?.trim());
@@ -3098,9 +3810,9 @@ function buildBDetailHTML(b){
     headshots:  {icon:'📸', label:'Headshots'},
     gmb:        {icon:'📷', label:'Photo Session'},
     salesvideo: {icon:'🎬', label:'Sales Video'},
-    event:      {icon:'✨', label:'Event Coverage'},
+    event:      {icon:'🎪', label:'Event Coverage'},
     social:     {icon:'📱', label:'Social Media Content'},
-    salesrep:   {icon:'🎤', label:'Sales Rep. Intro Video'},
+    salesrep:   {icon:'🎤', label:'Intro Video'},
   };
 
   let html = '';
@@ -3207,7 +3919,7 @@ function buildBDetailHTML(b){
   // Event Coverage
   if(pd.event?.name){
     const ev = pd.event;
-    html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>✨</span> Event Coverage</div>`;
+    html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>🎪</span> Event Coverage</div>`;
     if(ev.name) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Event</span><span class="pkg-detail-inner-val">${ev.name}</span></div>`;
     if(ev.contact) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Contact</span><span class="pkg-detail-inner-val">${ev.contact}</span></div>`;
     if(ev.phone) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Phone</span><span class="pkg-detail-inner-val">${ev.phone}</span></div>`;
@@ -3230,7 +3942,7 @@ function buildBDetailHTML(b){
 
   // Sales Rep
   if(pd.salesrep?.entries?.length){
-    html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>🎤</span> Sales Rep. Intro Videos</div>`;
+    html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>🎤</span> Intro Videos</div>`;
     pd.salesrep.entries.forEach((e,i) => {
       html += `<div class="pkg-entry-card"><div class="pkg-entry-label">Rep ${i+1}</div>`;
       if(e.name) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Name</span><span class="pkg-detail-inner-val">${e.name}</span></div>`;

@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-30T00:00:00.000Z",
+  "title": "Design System: Zanchin Content Shoot Booking",
+  "extensions": {
+    "colorMeta": {
+      "onyx": { "role": "primary", "displayName": "Onyx", "canonical": "#1a1a1a", "tonalRamp": ["#0d0d0d", "#1a1a1a", "#2b2b2b", "#3d3d3d", "#5c5c5c", "#8a8a8a", "#c4c4c4", "#eceded"] },
+      "signal-blue": { "role": "secondary", "displayName": "Signal Blue", "canonical": "#3a7bd5", "tonalRamp": ["#0f2547", "#1c4680", "#2a63ab", "#3a7bd5", "#619bdf", "#8cb8e8", "#bcd6f2", "#e9f2fb"] },
+      "available-green": { "role": "status", "displayName": "Available Green", "canonical": "#22c55e", "tonalRamp": ["#0b3d20", "#146534", "#189948", "#22c55e", "#4ade80", "#86efac", "#bbf7d0", "#eafcf0"] },
+      "filling-orange": { "role": "status", "displayName": "Filling-Up Orange", "canonical": "#f59e0b", "tonalRamp": ["#4a2f02", "#7c4d04", "#b06d06", "#f59e0b", "#f8b53d", "#fbcb73", "#fde2ac", "#fef6e6"] },
+      "full-red": { "role": "status", "displayName": "Full Red", "canonical": "#ef4444", "tonalRamp": ["#460c0c", "#7a1414", "#ad1e1e", "#ef4444", "#f37171", "#f79f9f", "#fbcdcd", "#fef0f0"] },
+      "bg": { "role": "neutral", "displayName": "Page Background", "canonical": "#eceef1" },
+      "surface": { "role": "neutral", "displayName": "Surface", "canonical": "#e8eaed" },
+      "surface-raised": { "role": "neutral", "displayName": "Surface Raised", "canonical": "#f0f2f5" },
+      "text": { "role": "neutral", "displayName": "Text", "canonical": "#1a1a1a" },
+      "text-muted": { "role": "neutral", "displayName": "Text Muted", "canonical": "#8a8f9a" },
+      "dark-accent-orange": { "role": "primary", "displayName": "Dark-Theme Accent Orange", "canonical": "#fc6e20", "tonalRamp": ["#3f1b06", "#6b2e0a", "#a1450f", "#fc6e20", "#fd8f4f", "#fdb17f", "#fed3af", "#fef4e9"] }
+    },
+    "typographyMeta": {
+      "section-title": { "displayName": "Section Title", "purpose": "One per card, the '01 Your Details'-style numbered header." },
+      "label": { "displayName": "Field Label", "purpose": "Form field labels only — the sole uppercase+tracked role in the system." },
+      "body": { "displayName": "Body", "purpose": "Input values and default reading text." },
+      "control": { "displayName": "Control", "purpose": "Button and list-control text (calendar days, time slots, suggestion cards, duration ticks)." },
+      "caption": { "displayName": "Caption", "purpose": "Sub-labels inside controls: slot status, duration sub-line, legend." }
+    },
+    "shadows": [
+      { "name": "raised", "value": "5px 5px 12px rgba(170,176,190,.5), -3px -3px 8px rgba(255,255,255,.92)", "purpose": "Hover and selected states on any interactive control. Never applied at rest." },
+      { "name": "pressed", "value": "inset 3px 3px 7px rgba(170,176,190,.4), inset -2px -2px 6px rgba(255,255,255,.88)", "purpose": "Text inputs at rest, reading as a recessed slot. Never used for disabled controls — those use opacity alone." },
+      { "name": "card", "value": "8px 8px 20px rgba(160,168,185,.4), -5px -5px 14px rgba(255,255,255,.95)", "purpose": "The six numbered card containers only — permanent, one elevation tier above raised." },
+      { "name": "focus-ring", "value": "0 0 0 2px rgba(58,123,213,.28)", "purpose": "Signal Blue hover/focus ring. Paired with 'raised' on hover; paired with 'pressed' on input focus; never paired with a selected fill." }
+    ],
+    "motion": [
+      { "name": "control-transition", "value": "all .15s-.16s ease", "purpose": "Default transition for hover/selected state changes across calendar days, list controls, and inputs." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "560px" },
+      { "name": "md", "value": "680px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button (Confirm Booking)",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Full-width Onyx primary action button — one per card, the single next step.",
+      "html": "<button class=\"ds-btn-primary\">Confirm Booking</button>",
+      "css": ".ds-btn-primary { width: 100%; background: #1a1a1a; color: #ffffff; border: 1px solid #1a1a1a; border-radius: 9px; padding: 14px 16px; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .16s ease; } .ds-btn-primary:hover { filter: brightness(1.08); } .ds-btn-primary:focus-visible { box-shadow: 0 0 0 3px rgba(58,123,213,.28); outline: none; }"
+    },
+    {
+      "name": "List Control — resting",
+      "kind": "custom",
+      "refersTo": "list-control",
+      "description": "Shared pattern for calendar days, time-slot rows, and suggestion cards at rest: flat, bordered, no shadow.",
+      "html": "<button class=\"ds-list-control\">10:00 AM<span class=\"ds-list-control-status\">OPEN</span></button>",
+      "css": ".ds-list-control { display: flex; align-items: center; justify-content: space-between; width: 100%; background: #e8eaed; border: 1px solid rgba(255,255,255,.85); color: #8a8f9a; border-radius: 9px; padding: 9px 13px; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .16s ease; } .ds-list-control-status { font-size: 10.5px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; opacity: .65; } .ds-list-control:hover { color: #1a1a1a; border-color: #3a7bd5; box-shadow: 5px 5px 12px rgba(170,176,190,.5), -3px -3px 8px rgba(255,255,255,.92), 0 0 0 2px rgba(58,123,213,.28); }"
+    },
+    {
+      "name": "List Control — selected",
+      "kind": "custom",
+      "refersTo": "button-primary-selected",
+      "description": "The one selected-state formula: solid Onyx fill + raised shadow, no ring, no leftover status dot.",
+      "html": "<button class=\"ds-list-control ds-list-control--selected\">10:00 AM<span class=\"ds-list-control-status\">OPEN</span></button>",
+      "css": ".ds-list-control--selected { background: #1a1a1a; border-color: #1a1a1a; color: #ffffff; font-weight: 700; box-shadow: 5px 5px 12px rgba(170,176,190,.5), -3px -3px 8px rgba(255,255,255,.92); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Pressed-in text field — the one place `pressed` shadow is used outside cards.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Full name\" />",
+      "css": ".ds-input { width: 100%; background: #e8eaed; border: 1px solid rgba(255,255,255,.85); color: #1a1a1a; padding: 12px 14px; font-family: Inter, sans-serif; font-size: 14px; font-weight: 500; border-radius: 10px; outline: none; box-shadow: inset 3px 3px 7px rgba(170,176,190,.4), inset -2px -2px 6px rgba(255,255,255,.88); transition: box-shadow .2s, border-color .2s; } .ds-input:focus { border-color: #3a7bd5; box-shadow: inset 3px 3px 7px rgba(170,176,190,.4), inset -2px -2px 6px rgba(255,255,255,.88), 0 0 0 3px rgba(58,123,213,.28); }"
+    },
+    {
+      "name": "Numbered Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The six top-level form sections — permanent elevation, an Onyx numbered badge, one Section Title.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-label\"><span class=\"ds-card-badge\">01</span><span class=\"ds-card-title\">Your Details</span></div></div>",
+      "css": ".ds-card { background: #f0f2f5; border-radius: 26px; box-shadow: 8px 8px 20px rgba(160,168,185,.4), -5px -5px 14px rgba(255,255,255,.95); padding: 26px 26px 22px; border: 1px solid rgba(255,255,255,.85); } .ds-card-label { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; } .ds-card-badge { width: 28px; height: 28px; background: #1a1a1a; color: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: Inter, sans-serif; font-size: 11px; font-weight: 800; } .ds-card-title { font-family: Inter, sans-serif; font-size: 16px; font-weight: 800; letter-spacing: -.3px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Studio Console",
+    "overview": "This is a control panel, not a marketing surface. Every surface reads like a soft-pressed physical console: pale grey planes with dual light/dark shadows implying real depth, buttons that visibly lift under the cursor and press flat when chosen. It's built for a small, fixed roster of strategists who use it a few times a week to reserve a real studio slot against a real calendar — precision and operator confidence matter more than warmth or delight. Depth comes from one consistent shadow vocabulary, never from stacking effects — the moment two different signals (a fill color, a glow ring, a status dot) all claim to mean 'this is selected' at once, the console stops reading as precise and starts reading as noisy.",
+    "keyCharacteristics": [
+      "Soft neumorphic surfaces — dual light/dark box-shadows are the entire elevation vocabulary.",
+      "Flat at rest, shadow as response — a control only carries a shadow when hovered, selected, or the one primary action.",
+      "Onyx is the single 'selected' color; Signal Blue means 'your focus is here,' never 'this is chosen.'",
+      "One font (Inter) carries every role.",
+      "Dark theme swaps the entire accent role to orange rather than keeping Onyx."
+    ],
+    "rules": [
+      { "name": "The One Selected Rule", "body": "\"Selected\" has exactly one visual formula everywhere it appears — solid Onyx fill, white text, the resting-elevation shadow. Never a glow ring on top of a fill. Never a status dot surviving under a fill.", "section": "colors" },
+      { "name": "The Dark-Theme Swap Rule", "body": "Dark theme repoints --accent/--neon to orange rather than keeping Onyx, since near-black has no contrast on a near-black background. Hardcoded hex instead of var(--accent) silently breaks in dark mode.", "section": "colors" },
+      { "name": "The Uppercase-Once Rule", "body": "Uppercase + letter-spacing marks exactly one thing: a form field label. Never apply it to buttons, captions, or titles.", "section": "typography" },
+      { "name": "The Rest-Is-Flat Rule", "body": "No control gets a shadow it didn't earn through hover or selection. A grid of mostly-flat cells with two or three shadowed ones is legible; simultaneously-shadowed everything is not.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do treat Onyx fill as the single, exclusive signal for 'selected' or 'primary action.'",
+      "Do keep every interactive control flat at rest and add shadow only for hover/selected states.",
+      "Do use var(--accent)/var(--neon) rather than hardcoded hex so components inherit the dark-theme swap.",
+      "Do reserve uppercase + letter-spacing for form field labels only.",
+      "Do keep the three status colors scoped to availability dots only."
+    ],
+    "donts": [
+      "Don't stack a shadow, a glow ring, and a status dot on the same selected element.",
+      "Don't apply the raised shadow to a control at rest.",
+      "Don't apply an inset shadow to disabled controls on top of reduced opacity.",
+      "Don't introduce a second 'primary' color alongside Onyx.",
+      "Don't build a generic SaaS dashboard or enterprise PM-tool layout.",
+      "Don't mix font families or introduce a display/heading face."
+    ]
+  }
+}

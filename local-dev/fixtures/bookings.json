@@ -1,0 +1,115 @@
+[
+  {
+    "id": "bk_1", "eventId": "local-ev-1", "status": "confirmed",
+    "date": "2026-08-18", "startMin": 600, "endMin": 690, "durLabel": "1.5 hr", "durMins": 90,
+    "store": "Maple Honda", "zone": "maple", "zoneName": "Maple Auto Mall",
+    "contact": "Dana Reyes", "contactPhone": "416-555-0101",
+    "packages": ["walkaround"], "packageDetail": {}, "scriptLink": "",
+    "notes": "", "strategistName": "Priya Nair", "strategistEmail": "strategist1@8create.ca",
+    "createdAt": 1755400000000
+  },
+  {
+    "id": "bk_2", "eventId": "local-ev-2", "status": "confirmed",
+    "date": "2026-08-19", "startMin": 720, "endMin": 810, "durLabel": "1.5 hr", "durMins": 90,
+    "store": "Woodbridge Toyota", "zone": "woodbridge", "zoneName": "Woodbridge Auto Mall",
+    "contact": "Marcus Lee", "contactPhone": "416-555-0102",
+    "packages": ["service"], "packageDetail": {}, "scriptLink": "",
+    "notes": "", "strategistName": "Priya Nair", "strategistEmail": "strategist1@8create.ca",
+    "createdAt": 1755486400000
+  },
+  {
+    "id": "bk_3", "eventId": "local-ev-3", "status": "confirmed",
+    "date": "2026-08-20", "startMin": 600, "endMin": 720, "durLabel": "2 hr", "durMins": 120,
+    "store": "VW Stouffville", "zone": "stouffville", "zoneName": "Stouffville Auto Mall",
+    "contact": "Jenna Wu", "contactPhone": "416-555-0103",
+    "packages": ["gmb"], "packageDetail": {}, "scriptLink": "",
+    "notes": "", "strategistName": "Alex Chen", "strategistEmail": "strategist2@8create.ca",
+    "createdAt": 1755572800000
+  },
+  {
+    "id": "bk_4", "eventId": "local-ev-4", "status": "confirmed",
+    "date": "2026-08-25", "startMin": 600, "endMin": 660, "durLabel": "1 hr", "durMins": 60,
+    "store": "Maple Toyota", "zone": "maple", "zoneName": "Maple Auto Mall",
+    "contact": "Rob Fenn", "contactPhone": "416-555-0104",
+    "packages": ["headshots"], "packageDetail": {}, "scriptLink": "",
+    "notes": "", "strategistName": "Priya Nair", "strategistEmail": "strategist1@8create.ca",
+    "createdAt": 1756004800000
+  },
+  {
+    "id": "bk_5", "eventId": "local-ev-5", "status": "confirmed",
+    "date": "2026-08-25", "startMin": 660, "endMin": 720, "durLabel": "1 hr", "durMins": 60,
+    "store": "Maple Nissan", "zone": "maple", "zoneName": "Maple Auto Mall",
+    "contact": "Sam Ortiz", "contactPhone": "416-555-0105",
+    "packages": ["headshots"], "packageDetail": {}, "scriptLink": "",
+    "notes": "Same-mall pairing with Maple Toyota — demonstrates existing grouping behaviour.",
+    "strategistName": "Alex Chen", "strategistEmail": "strategist2@8create.ca",
+    "createdAt": 1756008400000
+  },
+  {
+    "id": "bk_6", "eventId": "local-ev-6", "status": "confirmed",
+    "date": "2026-08-27", "startMin": 600, "endMin": 690, "durLabel": "1.5 hr", "durMins": 90,
+    "store": "Erin Mills Acura", "zone": "mississauga", "zoneName": "Mississauga Auto Mall",
+    "contact": "Wendy Park", "contactPhone": "416-555-0106",
+    "packages": ["salesvideo"], "packageDetail": {}, "scriptLink": "",
+    "notes": "", "strategistName": "Priya Nair", "strategistEmail": "strategist1@8create.ca",
+    "createdAt": 1756177600000
+  },
+  {
+    "id": "bk_7", "eventId": "local-ev-7", "status": "confirmed",
+    "date": "2026-09-02", "startMin": 720, "endMin": 780, "durLabel": "1 hr", "durMins": 60,
+    "store": "Maple VW", "zone": "maple", "zoneName": "Maple Auto Mall",
+    "contact": "Ivy Cho", "contactPhone": "416-555-0107",
+    "packages": ["walkaround"], "packageDetail": {}, "scriptLink": "",
+    "notes": "Lone upcoming Maple booking — main target for testing the same-mall suggestion strip.",
+    "strategistName": "Alex Chen", "strategistEmail": "strategist2@8create.ca",
+    "createdAt": 1756350400000
+  },
+  {
+    "id": "bk_8", "eventId": "local-ev-8", "status": "confirmed",
+    "date": "2026-09-04", "startMin": 600, "endMin": 660, "durLabel": "1 hr", "durMins": 60,
+    "store": "Woodbridge Nissan", "zone": "woodbridge", "zoneName": "Woodbridge Auto Mall",
+    "contact": "Leo Brandt", "contactPhone": "416-555-0108",
+    "packages": ["gmb"], "packageDetail": {}, "scriptLink": "",
+    "notes": "", "strategistName": "Priya Nair", "strategistEmail": "strategist1@8create.ca",
+    "createdAt": 1756523200000
+  },
+  {
+    "id": "bk_9", "eventId": "local-ev-9", "status": "confirmed",
+    "date": "2026-09-09", "startMin": 720, "endMin": 960, "durLabel": "4 hr", "durMins": 240,
+    "store": "Richmond Hill Nissan", "zone": "fullday", "zoneName": "Full-Day Location",
+    "contact": "Nadia Farouk", "contactPhone": "416-555-0109",
+    "packages": ["event"], "packageDetail": {}, "scriptLink": "",
+    "notes": "Full-day exclusive booking — every other store must find this date unbookable.",
+    "strategistName": "Alex Chen", "strategistEmail": "strategist2@8create.ca",
+    "createdAt": 1756954000000
+  },
+  {
+    "id": "bk_10", "eventId": "local-ev-10", "status": "confirmed",
+    "date": "2026-09-10", "startMin": 600, "endMin": 660, "durLabel": "1 hr", "durMins": 60,
+    "store": "Stouffville Chrysler", "zone": "stouffville", "zoneName": "Stouffville Auto Mall",
+    "contact": "Grace Ibbott", "contactPhone": "416-555-0110",
+    "packages": ["service"], "packageDetail": {}, "scriptLink": "",
+    "notes": "", "strategistName": "Priya Nair", "strategistEmail": "strategist1@8create.ca",
+    "createdAt": 1757040400000
+  },
+  {
+    "id": "bk_11", "eventId": "local-ev-11", "status": "confirmed",
+    "date": "2026-09-10", "startMin": 660, "endMin": 750, "durLabel": "1.5 hr", "durMins": 90,
+    "store": "Hyundai Stouffville", "zone": "stouffville", "zoneName": "Stouffville Auto Mall",
+    "contact": "Tomas Ridley", "contactPhone": "416-555-0111",
+    "packages": ["walkaround"], "packageDetail": {}, "scriptLink": "",
+    "notes": "Second Stouffville shoot same day — mall has 2 of 4 slots used, room for grouping.",
+    "strategistName": "Alex Chen", "strategistEmail": "strategist2@8create.ca",
+    "createdAt": 1757044000000
+  },
+  {
+    "id": "bk_12", "eventId": "local-ev-12", "status": "confirmed",
+    "date": "2026-09-15", "startMin": 600, "endMin": 660, "durLabel": "1 hr", "durMins": 60,
+    "store": "VW Mississauga", "zone": "mississauga", "zoneName": "Mississauga Auto Mall",
+    "contact": "Olive Sanders", "contactPhone": "416-555-0112",
+    "packages": ["gmb"], "packageDetail": {}, "scriptLink": "",
+    "notes": "Mississauga cap is 2/day — only 1 slot remains this date.",
+    "strategistName": "Priya Nair", "strategistEmail": "strategist1@8create.ca",
+    "createdAt": 1757390800000
+  }
+]
