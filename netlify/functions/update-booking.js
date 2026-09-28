@@ -17,14 +17,14 @@ function checkAuth(event) {
   } catch { return false; }
 }
 
+// Calendar description is a bare-bones reminder only — no content-package or
+// script details, which live entirely on the website.
 function buildDescription(b) {
   return [
     `📍 Store: ${b.store}`,
     `🏢 Zone: ${b.zoneName}`,
     `⏱ Duration: ${b.durLabel}`,
     `👤 On-Site Contact: ${b.contact}${b.contactPhone ? ' · ' + b.contactPhone : ''}`,
-    `📦 Content: ${(b.packages || []).join(', ')}`,
-    b.scriptLink ? `📝 Script: ${b.scriptLink}` : null,
     ``,
     `📧 Booked by: ${b.strategistName} (${b.strategistEmail})`,
     b.notes ? `📝 Notes: ${b.notes}` : null,

@@ -241,6 +241,25 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // Static passthrough for real repo assets referenced by index.html (e.g.
+  // icons/*.svg) — Netlify serves these automatically in production, this
+  // mirrors that for local dev. Path-traversal guarded to stay inside ROOT.
+  if (req.method === 'GET') {
+    const STATIC_TYPES = { '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.ico': 'image/x-icon' };
+    const ext = path.extname(url.pathname).toLowerCase();
+    if (STATIC_TYPES[ext]) {
+      const filePath = path.join(ROOT, url.pathname);
+      if (filePath.startsWith(ROOT)) {
+        fs.readFile(filePath, (err, data) => {
+          if (err) { res.writeHead(404, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: 'Not found', path: url.pathname })); }
+          res.writeHead(200, { 'Content-Type': STATIC_TYPES[ext] });
+          res.end(data);
+        });
+        return;
+      }
+    }
+  }
+
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ error: 'Not found', path: url.pathname }));
 });

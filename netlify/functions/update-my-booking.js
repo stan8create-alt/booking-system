@@ -5,16 +5,17 @@ const {
 } = require('./_booking-utils');
 
 // Public endpoint: lets the person who made a booking edit ONLY the content
-// packages (and notes) of their own booking. Email must match the booking's
-// stored strategistEmail. Date/time/store/contact are never changed here.
+// packages, script, and notes of their own booking. Email must match the
+// booking's stored strategistEmail. Date/time/store/contact are never
+// changed here.
+// The calendar description is a bare-bones reminder only — no content-package
+// or script details, which live entirely on the website.
 function buildDescription(b) {
   return [
     `📍 Store: ${b.store}`,
     `🏢 Zone: ${b.zoneName}`,
     `⏱ Duration: ${b.durLabel}`,
     `👤 On-Site Contact: ${b.contact}${b.contactPhone ? ' · ' + b.contactPhone : ''}`,
-    `📦 Content: ${(b.packages || []).join(', ')}`,
-    b.scriptLink ? `📝 Script: ${b.scriptLink}` : null,
     ``,
     `📧 Booked by: ${b.strategistName} (${b.strategistEmail})`,
     b.notes ? `📝 Notes: ${b.notes}` : null,
@@ -26,7 +27,7 @@ exports.handler = async (event) => {
 
   let payload;
   try { payload = JSON.parse(event.body); } catch { return { statusCode: 400, body: JSON.stringify({ error: 'Bad request' }) }; }
-  const { eventId, email, packages, packageDetail, notes } = payload;
+  const { eventId, email, packages, packageDetail, notes, scriptLink } = payload;
   if (!eventId || !email) return { statusCode: 400, body: JSON.stringify({ error: 'Missing eventId or email' }) };
   const target = email.trim().toLowerCase();
 
@@ -54,11 +55,12 @@ exports.handler = async (event) => {
       return { statusCode: 403, body: JSON.stringify({ error: 'This booking does not belong to that email' }) };
     }
 
-    // Merge ONLY package-related fields + notes. Everything else stays as-is.
+    // Merge ONLY package-related fields + script + notes. Everything else stays as-is.
     const updated = {
       ...bookingData,
       packages: Array.isArray(packages) ? packages : bookingData.packages,
       packageDetail: packageDetail || bookingData.packageDetail || {},
+      scriptLink: scriptLink != null ? scriptLink : bookingData.scriptLink,
       notes: notes != null ? notes : bookingData.notes,
     };
     delete updated._recoveredFromDescription; // breadcrumb only — don't persist

@@ -25,6 +25,7 @@ const AUTHORIZED_EMAILS = [
   'stan@8create.ca',
   'strategist1@8create.ca',
   'strategist2@8create.ca',
+  'emily@zanchinauto.com',
 ];
 
 module.exports = { ZONES, STORE_ZONE, WEEKLY_CAP, DAY_START, DAY_START_WED, DAY_END, AUTHORIZED_EMAILS };

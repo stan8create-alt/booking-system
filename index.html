@@ -297,6 +297,14 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
 .pkg-label:hover{color:var(--text);border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
 .pkg-checkbox:checked + .pkg-label{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 0 3px var(--neon-glow),3px 3px 8px rgba(0,0,0,.18);font-weight:700}
 .pkg-icon{font-size:15px;flex-shrink:0}
+/* Custom package icon (e.g. Emily Special) — sized to the surrounding text
+   so it drops into any emoji-icon spot (card, modal title, detail block,
+   editor chip) at the same visual footprint without per-context tuning. */
+.pkg-icon-img{width:1em;height:1em;object-fit:contain;vertical-align:-0.15em;flex-shrink:0}
+/* Emily Special's icon is fixed near-black linework (#212121) — nearly
+   invisible on the dark theme's near-black cards. A small white backing
+   chip keeps it legible without altering the client-provided artwork. */
+[data-theme="dark"] .pkg-icon-img{background:#fff;border-radius:4px;padding:1px;box-sizing:content-box}
 .pkg-label-text{flex:1;line-height:1.3}
 .pkg-check{width:17px;height:17px;border:1.5px solid rgba(128,128,128,.25);border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;background:rgba(128,128,128,.1);transition:all .16s}
 .pkg-checkbox:checked + .pkg-label .pkg-check{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.3);color:#fff}
@@ -338,6 +346,19 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
 .headshot-person input{flex:1}
 .remove-person{background:var(--surface-raised);border:1px solid var(--border);color:var(--text-muted);width:42px;height:42px;padding:0;border-radius:var(--radius-sm);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-out);transition:all .15s}
 .remove-person:hover{color:var(--red);border-color:var(--red)}
+
+/* ── MY BOOKINGS INLINE EDITOR ── */
+/* Matches .entry-remove / .remove-person: muted at rest, red only in response
+   to hover — never a permanent red signal (My Bookings editor package blocks). */
+.pkg-remove-btn{font-size:11px;font-weight:700;color:var(--text-muted);background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif;padding:2px;transition:color .15s}
+.pkg-remove-btn:hover{color:var(--red)}
+/* Reuses the .pkg-label "pick a package" affordance from the main booking
+   form's packages-grid, so adding a package here looks like the same control
+   everywhere else in the app rather than a one-off chip style. */
+.myedit-add-pkg-grid{display:grid;grid-template-columns:1fr;gap:9px}
+@media(min-width:420px){.myedit-add-pkg-grid{grid-template-columns:repeat(2,1fr)}}
+.myedit-add-pkg-btn{display:flex;align-items:center;gap:9px;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--text-muted);box-shadow:var(--shadow-out);transition:all .16s;font-family:'Inter',sans-serif;min-height:52px;text-align:left}
+.myedit-add-pkg-btn:hover{color:var(--text);border-color:var(--neon);box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow)}
 
 /* ── ALERTS ── */
 .alert{padding:12px 15px;border-radius:var(--radius-sm);font-size:13px;line-height:1.5;margin-bottom:14px;display:none;font-weight:500}
@@ -823,7 +844,7 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
 <!-- 05 SCRIPTS -->
 <div class="card" id="scripts-section" style="display:none">
   <div class="section-label"><div class="section-num">05</div><div class="section-title">Scripts</div><div class="section-hint">Optional</div></div>
-  <div class="field"><label>Script Link</label><input type="text" id="script-link" placeholder="Google Doc, Drive, Notion… https://"></div>
+  <div class="field"><label>Script Link or Script Text</label><textarea id="script-link" placeholder="Paste a Google Doc / Drive / Notion link, or paste the script itself…" style="min-height:100px"></textarea></div>
 </div>
 
 <!-- 06 ADDITIONAL NOTES -->
@@ -959,6 +980,12 @@ Object.entries(ZONES).forEach(([k,z])=>z.stores.forEach(s=>{STORE_ZONE[s]=k;ALL_
 ALL_STORES.sort((a,b)=>a.name.localeCompare(b.name));
 
 /* ── PACKAGES ── */
+// Emily specifically books social content across multiple dealerships in one
+// auto-mall visit — this package exists only for her, see EMILY_EMAIL below.
+// It's identical to 'social' in every field/behavior; kept as its own id
+// (rather than reusing 'social') so it shows as its own line item and never
+// gets confused with a dealership's regular Social Media Content booking.
+const EMILY_EMAIL = 'emily@zanchinauto.com';
 const PACKAGES = [
   { id:'ethnic',     label:'Ethnic Videos',         icon:'🌍' },
   { id:'salesvideo', label:'Sales Video',            icon:'🎬' },
@@ -969,7 +996,42 @@ const PACKAGES = [
   { id:'salesrep',   label:'Intro Video',            icon:'🎤' },
   { id:'event',      label:'Event Coverage',         icon:'🎪' },
   { id:'social',     label:'Social Media Content',   icon:'📱' },
+  // Custom image icon (client-provided) instead of an emoji — see pkgIconHTML().
+  { id:'emilyspecial', label:'Emily Special',        icon:'⭐', iconImg:'icons/emily-special.svg' },
 ];
+
+// Package types whose "amount booked" is a count of entries (vs. headshots'
+// name list, or a flat single-instance package like Service Video). Single
+// source of truth for the count-prefix logic, reused by getPkgTimeCost,
+// updateFilledInfo, getContentPieceCount, and packageTagLabels below.
+const LIST_ENTRY_PACKAGES = ['ethnic','social','emilyspecial','walkaround','salesvideo','salesrep'];
+
+/* Markup for a package's icon — an <img> when the package defines a custom
+   iconImg (e.g. Emily Special's client-provided icon), the plain emoji
+   character otherwise. `icon` always stays a valid text fallback. Safe for
+   both innerHTML contexts and .textContent reads (an <img> simply
+   contributes no text, so title-matching against the label still works). */
+function pkgIconHTML(pkg){
+  return pkg.iconImg ? `<img src="${pkg.iconImg}" alt="" class="pkg-icon-img">` : pkg.icon;
+}
+
+/* Display-ready package tag labels (with the "2× " count prefix where it
+   applies) for a booking. b.packages holds canonical ids (e.g. 'ethnic') —
+   but bookings created before that was the case stored pre-formatted label
+   strings (e.g. "2× Ethnic Videos") instead, so any entry that isn't a known
+   id is passed through unchanged rather than mangled. */
+function packageTagLabels(b){
+  const pd=b.packageDetail||{};
+  return (b.packages||[]).map(entry=>{
+    const meta=PACKAGES.find(p=>p.id===entry);
+    if(!meta) return entry; // legacy: already a formatted label string
+    const d=pd[entry];
+    let count=1;
+    if(LIST_ENTRY_PACKAGES.includes(entry)) count=d?.entries?.length||1;
+    else if(entry==='headshots') count=d?.names?.filter(n=>n.trim()).length||1;
+    return count>1?`${count}× ${meta.label}`:meta.label;
+  });
+}
 
 /* ── PACKAGE TIME COSTS (minutes needed per package) ── */
 const PACKAGE_MINS = {
@@ -981,6 +1043,7 @@ const PACKAGE_MINS = {
   salesvideo: 30,  // per vehicle entry
   event:      45,  // event coverage
   social:     30,  // per reel concept
+  emilyspecial: 30, // identical cost to social — same package, different label
   salesrep:   20,  // per rep intro clip
 };
 
@@ -988,7 +1051,7 @@ function getPkgTimeCost(id){
   const d = packageData[id];
   const base = PACKAGE_MINS[id] || 30;
   // multiply by entry count where applicable
-  if(['ethnic','social','walkaround','salesvideo','salesrep'].includes(id)){
+  if(LIST_ENTRY_PACKAGES.includes(id)){
     const count = d?.entries?.length || 1;
     return base * count;
   }
@@ -2114,10 +2177,13 @@ function buildPackages(){
   PACKAGES.forEach(pkg=>{
     const wrap=document.createElement('div');
     wrap.className='pkg-wrapper';
+    // Emily Special is hidden by default — only revealed for EMILY_EMAIL, see
+    // updateEmilySpecialVisibility(), called live as the email field changes.
+    if(pkg.id==='emilyspecial'){ wrap.id='pkg-wrapper-emilyspecial'; wrap.style.display='none'; }
     wrap.innerHTML=`
       <input type="checkbox" class="pkg-checkbox" id="pkg-${pkg.id}" value="${pkg.id}" onchange="onPackageToggle('${pkg.id}')">
       <label class="pkg-label" for="pkg-${pkg.id}" id="label-${pkg.id}">
-        <span class="pkg-icon">${pkg.icon}</span>
+        <span class="pkg-icon">${pkgIconHTML(pkg)}</span>
         <span class="pkg-label-text">${pkg.label}</span>
         <span class="pkg-check">✓</span>
       </label>
@@ -2129,6 +2195,25 @@ function buildPackages(){
   info.id='pkg-filled-info';
   info.style.cssText='margin-top:12px;display:none;padding:10px 14px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:10px;font-size:12.5px;color:#15803d;line-height:1.6';
   grid.parentElement.appendChild(info);
+  updateEmilySpecialVisibility();
+}
+
+/* Reveals the hidden "Emily Special" package tile the instant the email
+   field's value matches EMILY_EMAIL — and hides it again if it's edited away
+   — without ever rebuilding the grid (so other in-progress selections are
+   never disturbed). If it's hidden while checked (email edited after
+   picking it), deselect it so a hidden package can never stay silently
+   selected. */
+function updateEmilySpecialVisibility(){
+  const wrap=document.getElementById('pkg-wrapper-emilyspecial');
+  if(!wrap) return;
+  const email=(document.getElementById('strategist-email')?.value||'').trim().toLowerCase();
+  const show=email===EMILY_EMAIL;
+  wrap.style.display=show?'':'none';
+  if(!show){
+    const cb=document.getElementById('pkg-emilyspecial');
+    if(cb?.checked) deselectPackage('emilyspecial');
+  }
 }
 
 function onPackageToggle(id){
@@ -2187,7 +2272,7 @@ const packageData = {};
 function openModal(id){
   const pkg=PACKAGES.find(p=>p.id===id);
   if(!pkg) return;
-  document.getElementById('modal-title').textContent=`${pkg.icon} ${pkg.label}`;
+  document.getElementById('modal-title').innerHTML=`${pkgIconHTML(pkg)} ${pkg.label}`;
   document.getElementById('modal-body').innerHTML=buildModalBody(id);
   // clear any prior error
   const prevErr = document.getElementById('modal-field-error');
@@ -2324,7 +2409,7 @@ function validateModalFields(id){
     if(!names.length) return 'At least one person name is required.';
   } else if(id==='service'){
     if(!body.querySelector('#service-notes')?.value?.trim()) return 'Please describe the service video shoot.';
-  } else if(id==='social'){
+  } else if(id==='social'||id==='emilyspecial'){
     const cards = [...body.querySelectorAll('#social-entries .entry-card')];
     for(let i=0;i<cards.length;i++){
       if(!cards[i].querySelector('.social-hook')?.value?.trim()) return `Video ${i+1}: Hook / theme is required.`;
@@ -2353,21 +2438,20 @@ function updateFilledInfo(){
   info.innerHTML='<strong>Selected:</strong> '+checked.map(p=>{
     const d=packageData[p.id];
     let count=1;
-    if(p.id==='ethnic'||p.id==='social'||p.id==='walkaround'||p.id==='salesvideo'||p.id==='salesrep') count=d?.entries?.length||1;
+    if(LIST_ENTRY_PACKAGES.includes(p.id)) count=d?.entries?.length||1;
     else if(p.id==='headshots') count=d?.names?.filter(n=>n.trim()).length||1;
     const countStr=count>1?`${count}× `:'';
-    return `${p.icon} ${countStr}${p.label}`;
+    return `${pkgIconHTML(p)} ${countStr}${p.label}`;
   }).join(' &nbsp;·&nbsp; ');
 }
 
+/* Returns canonical package ids (e.g. 'ethnic'), NOT display labels — this is
+   what's persisted as bookingPayload.packages and later used to look up each
+   package's schema/data by id (My Bookings editor, admin editor). Display
+   text with the "2× " count prefix is computed separately, from packageDetail,
+   wherever it's actually rendered (see buildBDetailHTML's pkgTags). */
 function getSelectedPackages(){
-  return PACKAGES.filter(p=>document.getElementById('pkg-'+p.id)?.checked).map(p=>{
-    const d=packageData[p.id];
-    let count=1;
-    if(p.id==='ethnic'||p.id==='social'||p.id==='walkaround'||p.id==='salesvideo'||p.id==='salesrep') count=d?.entries?.length||1;
-    else if(p.id==='headshots') count=d?.names?.filter(n=>n.trim()).length||1;
-    return count>1?`${count}× ${p.label}`:p.label;
-  });
+  return PACKAGES.filter(p=>document.getElementById('pkg-'+p.id)?.checked).map(p=>p.id);
 }
 
 /* ── MODAL BODY BUILDERS ── */
@@ -2381,6 +2465,7 @@ function buildModalBody(id){
     case 'salesvideo': return bodySalesVideo();
     case 'event':      return bodyEvent();
     case 'social':     return bodySocial();
+    case 'emilyspecial': return bodySocial();
     case 'salesrep':   return bodyReps();
     default: return '<p style="color:var(--text-muted)">No extra details needed.</p>';
   }
@@ -2565,7 +2650,7 @@ function saveModalData(id){
       script:card.querySelector('.ethnic-script')?.value||''
     }));
     data.entries=entries;
-  } else if(id==='social'){
+  } else if(id==='social'||id==='emilyspecial'){
     const entries=[...body.querySelectorAll('#social-entries .entry-card')].map(card=>({
       hook:card.querySelector('.social-hook')?.value||'',
       count:card.querySelector('.social-count')?.value||''
@@ -2591,9 +2676,22 @@ function saveModalData(id){
   } else if(id==='salesrep'){
     const entries=[...body.querySelectorAll('#salesrep-entries .entry-card')].map(card=>({
       name:card.querySelector('.rep-name')?.value||'',
-      role:card.querySelector('.rep-role')?.value||''
+      role:card.querySelector('.rep-role')?.value||'',
+      lang:card.querySelector('.rep-lang')?.value||'',
+      notes:card.querySelector('.rep-notes')?.value||'',
+      ref:card.querySelector('.rep-ref')?.value||''
     }));
     data.entries=entries;
+  } else if(id==='gmb'){
+    data['photo-gmb']=body.querySelector('#photo-gmb')?.checked||false;
+    data['photo-vehicle']=body.querySelector('#photo-vehicle')?.checked||false;
+    data['photo-service']=body.querySelector('#photo-service')?.checked||false;
+    data['photo-lifestyle']=body.querySelector('#photo-lifestyle')?.checked||false;
+    const settingEl=body.querySelector('input[name="photo-setting"]:checked');
+    data.setting=settingEl?settingEl.id.replace('photo-',''):'';
+    data.count=body.querySelector('#photo-count')?.value||'';
+    data.areas=body.querySelector('#photo-areas')?.value||'';
+    data.ref=body.querySelector('#photo-ref')?.value||'';
   } else if(id==='service'){
     data.speaker=body.querySelector('#service-speaker')?.value||'';
     data.role=body.querySelector('#service-role')?.value||'';
@@ -2627,7 +2725,7 @@ function restoreModalData(id){
           cards[i].querySelector('.ethnic-script').value=e.script||'';
         });
       } else { addEthnicEntry(); }
-    } else if(id==='social'){
+    } else if(id==='social'||id==='emilyspecial'){
       const list=document.getElementById('social-entries');
       if(!list) return;
       if(data?.entries?.length){
@@ -2676,8 +2774,21 @@ function restoreModalData(id){
           if(!cards[i]) return;
           cards[i].querySelector('.rep-name').value=e.name||'';
           cards[i].querySelector('.rep-role').value=e.role||'';
+          cards[i].querySelector('.rep-lang').value=e.lang||'';
+          cards[i].querySelector('.rep-notes').value=e.notes||'';
+          cards[i].querySelector('.rep-ref').value=e.ref||'';
         });
       } else { addSalesRepEntry(); }
+    } else if(id==='gmb'){
+      if(data){
+        ['gmb','vehicle','service','lifestyle'].forEach(t=>{
+          const el=document.getElementById('photo-'+t); if(el) el.checked=!!data['photo-'+t];
+        });
+        if(data.setting){ const el=document.getElementById('photo-'+data.setting); if(el) el.checked=true; }
+        if(data.count){ const el=document.getElementById('photo-count'); if(el) el.value=data.count; }
+        if(data.areas){ const el=document.getElementById('photo-areas'); if(el) el.value=data.areas; }
+        if(data.ref){ const el=document.getElementById('photo-ref'); if(el) el.value=data.ref; }
+      }
     } else if(id==='headshots'){
       const list=document.getElementById('headshot-names-list');
       if(!list) return;
@@ -2715,10 +2826,7 @@ function getContentPieceCount(){
     if(!cb||!cb.checked) return;
     const d=packageData[pkg.id];
     let count=1;
-    if(pkg.id==='ethnic') count=d?.entries?.length||1;
-    else if(pkg.id==='social') count=d?.entries?.length||1;
-    else if(pkg.id==='walkaround'||pkg.id==='salesvideo') count=d?.entries?.length||1;
-    else if(pkg.id==='salesrep') count=d?.entries?.length||1;
+    if(LIST_ENTRY_PACKAGES.includes(pkg.id)) count=d?.entries?.length||1;
     else if(pkg.id==='headshots') count=d?.names?.filter(n=>n.trim()).length||1;
     total+=count;
     breakdown.push(`${count>1?count+'× ':''}${pkg.label}`);
@@ -2841,6 +2949,7 @@ async function verifyAndContinue(){
 /* Editing email/dealership after verifying must never hide a revealed
    section or clear a field — downgrade to a submit-time gate instead. */
 function onIdentityFieldChanged(){
+  updateEmilySpecialVisibility();
   if(verifyState!=='verified') return;
   const email=document.getElementById('strategist-email').value.trim();
   if(email===verifiedEmail) return;
@@ -2881,11 +2990,11 @@ async function handleSubmit(){
   const durLabel       =DURATIONS.find(d=>d.mins===selectedDuration)?.label||'';
   const bookingPayload ={id:'b_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),createdAt:Date.now(),status:'confirmed',date:selectedDate,startMin:selectedSlot,endMin,durLabel,durMins:selectedDuration,store,zone,zoneName:ZONES[zone]?.name||zone,contact,contactPhone,packages,packageDetail:{...packageData},scriptLink,notes,strategistName,strategistEmail};
 
+  // Calendar description is a bare-bones reminder only — no content-package or
+  // script details, which live entirely on the website (My Bookings / admin).
   const desc=[
     `📍 Store: ${store}`,`🏢 Zone: ${ZONES[zone].name}`,`⏱ Duration: ${durLabel}`,
     `👤 On-Site Contact: ${contact}${contactPhone?' · '+contactPhone:''}`,
-    `📦 Content: ${packages.join(', ')}`,
-    scriptLink?`📝 Script: ${scriptLink}`:null,
     `\n📧 Booked by: ${strategistName} (${strategistEmail})`,
     notes?`\n📝 Notes: ${notes}`:null,
   ].filter(Boolean).join('\n');
@@ -2899,7 +3008,12 @@ async function handleSubmit(){
     // Persist to localStorage for admin dashboard
     persistBooking({strategistName,strategistEmail,store,zone,contact,contactPhone,packages,packageDetail:{...packageData},notes,durLabel,durMins:selectedDuration});
     renderCalendar();
-    showSuccessScreen({strategistName,store,zone,contact,packages,durLabel});
+    // Clear the draft now that it's been booked — otherwise a strategist who
+    // closes the tab instead of clicking "Book Another Store" would come back
+    // to find their just-submitted booking silently pre-filled as a draft,
+    // one click away from an accidental duplicate submission.
+    localStorage.removeItem(AUTOSAVE_KEY);
+    showSuccessScreen({strategistName,store,zone,contact,packages,packageDetail:{...packageData},durLabel});
   } catch(err){
     btn.disabled=false; btn.textContent='Confirm Booking';
     summary.innerHTML=`<strong>Calendar error:</strong> ${err.message||'Could not create event.'}`;
@@ -3140,6 +3254,7 @@ async function loadAutosave(){
   // restore
   if(latest.strategistName){ const el=document.getElementById('strategist-name'); if(el) el.value=latest.strategistName; }
   if(latest.strategistEmail){ const el=document.getElementById('strategist-email'); if(el) el.value=latest.strategistEmail; }
+  updateEmilySpecialVisibility();
   if(latest.dealership){
     const di=document.getElementById('dealer-input'); const ds=document.getElementById('dealership-select');
     if(di) di.value=latest.dealership; if(ds) ds.value=latest.dealership;
@@ -3201,7 +3316,7 @@ async function createCalendarEvent({summary,description,startDateTime,endDateTim
 }
 
 /* ── SUCCESS ── */
-function showSuccessScreen({strategistName,store,zone,contact,packages,durLabel}){
+function showSuccessScreen({strategistName,store,zone,contact,packages,packageDetail,durLabel}){
   document.getElementById('main-form').style.display='none';
   document.getElementById('success-screen').classList.add('visible');
   const dateStr2=new Date(selectedDate+'T12:00:00').toLocaleDateString('en-CA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
@@ -3209,7 +3324,7 @@ function showSuccessScreen({strategistName,store,zone,contact,packages,durLabel}
   const rows=[
     {key:'Dealership',val:store},{key:'Zone',val:ZONES[zone].name},
     {key:'Date',val:dateStr2},{key:'Time',val:`${minsToTime12(selectedSlot)} – ${minsToTime12(selectedSlot+selectedDuration)} (${durLabel})`},
-    {key:'On-Site Contact',val:contact},{key:'Content',val:packages.join(', ')},
+    {key:'On-Site Contact',val:contact},{key:'Content',val:packageTagLabels({packages,packageDetail}).join(', ')},
     ...(_sl?[{key:'Script',val:_sl}]:[]),
     {key:'Booked By',val:strategistName},
   ];
@@ -3684,7 +3799,7 @@ function renderDayDrawer(ds, bookings){
   let html = `<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px;font-family:'Inter',sans-serif;margin-top:4px">${prettyDate} · ${bookings.length} booking${bookings.length>1?'s':''}</div>`;
 
   bookings.forEach(b => {
-    const pkgTags = b.packages.map(p => `<span class="drawer-pkg-tag">${p}</span>`).join('');
+    const pkgTags = packageTagLabels(b).map(p => `<span class="drawer-pkg-tag">${p}</span>`).join('');
     const statusCls = b.status === 'confirmed' ? 'status-upcoming' : 'status-past';
     html += `
     <div class="booking-drawer-inner" style="margin-bottom:10px" onclick="openBDetail('${b.id}')">
@@ -3738,7 +3853,7 @@ function renderBookingList(bookings){
     const dow = dt.toLocaleDateString('en-CA', {weekday:'long'});
     const statusCls = isPast ? 'status-past' : isToday ? 'status-today' : 'status-upcoming';
     const statusLabel = isPast ? 'Completed' : isToday ? 'Today' : 'Upcoming';
-    const pkgTags = b.packages.map(p => `<span class="pkg-tag">${p}</span>`).join('');
+    const pkgTags = packageTagLabels(b).map(p => `<span class="pkg-tag">${p}</span>`).join('');
 
     html += `
     <div class="booking-card${isPast?' past':''}" onclick="openBDetail('${b.id}')">
@@ -3837,7 +3952,7 @@ function buildBDetailHTML(b){
   </div>`;
 
   // ── PACKAGES SUMMARY TAGS ──
-  const pkgTags = b.packages.map(p => `<span class="bdetail-tag bdetail-tag-accent">${p}</span>`).join('');
+  const pkgTags = packageTagLabels(b).map(p => `<span class="bdetail-tag bdetail-tag-accent">${p}</span>`).join('');
   html += `<div class="bdetail-section">
     <div class="bdetail-section-title">Content Packages (${b.packages.length})</div>
     <div class="bdetail-tags" style="margin-bottom:14px">${pkgTags}</div>`;
@@ -3908,8 +4023,12 @@ function buildBDetailHTML(b){
   // Photo Session (GMB)
   if(pd.gmb){
     const g = pd.gmb;
-    const types = ['gmb','vehicle','service','lifestyle'].filter(t => g['photo-'+t] === true || g[t]);
+    const typeLabels = {gmb:'📍 GMB',vehicle:'🚗 Vehicle',service:'🔧 Service',lifestyle:'✨ Lifestyle'};
+    const types = Object.keys(typeLabels).filter(t => g['photo-'+t]);
+    const settingLabels = {in:'Indoor',out:'Outdoor',both:'Both'};
     html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>📷</span> Photo Session</div>`;
+    if(types.length) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Photo Types</span><span class="pkg-detail-inner-val">${types.map(t=>typeLabels[t]).join(', ')}</span></div>`;
+    if(g.setting) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Setting</span><span class="pkg-detail-inner-val">${settingLabels[g.setting]||g.setting}</span></div>`;
     if(g.count) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Deliverables</span><span class="pkg-detail-inner-val">${g.count}</span></div>`;
     if(g.areas) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Areas / Subjects</span><span class="pkg-detail-inner-val">${g.areas}</span></div>`;
     if(g.ref) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Reference</span><span class="pkg-detail-inner-val" style="word-break:break-all">${g.ref}</span></div>`;
@@ -3940,6 +4059,18 @@ function buildBDetailHTML(b){
     html += `</div>`;
   }
 
+  // Emily Special (identical shape to Social Media Content)
+  if(pd.emilyspecial?.entries?.length){
+    html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>${pkgIconHTML(PACKAGES.find(p=>p.id==='emilyspecial'))}</span> Emily Special</div>`;
+    pd.emilyspecial.entries.forEach((e,i) => {
+      html += `<div class="pkg-entry-card"><div class="pkg-entry-label">Video ${i+1}</div>`;
+      if(e.hook) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Hook / Theme</span><span class="pkg-detail-inner-val">${e.hook}</span></div>`;
+      if(e.count) html += `<div class="pkg-detail-inner-row"><span class="pkg-detail-inner-key">Deliverables</span><span class="pkg-detail-inner-val">${e.count}</span></div>`;
+      html += `</div>`;
+    });
+    html += `</div>`;
+  }
+
   // Sales Rep
   if(pd.salesrep?.entries?.length){
     html += `<div class="pkg-detail-block"><div class="pkg-detail-block-title"><span>🎤</span> Intro Videos</div>`;
@@ -3957,11 +4088,14 @@ function buildBDetailHTML(b){
 
   html += `</div>`; // close packages section
 
-  // ── SCRIPT ──
+  // ── SCRIPT ── (a pasted link renders clickable; pasted script text renders as plain text)
   if(b.scriptLink){
+    const isLink = /^https?:\/\//i.test(b.scriptLink.trim());
     html += `<div class="bdetail-section">
       <div class="bdetail-section-title">Script</div>
-      <div class="bdetail-row"><span class="bdetail-key">Link</span><span class="bdetail-val" style="word-break:break-all"><a href="${b.scriptLink}" target="_blank" rel="noopener" style="color:var(--accent)">${b.scriptLink}</a></span></div>
+      ${isLink
+        ? `<div class="bdetail-row"><span class="bdetail-key">Link</span><span class="bdetail-val" style="word-break:break-all"><a href="${b.scriptLink}" target="_blank" rel="noopener" style="color:var(--accent)">${b.scriptLink}</a></span></div>`
+        : `<div class="bdetail-notes" style="white-space:pre-wrap">${b.scriptLink}</div>`}
     </div>`;
   }
 
@@ -4040,7 +4174,6 @@ function getCalEventData(){
   const email     = document.getElementById('strategist-email')?.value?.trim() || '';
   const zone      = STORE_ZONE[store] || '';
   const zoneName  = ZONES[zone]?.name || zone;
-  const pkgs      = getSelectedPackages();
   const durLabel  = DURATIONS.find(d => d.mins === selectedDuration)?.label || '';
   const endMin    = selectedSlot + selectedDuration;
 
@@ -4054,12 +4187,13 @@ function getCalEventData(){
 
   const title = `📷 Content Shoot — ${store}`;
 
+  // Same bare-bones reminder shape as the Google Calendar description — no
+  // content-package or script details in the invite.
   const bodyLines = [
     `📍 Location: ${store}`,
     `🏢 Zone: ${zoneName}`,
     `⏱ Duration: ${durLabel}`,
     `👤 On-Site Contact: ${contact}${phone ? ' · ' + phone : ''}`,
-    `📦 Content: ${pkgs.join(', ')}`,
     ``,
     `📧 Booked by: ${name} (${email})`,
     notes ? `📝 Notes: ${notes}` : null,
@@ -4368,7 +4502,11 @@ function openEditBooking(id){
   _editPkgDataBackup=JSON.parse(JSON.stringify(packageData));
   Object.keys(packageData).forEach(k=>delete packageData[k]);
   if(b.packageDetail) Object.assign(packageData, JSON.parse(JSON.stringify(b.packageDetail)));
-  rerenderEditPkgGrid(b.packages||[]);
+  // packageDetail is always keyed by canonical id, unlike b.packages which on
+  // older bookings holds pre-formatted display labels instead of ids — so it's
+  // the reliable source for which package checkboxes should start checked.
+  const _editPresent=Object.keys(b.packageDetail||{}).filter(pid=>b.packageDetail[pid]&&PACKAGES.some(p=>p.id===pid));
+  rerenderEditPkgGrid(_editPresent.length?_editPresent:(b.packages||[]));
   document.getElementById('edit-error').textContent='';
   document.getElementById('edit-booking-backdrop').classList.add('open');
   document.body.style.overflow='hidden';
@@ -4387,28 +4525,6 @@ function rerenderEditPkgGrid(initialChecked, gridId){
   }
   pkgGrid.innerHTML='';
 
-  // Card style (matches the main booking form) for the My Bookings editor
-  if(gridId==='mybooking-packages-grid'){
-    PACKAGES.forEach(p=>{
-      const checked=checkedSet.has(p.id);
-      const wrap=document.createElement('div');
-      wrap.className='pkg-wrapper';
-      wrap.innerHTML=`
-        <input type="checkbox" class="pkg-checkbox" id="mybcb-${p.id}" value="${p.id}">
-        <label class="pkg-label" onclick="mybPkgCardClick(event,'${p.id}')">
-          <span class="pkg-icon">${p.icon}</span>
-          <span class="pkg-label-text">${p.label}</span>
-          <span class="pkg-check">✓</span>
-        </label>
-        <button type="button" class="pkg-deselect" title="Remove" onclick="mybDeselectCard(event,'${p.id}')">×</button>`;
-      // set checked as a property so :checked matches and CSS highlights it immediately
-      const _cb=wrap.querySelector('.pkg-checkbox'); if(_cb) _cb.checked=checked;
-      pkgGrid.appendChild(wrap);
-    });
-    updateMyEditBudget();
-    return;
-  }
-
   // Simple list style for the admin editor
   PACKAGES.forEach(p=>{
     const row=document.createElement('div');
@@ -4419,7 +4535,8 @@ function rerenderEditPkgGrid(initialChecked, gridId){
     cb.type='checkbox';cb.value=p.id;cb.checked=checkedSet.has(p.id);
     cb.style.cssText='width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0';
     lbl.appendChild(cb);
-    lbl.appendChild(document.createTextNode(p.icon+' '+p.label));
+    const lblText=document.createElement('span'); lblText.innerHTML=`${pkgIconHTML(p)} ${p.label}`;
+    lbl.appendChild(lblText);
     row.appendChild(lbl);
     const editBtn=document.createElement('button');
     editBtn.type='button';
@@ -4437,22 +4554,6 @@ function rerenderEditPkgGrid(initialChecked, gridId){
     };
     pkgGrid.appendChild(row);
   });
-}
-
-/* Card click in My Bookings editor — select+open, or re-open to edit */
-function mybPkgCardClick(e, id){
-  if(e) e.preventDefault();
-  const cb=document.getElementById('mybcb-'+id);
-  if(!cb) return;
-  if(!cb.checked) cb.checked=true; // selecting
-  openAdminPkgModal(id);
-}
-function mybDeselectCard(e, id){
-  if(e){ e.preventDefault(); e.stopPropagation(); }
-  const cb=document.getElementById('mybcb-'+id);
-  if(cb) cb.checked=false;
-  delete packageData[id];
-  updateMyEditBudget();
 }
 
 function closeEditBooking(){
@@ -4505,8 +4606,6 @@ async function confirmEditBooking(){
    MY BOOKINGS — public email lookup + package-only editing
 ════════════════════════════════════════════════════════ */
 let myBookingsCache = [];
-let _myEditBookingId = null;
-let _myEditDurMins = 0;
 let _myEditEmail = '';
 
 function toggleSidebar(force){
@@ -4593,7 +4692,7 @@ function renderMyBookingList(){
     const dow=dt.toLocaleDateString('en-CA',{weekday:'long'});
     const statusCls=isPast?'status-past':isToday?'status-today':'status-upcoming';
     const statusLabel=isPast?'Completed':isToday?'Today':'Upcoming';
-    const pkgTags=(b.packages||[]).map(p=>`<span class="pkg-tag">${p}</span>`).join('');
+    const pkgTags=packageTagLabels(b).map(p=>`<span class="pkg-tag">${p}</span>`).join('');
     html+=`
     <div class="booking-card${isPast?' past':''}" onclick="openMyBDetail('${b.id}')">
       <div class="booking-card-header">
@@ -4622,125 +4721,340 @@ function openMyBDetail(bookingId){
   const footer=document.getElementById('bdetail-footer');
   if(footer) footer.innerHTML = isPast
     ? `<p style="font-size:12.5px;color:var(--text-muted);text-align:center;margin:0;width:100%;font-family:Inter,sans-serif">This shoot has already passed and can no longer be edited.</p>`
-    : `<button class="bdetail-reschedule-btn" style="width:100%" onclick="openMyBookingEdit('${b.id}')">✏️ Edit Content Packages</button>`;
+    : `<button class="bdetail-reschedule-btn" style="width:100%" onclick="enterMyBookingEditMode('${b.id}')">✏️ Edit Content Packages</button>`;
   document.getElementById('bdetail-backdrop').classList.add('open');
   document.body.style.overflow='hidden';
 }
 
-function openMyBookingEdit(id){
+/* ════════════════════════════════════════════════════════
+   MY BOOKINGS — INLINE CONTENT-PACKAGE EDITOR
+   Editing happens directly inside the booking detail view (#bdetail-body)
+   instead of a separate modal — the same read-only layout, but each field
+   becomes an input pre-filled with the existing value. Driven by
+   PKG_FIELD_SCHEMA so every package type (including adding a package that
+   wasn't originally booked) goes through one render/collect path instead of
+   a hand-written block per package. Booking time-budget rules are NOT
+   enforced here — those only guard new bookings; once booked, content can be
+   freely adjusted. The calendar event itself is never touched beyond its
+   fixed reminder text, so this editor is the single source of truth for
+   what to shoot that day.
+════════════════════════════════════════════════════════ */
+const PKG_FIELD_SCHEMA = {
+  ethnic: { type:'list', itemLabel:'Ethnic Video', fields:[
+    {key:'lang',   label:'Language / Dialect',      kind:'text',     placeholder:'e.g. Punjabi, Mandarin, Tamil…'},
+    {key:'name',   label:'Subject / Person',         kind:'text',     placeholder:'Full name'},
+    {key:'role',   label:'Role',                     kind:'text',     placeholder:'e.g. Sales Rep, Manager'},
+    {key:'script', label:'Script / Talking Points',  kind:'textarea'},
+  ]},
+  walkaround: { type:'list', itemLabel:'Vehicle', fields:[
+    {key:'year',  label:'Year',  kind:'text'},
+    {key:'model', label:'Model', kind:'text'},
+    {key:'notes', label:'Notes', kind:'textarea'},
+  ]},
+  salesvideo: { type:'list', itemLabel:'Video', fields:[
+    {key:'speaker', label:'Speaker',         kind:'text'},
+    {key:'role',    label:'Role',            kind:'text'},
+    {key:'notes',   label:'Notes',           kind:'textarea'},
+    {key:'ref',     label:'Reference Link',  kind:'text'},
+  ]},
+  social: { type:'list', itemLabel:'Video', fields:[
+    {key:'hook',  label:'Hook / Theme',   kind:'text'},
+    {key:'count', label:'Deliverables',   kind:'text'},
+  ]},
+  emilyspecial: { type:'list', itemLabel:'Video', fields:[
+    {key:'hook',  label:'Hook / Theme',   kind:'text'},
+    {key:'count', label:'Deliverables',   kind:'text'},
+  ]},
+  salesrep: { type:'list', itemLabel:'Rep', fields:[
+    {key:'name',  label:'Rep Name',             kind:'text'},
+    {key:'role',  label:'Title / Role',         kind:'text'},
+    {key:'lang',  label:'Languages Spoken',     kind:'text'},
+    {key:'notes', label:'Key Message',          kind:'textarea'},
+    {key:'ref',   label:'Reference File Link',  kind:'text'},
+  ]},
+  headshots: { type:'names' },
+  service: { type:'flat', fields:[
+    {key:'speaker', label:'Person Speaking on Video', kind:'text'},
+    {key:'role',    label:'Title / Role',              kind:'text'},
+    {key:'notes',   label:'Notes',                      kind:'textarea'},
+  ]},
+  event: { type:'flat', fields:[
+    {key:'name',    label:'Event Name',      kind:'text'},
+    {key:'contact', label:'Contact Person',  kind:'text'},
+    {key:'phone',   label:'Contact Phone',   kind:'text'},
+    {key:'from',    label:'From',            kind:'text'},
+    {key:'until',   label:'Until',           kind:'text'},
+    {key:'moments', label:'Key Moments',     kind:'textarea'},
+  ]},
+  gmb: { type:'photos' },
+};
+
+let _myEditBooking = null; // the booking currently open in the inline editor
+
+function enterMyBookingEditMode(id){
   const b=myBookingsCache.find(x=>x.id===id);
   if(!b) return;
-  _myEditBookingId=id;
-  _myEditDurMins=b.durMins||(DURATIONS.find(d=>d.label===b.durLabel)?.mins)||((b.endMin!=null&&b.startMin!=null)?(b.endMin-b.startMin):0);
-  _activePkgGridId='mybooking-packages-grid';
-  // Backup public form packageData and load this booking's detail
-  _editPkgDataBackup=JSON.parse(JSON.stringify(packageData));
-  Object.keys(packageData).forEach(k=>delete packageData[k]);
-  if(b.packageDetail) Object.assign(packageData, JSON.parse(JSON.stringify(b.packageDetail)));
-  const prettyDate=new Date(b.date+'T12:00:00').toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
-  document.getElementById('myb-edit-sub').textContent='Only your content packages can be changed — date, time & location are fixed.';
-  // Read-only calendar highlighting today + the booking date
-  renderReadonlyCal(b.date, 'myb-edit-cal');
-  // Read-only summary of the locked values
-  document.getElementById('myb-edit-info').innerHTML=`
-    <div class="bdetail-row"><span class="bdetail-key">Date</span><span class="bdetail-val">${prettyDate}</span></div>
+  _myEditBooking=b;
+  document.getElementById('bdetail-body').innerHTML=buildMyEditHTML(b);
+  populateMyEditPackages(b);
+  const footer=document.getElementById('bdetail-footer');
+  if(footer) footer.innerHTML=`
+    <div class="bdetail-footer-btns">
+      <button class="bdetail-reschedule-btn" style="background:var(--surface);border:1px solid var(--border);color:var(--text)" onclick="cancelMyBookingEdit()">Cancel</button>
+      <button class="bdetail-reschedule-btn" onclick="saveMyBookingEdit()">💾 Save Changes</button>
+    </div>`;
+}
+
+function cancelMyBookingEdit(){
+  if(!_myEditBooking) return;
+  const id=_myEditBooking.id;
+  _myEditBooking=null;
+  openMyBDetail(id); // re-renders the read view straight from the untouched cache
+}
+
+function buildMyEditHTML(b){
+  return `<div class="bdetail-section">
+    <div class="bdetail-section-title">Shoot Details <span style="font-weight:400;font-size:11px;color:var(--text-muted);text-transform:none;letter-spacing:0">(fixed — contact the studio to change)</span></div>
+    <div class="bdetail-row"><span class="bdetail-key">Date</span><span class="bdetail-val">${new Date(b.date+'T12:00:00').toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}</span></div>
     <div class="bdetail-row"><span class="bdetail-key">Time</span><span class="bdetail-val">${minsToTime12(b.startMin)} – ${minsToTime12(b.endMin)} (${b.durLabel})</span></div>
     <div class="bdetail-row"><span class="bdetail-key">Location</span><span class="bdetail-val">${b.store}</span></div>
-    <div class="bdetail-row"><span class="bdetail-key">Zone</span><span class="bdetail-val">${b.zoneName||''}</span></div>`;
-  const _pkgList=(b.packages&&b.packages.length)?b.packages:Object.keys(b.packageDetail||{});
-  rerenderEditPkgGrid(_pkgList, 'mybooking-packages-grid');
-  document.getElementById('myb-edit-error').textContent='';
-  document.getElementById('mybooking-edit-backdrop').classList.add('open');
-  document.body.style.overflow='hidden';
-}
-function renderReadonlyCal(dstr, containerId){
-  const cont=document.getElementById(containerId);
-  if(!cont) return;
-  const bd=new Date(dstr+'T12:00:00');
-  const y=bd.getFullYear(), m=bd.getMonth();
-  const todayStr=dateStr(new Date());
-  const monthLabel=new Date(y,m,1).toLocaleDateString('en-CA',{month:'long',year:'numeric'});
-  const firstDay=new Date(y,m,1).getDay();
-  const daysInMonth=new Date(y,m+1,0).getDate();
-  let cells='';
-  for(let i=0;i<firstDay;i++) cells+='<div class="cal-day cal-empty"></div>';
-  for(let d=1;d<=daysInMonth;d++){
-    const cur=dateStr(new Date(y,m,d));
-    let cls='cal-day';
-    if(cur===todayStr) cls+=' cal-today';
-    if(cur===dstr) cls+=' cal-selected';
-    cells+=`<div class="${cls}" style="cursor:default"><span>${d}</span></div>`;
-  }
-  cont.innerHTML=`
-    <div class="cal-nav"><div class="cal-month-label">${monthLabel}</div></div>
-    <div class="cal-weekdays"><div class="cal-wd">Sun</div><div class="cal-wd">Mon</div><div class="cal-wd">Tue</div><div class="cal-wd">Wed</div><div class="cal-wd">Thu</div><div class="cal-wd">Fri</div><div class="cal-wd">Sat</div></div>
-    <div class="cal-grid">${cells}</div>`;
-}
-function closeMyBookingEdit(){
-  _myEditBookingId=null;
-  if(_editPkgDataBackup){
-    Object.keys(packageData).forEach(k=>delete packageData[k]);
-    Object.assign(packageData, _editPkgDataBackup);
-    _editPkgDataBackup=null;
-  }
-  document.getElementById('mybooking-edit-backdrop').classList.remove('open');
-  document.body.style.overflow='hidden';
-}
-function closeMyBookingEditOnBackdrop(e){
-  if(e.target===document.getElementById('mybooking-edit-backdrop')) closeMyBookingEdit();
+  </div>
+  <div class="bdetail-section">
+    <div class="bdetail-section-title">Content Packages</div>
+    <div id="myedit-pkg-list"></div>
+    <div id="myedit-add-wrap" style="margin-top:10px"></div>
+    <p id="myedit-error" style="color:var(--red);font-size:12.5px;font-weight:600;margin:10px 0 0"></p>
+  </div>
+  <div class="bdetail-section">
+    <div class="bdetail-section-title">Script</div>
+    <div class="field" style="margin:0"><textarea id="myedit-script" placeholder="Paste a link, or paste the script itself…" style="min-height:90px"></textarea></div>
+  </div>`;
 }
 
-function getMyEditPkgMins(){
-  const checked=[...document.querySelectorAll('#mybooking-packages-grid input[type=checkbox]:checked')].map(cb=>cb.value);
-  return checked.reduce((sum,id)=>sum+getPkgTimeCost(id),0);
-}
-function updateMyEditBudget(){
-  const used=getMyEditPkgMins();
-  const total=_myEditDurMins||0;
-  const counter=document.getElementById('myb-budget-counter');
-  const fill=document.getElementById('myb-budget-fill');
-  const hint=document.getElementById('myb-budget-hint');
-  if(!counter||!fill) return;
-  counter.textContent=`${used} / ${total} min used`;
-  const pct=total?Math.min(100,Math.round(used/total*100)):0;
-  fill.style.width=pct+'%';
-  const over=used>total;
-  fill.style.background=over?'var(--red)':pct>=80?'var(--orange)':'var(--green)';
-  if(hint) hint.textContent=over
-    ? `⚠ Over your booked time by ${used-total} min. Remove some content to fit within ${total} min.`
-    : `${total-used} min still available within your booked session.`;
+/* Blank field element, value set via .value (never string-interpolated) so
+   pasted content can never break out of an attribute. */
+function myEditFieldEl(f, value){
+  const wrap=document.createElement('div'); wrap.className='field';
+  const label=document.createElement('label'); label.textContent=f.label;
+  wrap.appendChild(label);
+  const input=document.createElement(f.kind==='textarea'?'textarea':'input');
+  if(f.kind!=='textarea') input.type='text';
+  input.dataset.field=f.key;
+  if(f.placeholder) input.placeholder=f.placeholder;
+  input.value=value||'';
+  wrap.appendChild(input);
+  return wrap;
 }
 
-async function confirmMyBookingEdit(){
-  if(!_myEditBookingId) return;
-  const b=myBookingsCache.find(x=>x.id===_myEditBookingId);
-  if(!b) return;
-  const errEl=document.getElementById('myb-edit-error');
-  // Enforce time budget
-  const used=getMyEditPkgMins();
-  if(used>_myEditDurMins){
-    errEl.textContent=`Your selections need ${used} min but your booked session is only ${_myEditDurMins} min. Remove some content to continue.`;
-    return;
+function myEditAddEntry(pkgId, data, entriesWrap){
+  const schema=PKG_FIELD_SCHEMA[pkgId];
+  const wrap=entriesWrap||document.querySelector(`[data-pkg-block="${pkgId}"] .myedit-entries`);
+  if(!wrap) return;
+  const card=document.createElement('div'); card.className='entry-card'; card.dataset.entry='';
+  if(wrap.children.length>0){
+    const rm=document.createElement('button');
+    rm.type='button'; rm.className='entry-remove'; rm.textContent='×';
+    rm.onclick=()=>card.remove();
+    card.appendChild(rm);
   }
-  const packages=[...document.querySelectorAll('#mybooking-packages-grid input[type=checkbox]:checked')].map(cb=>cb.value);
-  if(!packages.length){ errEl.textContent='Please keep at least one content package.'; return; }
-  const packageDetail={};
-  packages.forEach(pid=>{ if(packageData[pid]) packageDetail[pid]=packageData[pid]; });
-  const btn=document.getElementById('myb-edit-confirm-btn');
-  btn.disabled=true; btn.textContent='Saving…';
+  schema.fields.forEach(f=>card.appendChild(myEditFieldEl(f,(data&&data[f.key])||'')));
+  wrap.appendChild(card);
+}
+
+function myEditAddNameRow(wrap, name){
+  const div=document.createElement('div'); div.className='headshot-person';
+  const input=document.createElement('input');
+  input.type='text'; input.className='myedit-name-input'; input.placeholder='Full name of person'; input.value=name||'';
+  div.appendChild(input);
+  const rm=document.createElement('button'); rm.type='button'; rm.className='remove-person'; rm.textContent='×';
+  rm.onclick=()=>{ if(wrap.children.length>1) div.remove(); };
+  div.appendChild(rm);
+  wrap.appendChild(div);
+}
+
+function myEditPhotosFields(data){
+  const frag=document.createDocumentFragment();
+  const typesWrap=document.createElement('div'); typesWrap.className='field';
+  typesWrap.innerHTML='<label>Photo Types</label>';
+  const tog=document.createElement('div'); tog.className='toggle-group';
+  [['gmb','📍 GMB'],['vehicle','🚗 Vehicle'],['service','🔧 Service'],['lifestyle','✨ Lifestyle']].forEach(([t,lbl])=>{
+    const id='myedit-photo-'+t;
+    const cb=document.createElement('input');
+    cb.type='checkbox'; cb.className='tog-input'; cb.id=id; cb.dataset.field='photo-'+t; cb.checked=!!data['photo-'+t];
+    const l=document.createElement('label'); l.className='tog-label'; l.htmlFor=id; l.textContent=lbl;
+    tog.appendChild(cb); tog.appendChild(l);
+  });
+  typesWrap.appendChild(tog);
+  frag.appendChild(typesWrap);
+
+  const setWrap=document.createElement('div'); setWrap.className='field';
+  setWrap.innerHTML='<label>Setting</label>';
+  const tog2=document.createElement('div'); tog2.className='toggle-group';
+  [['in','Indoor'],['out','Outdoor'],['both','Both']].forEach(([t,lbl])=>{
+    const id='myedit-photo-set-'+t;
+    const r=document.createElement('input');
+    r.type='radio'; r.className='tog-input'; r.name='myedit-photo-setting'; r.id=id; r.dataset.field='setting'; r.value=t; r.checked=data.setting===t;
+    const l=document.createElement('label'); l.className='tog-label'; l.htmlFor=id; l.textContent=lbl;
+    tog2.appendChild(r); tog2.appendChild(l);
+  });
+  setWrap.appendChild(tog2);
+  frag.appendChild(setWrap);
+
+  frag.appendChild(myEditFieldEl({key:'count',label:'Number of Photos / Deliverables',kind:'text',placeholder:'e.g. 20 GMB + 10 vehicle shots'}, data.count));
+  frag.appendChild(myEditFieldEl({key:'areas',label:'Areas or Subjects to Cover',kind:'textarea',placeholder:'Showroom floor, service bay, specific vehicles…'}, data.areas));
+  frag.appendChild(myEditFieldEl({key:'ref',label:'Reference Link',kind:'text',placeholder:'Google Drive, Doc, Pinterest… https://'}, data.ref));
+  return frag;
+}
+
+function myEditAddPackageBlock(pkgId, data){
+  const schema=PKG_FIELD_SCHEMA[pkgId];
+  const meta=PACKAGES.find(p=>p.id===pkgId);
+  const list=document.getElementById('myedit-pkg-list');
+  if(!schema||!meta||!list||list.querySelector(`[data-pkg-block="${pkgId}"]`)) return;
+
+  const block=document.createElement('div');
+  block.className='pkg-detail-block'; block.dataset.pkgBlock=pkgId;
+
+  const title=document.createElement('div');
+  title.className='pkg-detail-block-title'; title.style.justifyContent='space-between';
+  const titleText=document.createElement('span'); titleText.innerHTML=`<span>${pkgIconHTML(meta)}</span> ${meta.label}`;
+  title.appendChild(titleText);
+  const removeBtn=document.createElement('button');
+  removeBtn.type='button'; removeBtn.textContent='Remove'; removeBtn.className='pkg-remove-btn';
+  removeBtn.onclick=()=>myEditRemovePackageBlock(pkgId);
+  title.appendChild(removeBtn);
+  block.appendChild(title);
+
+  if(schema.type==='list'){
+    const entriesWrap=document.createElement('div'); entriesWrap.className='myedit-entries';
+    block.appendChild(entriesWrap);
+    const entries=(data&&data.entries&&data.entries.length)?data.entries:[{}];
+    entries.forEach(e=>myEditAddEntry(pkgId,e,entriesWrap));
+    const addBtn=document.createElement('button');
+    addBtn.type='button'; addBtn.className='add-entry-btn'; addBtn.textContent=`+ Add Another ${schema.itemLabel}`;
+    addBtn.onclick=()=>myEditAddEntry(pkgId,{},entriesWrap);
+    block.appendChild(addBtn);
+  } else if(schema.type==='flat'){
+    schema.fields.forEach(f=>block.appendChild(myEditFieldEl(f,(data&&data[f.key])||'')));
+  } else if(schema.type==='names'){
+    const namesWrap=document.createElement('div'); namesWrap.className='myedit-names';
+    block.appendChild(namesWrap);
+    const names=(data&&data.names&&data.names.length)?data.names:[''];
+    names.forEach(n=>myEditAddNameRow(namesWrap,n));
+    const addBtn=document.createElement('button');
+    addBtn.type='button'; addBtn.className='add-entry-btn'; addBtn.textContent='+ Add Another Person';
+    addBtn.onclick=()=>myEditAddNameRow(namesWrap,'');
+    block.appendChild(addBtn);
+  } else if(schema.type==='photos'){
+    block.appendChild(myEditPhotosFields(data||{}));
+  }
+
+  list.appendChild(block);
+  myEditRefreshAddChips();
+}
+
+function myEditRemovePackageBlock(pkgId){
+  const block=document.querySelector(`[data-pkg-block="${pkgId}"]`);
+  if(block) block.remove();
+  myEditRefreshAddChips();
+}
+
+function myEditRefreshAddChips(){
+  const wrap=document.getElementById('myedit-add-wrap');
+  if(!wrap) return;
+  const present=new Set([...document.querySelectorAll('#myedit-pkg-list [data-pkg-block]')].map(el=>el.dataset.pkgBlock));
+  // Emily Special only offered as an addable option on Emily's own bookings —
+  // never surfaced as a generic option for anyone else editing any booking.
+  const isEmily=(_myEditEmail||'').trim().toLowerCase()===EMILY_EMAIL;
+  const remaining=PACKAGES.filter(p=>!present.has(p.id)&&(p.id!=='emilyspecial'||isEmily));
+  wrap.innerHTML='';
+  if(!remaining.length) return;
+  const label=document.createElement('div');
+  label.className='bdetail-section-title';
+  label.textContent='Add a Package';
+  wrap.appendChild(label);
+  // Reuses the .pkg-label "pick a package" card from the main booking form's
+  // packages-grid — same control, same look, everywhere a package is chosen.
+  const row=document.createElement('div');
+  row.className='myedit-add-pkg-grid';
+  remaining.forEach(p=>{
+    const chip=document.createElement('button');
+    chip.type='button'; chip.className='myedit-add-pkg-btn';
+    chip.innerHTML=`<span class="pkg-icon">${pkgIconHTML(p)}</span><span class="pkg-label-text">${p.label}</span>`;
+    chip.onclick=()=>myEditAddPackageBlock(p.id,{});
+    row.appendChild(chip);
+  });
+  wrap.appendChild(row);
+}
+
+function populateMyEditPackages(b){
+  const pd=b.packageDetail||{};
+  // packageDetail is always keyed by canonical id, even on bookings made
+  // before b.packages itself switched from formatted labels to ids — so it's
+  // the one reliable source for "which packages does this booking have".
+  const present=Object.keys(pd).filter(pid=>pd[pid]&&PKG_FIELD_SCHEMA[pid]);
+  present.forEach(pid=>myEditAddPackageBlock(pid, pd[pid]));
+  myEditRefreshAddChips();
+  const scriptEl=document.getElementById('myedit-script');
+  if(scriptEl) scriptEl.value=b.scriptLink||'';
+}
+
+function collectMyEditPackages(){
+  const packages=[], packageDetail={};
+  document.querySelectorAll('#myedit-pkg-list [data-pkg-block]').forEach(block=>{
+    const pkgId=block.dataset.pkgBlock;
+    const schema=PKG_FIELD_SCHEMA[pkgId];
+    if(!schema) return;
+    packages.push(pkgId);
+    if(schema.type==='list'){
+      const entries=[...block.querySelectorAll('.myedit-entries .entry-card')].map(card=>{
+        const obj={};
+        schema.fields.forEach(f=>{ obj[f.key]=card.querySelector(`[data-field="${f.key}"]`)?.value||''; });
+        return obj;
+      });
+      packageDetail[pkgId]={entries};
+    } else if(schema.type==='flat'){
+      const obj={};
+      schema.fields.forEach(f=>{ obj[f.key]=block.querySelector(`[data-field="${f.key}"]`)?.value||''; });
+      packageDetail[pkgId]=obj;
+    } else if(schema.type==='names'){
+      packageDetail[pkgId]={names:[...block.querySelectorAll('.myedit-names .myedit-name-input')].map(i=>i.value||'')};
+    } else if(schema.type==='photos'){
+      const obj={};
+      ['gmb','vehicle','service','lifestyle'].forEach(t=>{ obj['photo-'+t]=block.querySelector(`[data-field="photo-${t}"]`)?.checked||false; });
+      const settingEl=block.querySelector('[data-field="setting"]:checked');
+      obj.setting=settingEl?settingEl.value:'';
+      obj.count=block.querySelector('[data-field="count"]')?.value||'';
+      obj.areas=block.querySelector('[data-field="areas"]')?.value||'';
+      obj.ref=block.querySelector('[data-field="ref"]')?.value||'';
+      packageDetail[pkgId]=obj;
+    }
+  });
+  return {packages, packageDetail};
+}
+
+async function saveMyBookingEdit(){
+  if(!_myEditBooking) return;
+  const b=_myEditBooking;
+  const errEl=document.getElementById('myedit-error');
+  if(errEl) errEl.textContent='';
+  const {packages, packageDetail}=collectMyEditPackages();
+  if(!packages.length){ if(errEl) errEl.textContent='Please keep at least one content package.'; return; }
+  const scriptLink=document.getElementById('myedit-script')?.value?.trim()||'';
+  const saveBtn=document.querySelector('#bdetail-footer .bdetail-footer-btns .bdetail-reschedule-btn:last-child');
+  if(saveBtn){ saveBtn.disabled=true; saveBtn.textContent='Saving…'; }
   try{
-    const res=await fetch('/.netlify/functions/update-my-booking',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventId:b.eventId,email:_myEditEmail,packages,packageDetail})});
+    const res=await fetch('/.netlify/functions/update-my-booking',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventId:b.eventId,email:_myEditEmail,packages,packageDetail,scriptLink})});
     const d=await res.json();
     if(!res.ok) throw new Error(d.error||'Update failed');
     // Update local cache so the detail view reflects changes
-    b.packages=packages; b.packageDetail=packageDetail;
-    closeMyBookingEdit();
-    closeBDetailDirect();
+    b.packages=packages; b.packageDetail=packageDetail; b.scriptLink=scriptLink;
+    _myEditBooking=null;
+    openMyBDetail(b.id);
     renderMyBookingList();
   }catch(err){
-    errEl.textContent='Save failed: '+err.message;
-  }finally{
-    btn.disabled=false; btn.textContent='Save Changes';
+    if(errEl) errEl.textContent='Save failed: '+err.message;
+    if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent='💾 Save Changes'; }
   }
 }
 
@@ -4918,38 +5232,6 @@ async function confirmMyBookingEdit(){
 </div>
 
 
-<!-- ══ MY BOOKING EDIT MODAL (content packages only) ══ -->
-<div class="reschedule-backdrop" id="mybooking-edit-backdrop" onclick="closeMyBookingEditOnBackdrop(event)">
-  <div class="reschedule-modal" style="max-height:90vh;overflow-y:auto;max-width:560px">
-    <div class="reschedule-title">Edit Your Booking</div>
-    <div class="reschedule-sub" id="myb-edit-sub"></div>
-
-    <!-- Read-only calendar context -->
-    <div class="admin-cal-card" id="myb-edit-cal" style="margin-top:16px"></div>
-
-    <!-- Read-only booking summary -->
-    <div id="myb-edit-info" style="margin-top:14px"></div>
-
-    <div style="border-top:1px solid var(--border);margin:18px 0 4px"></div>
-
-    <div class="section-label" style="margin-bottom:14px"><div class="section-num">04</div><div class="section-title">Content Packages</div><div class="section-hint">Tap to select · tap again to edit details</div></div>
-    <div class="pkg-budget-wrap">
-      <div class="pkg-budget-header">
-        <span class="pkg-budget-label">⏱ Time Budget</span>
-        <span class="pkg-budget-counter" id="myb-budget-counter">0 / 0 min used</span>
-      </div>
-      <div class="pkg-budget-bar"><div class="pkg-budget-fill" id="myb-budget-fill" style="width:0%"></div></div>
-      <div class="pkg-budget-hint" id="myb-budget-hint"></div>
-    </div>
-    <div id="mybooking-packages-grid" class="packages-grid"></div>
-    <div class="reschedule-error" id="myb-edit-error"></div>
-    <div class="reschedule-actions">
-      <button class="reschedule-cancel-btn" onclick="closeMyBookingEdit()">Cancel</button>
-      <button class="reschedule-confirm-btn ready" id="myb-edit-confirm-btn" onclick="confirmMyBookingEdit()">Save Changes</button>
-    </div>
-  </div>
-</div>
-
 
 <!-- ══ CANCEL BOOKING CONFIRM MODAL ══ -->
 <div class="reset-modal-backdrop" id="cancel-booking-backdrop" style="z-index:900">
@@ -5029,8 +5311,8 @@ async function confirmMyBookingEdit(){
         <div id="edit-packages-grid"></div>
       </div>
       <div>
-        <label style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);display:block;margin-bottom:6px;font-family:'Inter',sans-serif">Script Link</label>
-        <input type="text" id="edit-script-link" placeholder="https://" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box">
+        <label style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);display:block;margin-bottom:6px;font-family:'Inter',sans-serif">Script Link or Script Text</label>
+        <textarea id="edit-script-link" placeholder="https:// or pasted script text" style="width:100%;min-height:90px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box;resize:vertical"></textarea>
       </div>
       <div>
         <label style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);display:block;margin-bottom:6px;font-family:'Inter',sans-serif">Additional Notes</label>

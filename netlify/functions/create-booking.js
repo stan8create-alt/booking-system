@@ -32,7 +32,7 @@ exports.handler = async (event) => {
         description,
         start: { dateTime: startDateTime, timeZone: 'America/Toronto' },
         end: { dateTime: endDateTime, timeZone: 'America/Toronto' },
-        attendees: [{ email: 'stan@8create.ca' }],
+        attendees: [{ email: 'stan@8create.ca' }, { email: 'andrewkotovych@gmail.com' }],
         // Durable secondary identifier — survives GCal UI edits much better than
         // extendedProperties.private (which guest accept-sync can strip).
         source: { title: SOURCE_TITLE, url: SOURCE_URL },
