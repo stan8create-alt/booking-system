@@ -27,7 +27,7 @@ exports.handler = async (event) => {
 
   let payload;
   try { payload = JSON.parse(event.body); } catch { return { statusCode: 400, body: JSON.stringify({ error: 'Bad request' }) }; }
-  const { eventId, email, packages, packageDetail, notes, scriptLink } = payload;
+  const { eventId, email, packages, packageDetail, notes, scriptLink, contact, contactPhone } = payload;
   if (!eventId || !email) return { statusCode: 400, body: JSON.stringify({ error: 'Missing eventId or email' }) };
   const target = email.trim().toLowerCase();
 
@@ -63,6 +63,12 @@ exports.handler = async (event) => {
       scriptLink: scriptLink != null ? scriptLink : bookingData.scriptLink,
       notes: notes != null ? notes : bookingData.notes,
     };
+    // Master (admin-created) bookings arrive without on-site contact info so the
+    // strategist can supply it. Ordinary bookings keep contact fixed.
+    if (bookingData.adminCreated) {
+      if (typeof contact === 'string') updated.contact = contact.trim();
+      if (typeof contactPhone === 'string') updated.contactPhone = contactPhone.trim();
+    }
     delete updated._recoveredFromDescription; // breadcrumb only — don't persist
 
     // Patch description + metadata only — do NOT touch start/end (no reschedule).

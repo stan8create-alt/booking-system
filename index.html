@@ -693,6 +693,10 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
 </style>
 </head>
 <body class="mainpage">
+<div id="master-banner" style="display:none;position:sticky;top:0;z-index:300;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:var(--accent);color:#fff;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700">
+  <span>MASTER BOOKING · availability rules bypassed</span>
+  <button onclick="exitMasterBooking()" style="background:rgba(255,255,255,.2);border:none;color:#fff;font-family:inherit;font-size:12px;font-weight:800;padding:6px 12px;border-radius:8px;cursor:pointer">← Back to Admin</button>
+</div>
 
 <!-- ══ MODAL BACKDROP ══ -->
 <div class="modal-backdrop" id="modal-backdrop" onclick="closeModalOnBackdrop(event)">
@@ -946,6 +950,7 @@ input.invalid,select.invalid{border-color:rgba(239,68,68,.55)!important;box-shad
       Add to Google
     </button>
   </div>
+  <p class="success-detail" id="master-success-note" style="display:none;font-size:12.5px;color:var(--orange)"></p>
   <button class="book-another-btn" onclick="resetForAnotherBooking()">+ Book Another Store</button>
   <p class="success-detail" style="font-size:12.5px;margin-top:22px;">Need changes? Contact Stan directly.</p>
 </div>
@@ -1111,7 +1116,7 @@ function updatePkgBudget(){
       return;
     }
     const cost = getPkgTimeCost(p.id); // cost if they were to add it
-    const wouldExceed = (used + cost) > cap;
+    const wouldExceed = !masterMode && (used + cost) > cap;
     wrap.classList.toggle('pkg-time-locked-wrap', wouldExceed);
     // Set tooltip on label
     const lbl = document.getElementById('label-' + p.id);
@@ -1192,6 +1197,9 @@ function getEaster(y){
 }
 
 /* ── STATE ── */
+// Admin-only "master booking": the public form run with every availability
+// rule bypassed. Enabled by enterMasterBooking(); submits to admin-create-booking.
+let masterMode = false;
 let selectedDate     = null;
 let selectedDuration = null;
 let selectedSlot     = null;
@@ -1270,6 +1278,7 @@ const BLOCK_LABELS = {
    is allowed to re-derive eligibility. Returns null when bookable, else a
    short reason key from BLOCK_LABELS. */
 function dateBlockReason(dstr, userZone){
+  if(masterMode) return null; // admin override: any day is bookable
   const dt  = new Date(dstr+'T00:00:00');
   const dow = dt.getDay(); // 0=Sun,6=Sat
   if(dow===0||dow===6) return 'weekend';
@@ -1755,7 +1764,7 @@ function renderDurationPicker(){
     const fitsInDay=endMin<=DAY_END;
     const overlapsBooking=dayBookings.some(b=>selectedSlot<b.endMin&&endMin>b.startMin);
     const overlapsGcal=googleBusyRanges.some(b=>selectedSlot<isoToMinsET(b.end)&&endMin>isoToMinsET(b.start));
-    return fitsInDay&&!overlapsBooking&&!overlapsGcal&&!isFullDayBooked;
+    return masterMode||(fitsInDay&&!overlapsBooking&&!overlapsGcal&&!isFullDayBooked);
   });
   // Fits is monotonic non-increasing in duration: extending a session (same
   // start, later end) can only add overlaps or push past DAY_END, never
@@ -1812,7 +1821,7 @@ function renderSlots(){
       const gcalBusy=googleBusyRanges.some(b=>startMin<isoToMinsET(b.end)&&endMin>isoToMinsET(b.start));
       const full=minsToTime12(startMin);
       btn.innerHTML=`<span class="slot-time">${slotDisplayLabel(startMin)}</span>`;
-      if(overlaps||gcalBusy){
+      if((overlaps||gcalBusy)&&!masterMode){
         btn.classList.add('disabled');
         btn.disabled=true;
         btn.setAttribute('aria-label',`${full}, booked`);
@@ -2220,7 +2229,7 @@ function onPackageToggle(id){
   const checked=document.getElementById('pkg-'+id).checked;
   if(checked){
     // Check time budget before allowing selection
-    if(selectedDuration){
+    if(selectedDuration && !masterMode){
       const cost = getPkgTimeCost(id);
       const used = getTotalPkgMins() - cost; // subtract because it's already checked
       const remaining = selectedDuration - used;
@@ -2888,10 +2897,14 @@ function validate(){
   if(!selectedDate) errors.push('Please select a shoot date from the calendar.');
   if(!selectedDuration) errors.push('Please select a session duration.');
   if(selectedSlot===null) errors.push('Please select a start time.');
-  const contact=document.getElementById('onsite-contact').value.trim();
-  mark('onsite-contact',!contact); if(!contact) errors.push('On-site contact name is required.');
-  if(getSelectedPackages().length===0) errors.push('Please select at least one content package.');
-  if(selectedDuration && getTotalPkgMins() > selectedDuration){
+  // Master booking: only block 01 + 02 are required — the strategist fills in
+  // contact, packages and script later via My Bookings.
+  if(!masterMode){
+    const contact=document.getElementById('onsite-contact').value.trim();
+    mark('onsite-contact',!contact); if(!contact) errors.push('On-site contact name is required.');
+    if(getSelectedPackages().length===0) errors.push('Please select at least one content package.');
+  }
+  if(!masterMode && selectedDuration && getTotalPkgMins() > selectedDuration){
     errors.push(`Selected packages need ~${getTotalPkgMins()} min but session is only ${selectedDuration} min. Deselect a package or choose a longer duration.`);
   }
   return errors;
@@ -2923,6 +2936,11 @@ async function verifyAndContinue(){
   hideAlert('details-alert');
   const email=document.getElementById('strategist-email').value.trim();
   const btn=document.getElementById('verify-btn');
+  if(masterMode){ // admin: no allowlist check
+    await markVerified(email);
+    document.getElementById('datetime-section')?.scrollIntoView({behavior:'smooth',block:'start'});
+    return;
+  }
   verifyState='checking';
   if(btn){ btn.disabled=true; btn.textContent='Checking…'; }
   try{
@@ -3003,17 +3021,24 @@ async function handleSubmit(){
   const eh=String(Math.floor(endMin/60)).padStart(2,'0'),       em=String(endMin%60).padStart(2,'0');
 
   try {
-    await createCalendarEvent({summary:`📷 ${store} — Content Shoot`,description:desc,startDateTime:`${selectedDate}T${sh}:${sm}:00`,endDateTime:`${selectedDate}T${eh}:${em}:00`,bookingData:bookingPayload});
-    existingBookings.push({date:selectedDate,startMin:selectedSlot,endMin,zone,store});
-    // Persist to localStorage for admin dashboard
-    persistBooking({strategistName,strategistEmail,store,zone,contact,contactPhone,packages,packageDetail:{...packageData},notes,durLabel,durMins:selectedDuration});
+    const created=await createCalendarEvent({summary:`📷 ${store} — Content Shoot`,description:desc,startDateTime:`${selectedDate}T${sh}:${sm}:00`,endDateTime:`${selectedDate}T${eh}:${em}:00`,bookingData:bookingPayload});
+    if(!masterMode){
+      existingBookings.push({date:selectedDate,startMin:selectedSlot,endMin,zone,store});
+      // Persist to localStorage for admin dashboard
+      persistBooking({strategistName,strategistEmail,store,zone,contact,contactPhone,packages,packageDetail:{...packageData},notes,durLabel,durMins:selectedDuration});
+    }
     renderCalendar();
     // Clear the draft now that it's been booked — otherwise a strategist who
     // closes the tab instead of clicking "Book Another Store" would come back
     // to find their just-submitted booking silently pre-filled as a draft,
     // one click away from an accidental duplicate submission.
-    localStorage.removeItem(AUTOSAVE_KEY);
+    if(!masterMode) localStorage.removeItem(AUTOSAVE_KEY);
     showSuccessScreen({strategistName,store,zone,contact,packages,packageDetail:{...packageData},durLabel});
+    const mn=document.getElementById('master-success-note');
+    if(mn){
+      mn.style.display=masterMode&&created&&created.emailNotAuthorized?'block':'none';
+      mn.textContent=strategistEmail+' is not on the authorized list, so they can see this booking under My Bookings but cannot edit it.';
+    }
   } catch(err){
     btn.disabled=false; btn.textContent='Confirm Booking';
     summary.innerHTML=`<strong>Calendar error:</strong> ${err.message||'Could not create event.'}`;
@@ -3199,6 +3224,7 @@ function getFormSnapshot(){
 }
 
 function doAutosave(){
+  if(masterMode){ autosaveScheduled=false; return; } // never overwrite the public draft
   const snap=getFormSnapshot();
   let saves=[];
   try{ saves=JSON.parse(localStorage.getItem(AUTOSAVE_KEY)||'[]'); }catch(e){}
@@ -3309,7 +3335,9 @@ async function loadAutosave(){
   setTimeout(()=>{ const l=document.getElementById('autosave-label'); if(l) l.textContent='Auto-save on'; },3000);
 }
 async function createCalendarEvent({summary,description,startDateTime,endDateTime,bookingData}){
-  const res=await fetch('/.netlify/functions/create-booking',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({summary,description,startDateTime,endDateTime,bookingData})});
+  const res=masterMode
+    ? await fetch('/.netlify/functions/admin-create-booking',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Token':getAdminToken()||''},body:JSON.stringify({bookingData})})
+    : await fetch('/.netlify/functions/create-booking',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({summary,description,startDateTime,endDateTime,bookingData})});
   const data=await res.json();
   if(!res.ok||data.error) throw new Error(data.error||'Booking failed');
   return data;
@@ -3328,7 +3356,7 @@ function showSuccessScreen({strategistName,store,zone,contact,packages,packageDe
     ...(_sl?[{key:'Script',val:_sl}]:[]),
     {key:'Booked By',val:strategistName},
   ];
-  document.getElementById('booking-summary').innerHTML=rows.map(r=>`<div class="summary-row"><span class="key">${r.key}</span><span class="val">${r.val}</span></div>`).join('');
+  document.getElementById('booking-summary').innerHTML=rows.filter(r=>r.val).map(r=>`<div class="summary-row"><span class="key">${r.key}</span><span class="val">${r.val}</span></div>`).join('');
 }
 
 /* ── RESET ── */
@@ -3371,7 +3399,7 @@ function resetForAnotherBooking(){
   if(lbl) lbl.textContent='Auto-save on';
   const dot=document.getElementById('autosave-dot');
   if(dot) dot.className='autosave-dot';
-  localStorage.removeItem(AUTOSAVE_KEY);
+  if(!masterMode) localStorage.removeItem(AUTOSAVE_KEY);
   const _drw=document.getElementById('duration-row-wrap'); if(_drw) _drw.style.display='none';
   renderDurationPicker();
   renderCalendar();
@@ -3664,6 +3692,30 @@ function hideAdmin(){
   window.scrollTo({top:0,behavior:'instant'});
 }
 
+/* Master booking: the real public form, run with all rules bypassed. */
+function enterMasterBooking(){
+  hideAdmin();
+  masterMode = true;
+  document.body.classList.add('master-mode');
+  document.querySelector('.rules-bar').style.display = 'none';
+  const bd=document.querySelector('.backdoor-btn'); if(bd) bd.style.display='none';
+  const st=document.getElementById('sidebar-toggle'); if(st) st.style.display='none';
+  document.getElementById('master-banner').style.display = 'flex';
+  resetForAnotherBooking();
+  const now=new Date(); calYear=now.getFullYear(); calMonth=now.getMonth();
+  renderCalendar();
+  fetchCalMonthBusy(calYear,calMonth);
+  window.scrollTo({top:0,behavior:'instant'});
+}
+function exitMasterBooking(){
+  resetForAnotherBooking(); // still in master mode, so the public draft is left alone
+  masterMode = false;
+  document.body.classList.remove('master-mode');
+  document.getElementById('master-banner').style.display = 'none';
+  renderCalendar();
+  showAdmin();
+}
+
 function switchAdminTab(tab){
   currentAdminTab = tab;
   document.getElementById('admin-tab-calendar').style.display = tab === 'calendar' ? 'block' : 'none';
@@ -3947,7 +3999,7 @@ function buildBDetailHTML(b){
     <div class="bdetail-section-title">People</div>
     <div class="bdetail-row"><span class="bdetail-key">Booked By</span><span class="bdetail-val">${b.strategistName}</span></div>
     <div class="bdetail-row"><span class="bdetail-key">Email</span><span class="bdetail-val">${b.strategistEmail}</span></div>
-    <div class="bdetail-row"><span class="bdetail-key">On-Site Contact</span><span class="bdetail-val">${b.contact}</span></div>
+    <div class="bdetail-row"><span class="bdetail-key">On-Site Contact</span><span class="bdetail-val">${b.contact||'<span style="color:var(--text-muted);font-weight:500">Not added yet</span>'}</span></div>
     ${b.contactPhone ? `<div class="bdetail-row"><span class="bdetail-key">Contact Phone</span><span class="bdetail-val">${b.contactPhone}</span></div>` : ''}
   </div>`;
 
@@ -4212,6 +4264,32 @@ function exportToOutlook(){
   const enc=encodeURIComponent;
   const query=`subject=${enc(ev.title)}&startdt=${enc(startdt)}&enddt=${enc(enddt)}&location=${enc(ev.store)}&body=${enc(ev.bodyLines)}`;
   window.open(`https://outlook.office.com/calendar/0/deeplink/compose?${query}`,'_blank');
+}
+
+/* Outlook export for an already-saved booking (My Bookings). Mirrors
+   exportToOutlook() but reads from the booking record, not the form. */
+/* Same button as the post-booking screen, for the My Bookings detail footer. */
+function myOutlookRowHTML(bookingId){
+  return `<div class="cal-export-row" style="margin-top:0;margin-bottom:12px">
+    <button class="cal-export-btn cal-export-btn-outlook" style="width:100%;justify-content:center" onclick="exportBookingToOutlook('${bookingId}')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l10-4V8L7 4zm0 0L3 6v12l4-2V4z" opacity=".3"/><path d="M3 6l4-2v16l-4-2V6zm14 2l3 1v10l-3 1V8zm-10 2.5a2.5 2.5 0 1 0 5 0 2.5 2.5 0 0 0-5 0z"/></svg>
+      Add to Outlook
+    </button>
+  </div>`;
+}
+function exportBookingToOutlook(bookingId){
+  const b=myBookingsCache.find(x=>x.id===bookingId);
+  if(!b) return;
+  const pad=n=>String(n).padStart(2,'0');
+  const at=m=>`${b.date}T${pad(Math.floor(m/60))}:${pad(m%60)}:00`;
+  const body=[
+    `📍 Location: ${b.store}`,`🏢 Zone: ${b.zoneName}`,`⏱ Duration: ${b.durLabel}`,
+    `👤 On-Site Contact: ${b.contact}${b.contactPhone?' · '+b.contactPhone:''}`,
+    ``,`📧 Booked by: ${b.strategistName} (${b.strategistEmail})`,
+    b.notes?`📝 Notes: ${b.notes}`:null,
+  ].filter(v=>v!==null).join('\n');
+  const enc=encodeURIComponent;
+  window.open(`https://outlook.office.com/calendar/0/deeplink/compose?subject=${enc('📷 Content Shoot — '+b.store)}&startdt=${enc(at(b.startMin))}&enddt=${enc(at(b.endMin))}&location=${enc(b.store)}&body=${enc(body)}`,'_blank');
 }
 
 /* ── GOOGLE CALENDAR URL EXPORT ── */
@@ -4721,7 +4799,7 @@ function openMyBDetail(bookingId){
   const footer=document.getElementById('bdetail-footer');
   if(footer) footer.innerHTML = isPast
     ? `<p style="font-size:12.5px;color:var(--text-muted);text-align:center;margin:0;width:100%;font-family:Inter,sans-serif">This shoot has already passed and can no longer be edited.</p>`
-    : `<button class="bdetail-reschedule-btn" style="width:100%" onclick="enterMyBookingEditMode('${b.id}')">✏️ Edit Content Packages</button>`;
+    : `${myOutlookRowHTML(b.id)}<button class="bdetail-reschedule-btn" style="width:100%" onclick="enterMyBookingEditMode('${b.id}')">✏️ Edit Content Packages</button>`;
   document.getElementById('bdetail-backdrop').classList.add('open');
   document.body.style.overflow='hidden';
 }
@@ -4798,7 +4876,7 @@ function enterMyBookingEditMode(id){
   document.getElementById('bdetail-body').innerHTML=buildMyEditHTML(b);
   populateMyEditPackages(b);
   const footer=document.getElementById('bdetail-footer');
-  if(footer) footer.innerHTML=`
+  if(footer) footer.innerHTML=`${myOutlookRowHTML(b.id)}
     <div class="bdetail-footer-btns">
       <button class="bdetail-reschedule-btn" style="background:var(--surface);border:1px solid var(--border);color:var(--text)" onclick="cancelMyBookingEdit()">Cancel</button>
       <button class="bdetail-reschedule-btn" onclick="saveMyBookingEdit()">💾 Save Changes</button>
@@ -4819,6 +4897,11 @@ function buildMyEditHTML(b){
     <div class="bdetail-row"><span class="bdetail-key">Time</span><span class="bdetail-val">${minsToTime12(b.startMin)} – ${minsToTime12(b.endMin)} (${b.durLabel})</span></div>
     <div class="bdetail-row"><span class="bdetail-key">Location</span><span class="bdetail-val">${b.store}</span></div>
   </div>
+  ${b.adminCreated?`<div class="bdetail-section">
+    <div class="bdetail-section-title">On-Site Contact</div>
+    <div class="field" style="margin:0 0 10px"><input type="text" id="myedit-contact" placeholder="Contact name" value="${(b.contact||'').replace(/"/g,'&quot;')}"></div>
+    <div class="field" style="margin:0"><input type="text" id="myedit-contact-phone" placeholder="Contact phone" value="${(b.contactPhone||'').replace(/"/g,'&quot;')}"></div>
+  </div>`:''}
   <div class="bdetail-section">
     <div class="bdetail-section-title">Content Packages</div>
     <div id="myedit-pkg-list"></div>
@@ -5039,16 +5122,19 @@ async function saveMyBookingEdit(){
   const errEl=document.getElementById('myedit-error');
   if(errEl) errEl.textContent='';
   const {packages, packageDetail}=collectMyEditPackages();
-  if(!packages.length){ if(errEl) errEl.textContent='Please keep at least one content package.'; return; }
+  if(!packages.length && !b.adminCreated){ if(errEl) errEl.textContent='Please keep at least one content package.'; return; }
   const scriptLink=document.getElementById('myedit-script')?.value?.trim()||'';
+  const contactEl=document.getElementById('myedit-contact');
+  const contactFields=contactEl?{contact:contactEl.value.trim(),contactPhone:document.getElementById('myedit-contact-phone').value.trim()}:{};
   const saveBtn=document.querySelector('#bdetail-footer .bdetail-footer-btns .bdetail-reschedule-btn:last-child');
   if(saveBtn){ saveBtn.disabled=true; saveBtn.textContent='Saving…'; }
   try{
-    const res=await fetch('/.netlify/functions/update-my-booking',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventId:b.eventId,email:_myEditEmail,packages,packageDetail,scriptLink})});
+    const res=await fetch('/.netlify/functions/update-my-booking',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventId:b.eventId,email:_myEditEmail,packages,packageDetail,scriptLink,...contactFields})});
     const d=await res.json();
     if(!res.ok) throw new Error(d.error||'Update failed');
     // Update local cache so the detail view reflects changes
     b.packages=packages; b.packageDetail=packageDetail; b.scriptLink=scriptLink;
+    Object.assign(b,contactFields);
     _myEditBooking=null;
     openMyBDetail(b.id);
     renderMyBookingList();
@@ -5171,12 +5257,15 @@ async function saveMyBookingEdit(){
       </div>
     </div>
 
+    <button onclick="enterMasterBooking()" style="width:100%;padding:13px;margin-bottom:20px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Inter',sans-serif;font-size:13.5px;font-weight:800;cursor:pointer">＋ New Master Booking</button>
+
     <!-- Booking drawer for selected day -->
     <div id="adm-drawer-wrap"></div>
   </div>
 
   <!-- UPCOMING TAB -->
   <div id="admin-tab-upcoming" class="admin-container" style="display:none">
+    <button onclick="enterMasterBooking()" style="width:100%;padding:13px;margin-bottom:20px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Inter',sans-serif;font-size:13.5px;font-weight:800;cursor:pointer">＋ New Master Booking</button>
     <div class="admin-section-head">All Shoots</div>
     <div id="adm-booking-list"></div>
   </div>

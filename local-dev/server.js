@@ -171,6 +171,21 @@ const routes = {
     sendJSON(res, 200, { success: true, eventId });
   },
 
+  // Master booking: admin-only, no availability checks at all.
+  'POST /.netlify/functions/admin-create-booking': async (req, res) => {
+    if (!checkAdminAuth(req)) return sendJSON(res, 401, { error: 'Unauthorized' });
+    const { bookingData: b } = JSON.parse((await readBody(req)) || '{}');
+    if (!b || !/^\d{4}-\d{2}-\d{2}$/.test(b.date || '')) return sendJSON(res, 400, { error: 'A valid date is required' });
+    if (!(b.endMin > b.startMin)) return sendJSON(res, 400, { error: 'End time must be after start time' });
+    if (!b.store || !ZONES[b.zone]) return sendJSON(res, 400, { error: 'A dealership is required' });
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(b.strategistEmail || '')) return sendJSON(res, 400, { error: 'A valid strategist email is required' });
+    const eventId = 'local-ev-' + randomUUID().slice(0, 8);
+    const record = { ...b, id: 'bk_' + randomUUID().slice(0, 8), eventId, status: 'confirmed', zoneName: ZONES[b.zone].name, createdAt: Date.now(), adminCreated: true };
+    bookings.push(record);
+    console.log(`[local-dev] MASTER booking ${eventId}: ${record.store} on ${record.date} ${minsToTime12(record.startMin)}-${minsToTime12(record.endMin)}`);
+    sendJSON(res, 200, { success: true, eventId, emailNotAuthorized: !isEmailAuthorized(b.strategistEmail) });
+  },
+
   'POST /.netlify/functions/update-booking': async (req, res) => {
     if (!checkAdminAuth(req)) return sendJSON(res, 401, { error: 'Unauthorized' });
     const body = JSON.parse((await readBody(req)) || '{}');
@@ -185,7 +200,7 @@ const routes = {
 
   'POST /.netlify/functions/update-my-booking': async (req, res) => {
     const body = JSON.parse((await readBody(req)) || '{}');
-    const { eventId, email, packages, packageDetail, notes } = body;
+    const { eventId, email, packages, packageDetail, notes, scriptLink, contact, contactPhone } = body;
     if (!eventId || !email) return sendJSON(res, 400, { error: 'Missing eventId or email' });
     const target = email.trim().toLowerCase();
     if (!isEmailAuthorized(target)) return sendJSON(res, 403, { error: 'This email is not authorized to book. Please contact your administrator.' });
@@ -197,6 +212,11 @@ const routes = {
     if (Array.isArray(packages)) rec.packages = packages;
     if (packageDetail) rec.packageDetail = packageDetail;
     if (notes != null) rec.notes = notes;
+    if (scriptLink != null) rec.scriptLink = scriptLink;
+    if (rec.adminCreated) {
+      if (typeof contact === 'string') rec.contact = contact.trim();
+      if (typeof contactPhone === 'string') rec.contactPhone = contactPhone.trim();
+    }
     sendJSON(res, 200, { success: true });
   },
 
