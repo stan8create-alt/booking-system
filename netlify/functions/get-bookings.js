@@ -27,7 +27,7 @@ exports.handler = async (event) => {
   const timeMin = new Date(now); timeMin.setMonth(timeMin.getMonth() - 6);
   const timeMax = new Date(now); timeMax.setMonth(timeMax.getMonth() + 12);
 
-  const store = bookingsBlobStore();
+  const store = bookingsBlobStore(event);
 
   try {
     // We no longer hard-filter by `privateExtendedProperty: 'source=zanchin-booking'`

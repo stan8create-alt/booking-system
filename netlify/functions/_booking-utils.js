@@ -17,7 +17,7 @@
  * `selfHealEvent()` writes it back so the event recovers on the next read.
  */
 
-const { getStore } = require('@netlify/blobs');
+const { getStore, connectLambda } = require('@netlify/blobs');
 
 /* Zone map mirrors the frontend ZONES constant. Used to reverse-lookup the
    zone key from the friendly zone name found in a stripped event's description. */
@@ -34,6 +34,8 @@ const SOURCE_TAG = 'zanchin-booking';
 const SOURCE_URL = 'https://zanchin-booking.netlify.app';
 const SOURCE_TITLE = 'Zanchin Content Shoot Booking';
 const BLOB_STORE_NAME = 'bookings';
+const HISTORY_STORE_NAME = 'booking-history';
+const MAX_HISTORY = 3; // rolling: the 4th save overwrites the oldest
 
 /* Mirrors the PACKAGES array in index.html. Used to map the friendly labels
    found in a stripped event's description back to canonical package ids. */
@@ -186,7 +188,15 @@ function isOurEvent(event) {
 }
 
 /* Best-effort booking data from an event, plus a flag indicating
-   which layers were missing so callers can self-heal. */
+   which layers were missing so callers can self-heal.
+
+   "Richest copy wins": an invite acceptance can strip the calendar event's
+   hidden fields entirely OR leave a hollow stub behind (e.g. a previous
+   description-only recovery persisted into the event). So whenever the Blob
+   backup holds real package data and the event's copy doesn't, the Blob wins
+   and the event is flagged to be repaired from it. */
+const hasPackageData = (d) => !!d && (((d.packages || []).length > 0) || Object.keys(d.packageDetail || {}).length > 0);
+
 async function hydrateBooking(event, store) {
   let bookingData = null;
   let needsExtendedProps = false;
@@ -198,25 +208,29 @@ async function hydrateBooking(event, store) {
     try { bookingData = JSON.parse(raw); } catch {}
   }
   if (!bookingData || typeof bookingData !== 'object' || !Object.keys(bookingData).length) {
+    bookingData = null;
     needsExtendedProps = true;
   }
 
-  // Layer 2 — Netlify Blob (durable backup, survives GCal strip)
-  if (!bookingData && store) {
-    try {
-      const fromBlob = await store.get(event.id, { type: 'json' });
-      if (fromBlob && typeof fromBlob === 'object') {
-        bookingData = fromBlob;
-        // we recovered from blob, so the extendedProps must be restored
-      }
-    } catch {}
-  }
-  // Even if we got data from extendedProps, ensure the blob exists.
+  // Layer 2 — Netlify Blob (durable backup, survives GCal strip). Read once and
+  // reuse for both recovery and the "does the blob exist" check.
+  let blobData = null;
   if (store) {
     try {
-      const probe = await store.get(event.id);
-      if (!probe) needsBlob = true;
-    } catch { needsBlob = true; }
+      const fromBlob = await store.get(event.id, { type: 'json' });
+      if (fromBlob && typeof fromBlob === 'object') blobData = fromBlob;
+    } catch {}
+    needsBlob = !blobData;
+  }
+
+  if (blobData) {
+    if (!bookingData) {
+      bookingData = blobData;
+    } else if (bookingData._recoveredFromDescription || (!hasPackageData(bookingData) && hasPackageData(blobData))) {
+      bookingData = { ...blobData };
+      needsExtendedProps = true; // repair the event from the richer backup
+    }
+    delete bookingData._recoveredFromDescription;
   }
 
   // Layer 3 — description parsing (partial data only)
@@ -228,15 +242,53 @@ async function hydrateBooking(event, store) {
   return { bookingData, needsExtendedProps, needsBlob };
 }
 
-/* Write the full bookingData to the Netlify Blob. Safe to call on every save. */
-async function writeBookingBlob(store, eventId, bookingData) {
+/* ── Version history ──
+   The website's own storage is the source of truth for a booking; the calendar
+   event is only a reminder. Every save first copies the state it is about to
+   replace into a small rolling history (last MAX_HISTORY versions per booking),
+   so an accidental wipe can be rolled back from the admin panel. */
+const VOLATILE_KEYS = ['_recoveredFromDescription'];
+function sameBooking(a, b) {
+  const clean = (o) => JSON.stringify(o, (k, v) => (VOLATILE_KEYS.includes(k) ? undefined : v));
+  return clean(a) === clean(b);
+}
+function bookingHistoryStore() {
+  try { return getStore(HISTORY_STORE_NAME); } catch (e) { console.error('[blobs] history store unavailable:', e.message); return null; }
+}
+async function readHistory(eventId) {
+  const hs = bookingHistoryStore();
+  if (!hs) return [];
+  try {
+    const h = await hs.get(eventId, { type: 'json' });
+    return Array.isArray(h?.versions) ? h.versions : [];
+  } catch { return []; }
+}
+async function pushHistory(eventId, priorData, source) {
+  const hs = bookingHistoryStore();
+  if (!hs) return;
+  const versions = await readHistory(eventId);
+  versions.push({ ts: Date.now(), source: source || 'save', data: priorData });
+  while (versions.length > MAX_HISTORY) versions.shift(); // overwrite the oldest
+  try { await hs.setJSON(eventId, { versions }); } catch (e) { console.error('[blobs] history write failed for', eventId, e.message); }
+}
+
+/* Write the full bookingData to the Netlify Blob, snapshotting the previous
+   state into history first. Safe to call on every save. */
+async function writeBookingBlob(store, eventId, bookingData, source) {
   if (!store || !eventId) return;
-  try { await store.setJSON(eventId, bookingData); } catch {}
+  try {
+    let prior = null;
+    try { prior = await store.get(eventId, { type: 'json' }); } catch {}
+    if (prior && typeof prior === 'object' && !sameBooking(prior, bookingData)) {
+      await pushHistory(eventId, prior, source);
+    }
+    await store.setJSON(eventId, bookingData);
+  } catch (e) { console.error('[blobs] write failed for', eventId, e.message); }
 }
 
 async function deleteBookingBlob(store, eventId) {
   if (!store || !eventId) return;
-  try { await store.delete(eventId); } catch {}
+  try { await store.delete(eventId); const hs = bookingHistoryStore(); if (hs) await hs.delete(eventId); } catch {}
 }
 
 /* Re-attach the source tag + bookingData to a stripped event AND ensure the blob
@@ -261,14 +313,26 @@ async function selfHealEvent(calendar, event, bookingData, store, { restoreExten
       }).catch(() => null)
     );
   }
-  if (restoreBlob && store) {
+  // Never back up a description-only stub: it would mask the loss as if it were real data.
+  if (restoreBlob && store && !bookingData._recoveredFromDescription) {
     tasks.push(writeBookingBlob(store, event.id, bookingData));
   }
   await Promise.all(tasks);
 }
 
-function bookingsBlobStore() {
-  try { return getStore(BLOB_STORE_NAME); } catch { return null; }
+/* These are Lambda-compatibility functions (exports.handler), where Netlify does
+   NOT inject the Blobs credentials on its own — connectLambda(event) must run
+   first or every store call throws. Without it the blob backup silently never
+   worked, so a booking whose extendedProperties got stripped lost its package
+   detail for good. Always pass the handler's `event`. */
+function bookingsBlobStore(event) {
+  try {
+    if (event) connectLambda(event);
+    return getStore(BLOB_STORE_NAME);
+  } catch (e) {
+    console.error('[blobs] store unavailable:', e.message);
+    return null;
+  }
 }
 
 /* ── Authorized booker allowlist ──
@@ -392,6 +456,7 @@ module.exports = {
   isOurEvent,
   hydrateBooking,
   writeBookingBlob,
+  readHistory,
   deleteBookingBlob,
   selfHealEvent,
   bookingsBlobStore,

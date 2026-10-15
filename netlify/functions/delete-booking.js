@@ -27,7 +27,7 @@ exports.handler = async (event) => {
   try {
     await calendar.events.delete({ calendarId: 'primary', eventId });
     // Clean up the durable backup so we don't leak stale records.
-    const store = bookingsBlobStore();
+    const store = bookingsBlobStore(event);
     await deleteBookingBlob(store, eventId);
     return { statusCode: 200, body: JSON.stringify({ success: true }) };
   } catch (err) {

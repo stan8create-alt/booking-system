@@ -3955,6 +3955,7 @@ function openBDetail(bookingId){
     <div class="bdetail-footer-btns">
       <button class="bdetail-reschedule-btn" onclick="openReschedule('${b.id}')">📅 Reschedule</button>
       <button class="bdetail-reschedule-btn" style="background:var(--surface);border:1px solid var(--border);color:var(--text)" onclick="openEditBooking('${b.id}')">✏️ Edit</button>
+      <button class="bdetail-reschedule-btn" style="background:var(--surface);border:1px solid var(--border);color:var(--text)" onclick="openBookingHistory('${b.id}')">🕘 History</button>
       <button class="bdetail-cancel-btn" style="margin-top:0;width:100%" onclick="promptCancelBooking('${b.id}')">🗑 Delete</button>
     </div>`;
   document.getElementById('bdetail-backdrop').classList.add('open');
@@ -3964,6 +3965,60 @@ function openBDetail(bookingId){
 function closeBDetail(e){
   if(e.target === document.getElementById('bdetail-backdrop')) closeBDetailDirect();
 }
+/* ── BOOKING VERSION HISTORY (admin) ──
+   The server keeps the last 3 saved versions of each booking's content. This
+   lists them and rolls the content (packages, script, notes, contact) back. */
+let _histBooking = null;
+function histPkgText(v){
+  const ids = (v.packages && v.packages.length) ? v.packages : (v.packageDetailKeys || []);
+  const names = ids.map(id => (PACKAGES.find(p => p.id === id) || {label:id}).label);
+  return names.length ? names.join(', ') : 'No packages';
+}
+const HIST_SOURCES = {create:'Booked', 'master-create':'Master booking', 'admin-edit':'Admin edit', 'strategist-edit':'Strategist edit', restore:'Restore'};
+async function openBookingHistory(id){
+  const b = adminBookingsCache.find(x => x.id === id);
+  if(!b) return;
+  _histBooking = b;
+  document.getElementById('history-sub').textContent = b.store + ' · ' + new Date(b.date+'T12:00:00').toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric'});
+  const list = document.getElementById('history-list');
+  list.innerHTML = '<p style="font-size:13px;color:var(--text-muted)">Loading…</p>';
+  document.getElementById('history-error').textContent = '';
+  document.getElementById('history-backdrop').classList.add('open');
+  try{
+    const res = await fetch('/.netlify/functions/booking-history?eventId='+encodeURIComponent(b.eventId),{headers:{'X-Admin-Token':getAdminToken()}});
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.error || 'Could not load history');
+    const cur = `<div style="padding:12px 0;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:4px">Current</div><div style="font-size:13px;font-weight:600">${histPkgText({packages:b.packages,packageDetailKeys:Object.keys(b.packageDetail||{})})}</div></div>`;
+    if(!d.versions.length){
+      list.innerHTML = cur + '<p style="font-size:13px;color:var(--text-muted);margin:14px 0 0">No earlier versions yet. A version is saved each time this booking is edited (the last 3 are kept).</p>';
+      return;
+    }
+    list.innerHTML = cur + d.versions.map(v => {
+      const when = new Date(v.ts).toLocaleString('en-CA',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+      return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
+        <div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:4px">Before ${HIST_SOURCES[v.source]||'save'} · ${when}</div>
+        <div style="font-size:13px;font-weight:600">${histPkgText(v)}</div></div>
+        <button class="reschedule-cancel-btn" style="padding:9px 14px;font-size:12.5px" onclick="restoreBookingVersion(${v.ts})">Restore</button></div>`;
+    }).join('');
+  }catch(err){
+    list.innerHTML = '';
+    document.getElementById('history-error').textContent = err.message;
+  }
+}
+function closeBookingHistory(){ document.getElementById('history-backdrop').classList.remove('open'); }
+async function restoreBookingVersion(ts){
+  if(!_histBooking) return;
+  if(!confirm('Restore this version? The current content is saved to history first, so you can undo it.')) return;
+  const err = document.getElementById('history-error'); err.textContent = '';
+  try{
+    const res = await fetch('/.netlify/functions/booking-history',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Token':getAdminToken()},body:JSON.stringify({eventId:_histBooking.eventId,ts})});
+    const d = await res.json();
+    if(!res.ok) throw new Error(d.error || 'Restore failed');
+    closeBookingHistory(); closeBDetailDirect();
+    await admRefreshAll();
+  }catch(e){ err.textContent = e.message; }
+}
+
 function closeBDetailDirect(){
   document.getElementById('bdetail-backdrop').classList.remove('open');
   document.body.style.overflow = '';
@@ -5077,6 +5132,9 @@ function populateMyEditPackages(b){
   // the one reliable source for "which packages does this booking have".
   const present=Object.keys(pd).filter(pid=>pd[pid]&&PKG_FIELD_SCHEMA[pid]);
   present.forEach(pid=>myEditAddPackageBlock(pid, pd[pid]));
+  // Bookings whose detail was lost (calendar tags stripped) still list their
+  // package ids — show those as empty blocks so saving doesn't silently drop them.
+  (b.packages||[]).filter(pid=>PKG_FIELD_SCHEMA[pid]&&!present.includes(pid)).forEach(pid=>myEditAddPackageBlock(pid, null));
   myEditRefreshAddChips();
   const scriptEl=document.getElementById('myedit-script');
   if(scriptEl) scriptEl.value=b.scriptLink||'';
@@ -5368,6 +5426,19 @@ async function saveMyBookingEdit(){
   </div>
 </div>
 
+
+<!-- ══ BOOKING HISTORY MODAL (admin) ══ -->
+<div class="reschedule-backdrop" id="history-backdrop" onclick="if(event.target===this)closeBookingHistory()">
+  <div class="reschedule-modal" style="max-height:88vh;overflow-y:auto">
+    <div class="reschedule-title">Booking History</div>
+    <div class="reschedule-sub" id="history-sub"></div>
+    <div id="history-list"></div>
+    <div class="reschedule-error" id="history-error"></div>
+    <div class="reschedule-actions" style="grid-template-columns:1fr">
+      <button class="reschedule-cancel-btn" onclick="closeBookingHistory()">Close</button>
+    </div>
+  </div>
+</div>
 
 <!-- ══ EDIT BOOKING MODAL ══ -->
 <div class="reschedule-backdrop" id="edit-booking-backdrop" onclick="closeEditBookingOnBackdrop(event)">

@@ -46,8 +46,8 @@ exports.handler = async (event) => {
     });
     // Mirror to Netlify Blob — the durable backup for full bookingData
     // (incl. per-package details that can't be recovered from the description).
-    const store = bookingsBlobStore();
-    await writeBookingBlob(store, ev.data.id, bookingData || {});
+    const store = bookingsBlobStore(event);
+    await writeBookingBlob(store, ev.data.id, bookingData || {}, 'create');
 
     // Auto-manage "Full Day Editing" blocks for this booking's week. Best-effort:
     // the booking already succeeded, so never fail the request over this.

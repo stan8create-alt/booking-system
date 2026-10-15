@@ -102,7 +102,35 @@ function readBody(req) {
 }
 
 /* ── route handlers ── */
+/* Rolling per-booking version history — mirrors _booking-utils.js (last 3). */
+const history = {}; // eventId -> [{ts, source, data}]
+const CONTENT = ['packages', 'packageDetail', 'scriptLink', 'notes', 'contact', 'contactPhone'];
+function snapshot(rec, source) {
+  const data = JSON.parse(JSON.stringify(rec));
+  const list = (history[rec.eventId] = history[rec.eventId] || []);
+  list.push({ ts: Date.now(), source, data });
+  while (list.length > 3) list.shift();
+}
+
 const routes = {
+  'GET /.netlify/functions/booking-history': (req, res, q) => {
+    if (!checkAdminAuth(req)) return sendJSON(res, 401, { error: 'Unauthorized' });
+    const versions = (history[q.eventId] || []).slice().reverse().map(v => ({
+      ts: v.ts, source: v.source, packages: v.data.packages || [],
+      packageDetailKeys: Object.keys(v.data.packageDetail || {}), hasScript: !!v.data.scriptLink, contact: v.data.contact || '',
+    }));
+    sendJSON(res, 200, { versions });
+  },
+  'POST /.netlify/functions/booking-history': async (req, res) => {
+    if (!checkAdminAuth(req)) return sendJSON(res, 401, { error: 'Unauthorized' });
+    const { eventId, ts } = JSON.parse((await readBody(req)) || '{}');
+    const v = (history[eventId] || []).find(x => x.ts === ts);
+    const rec = bookings.find(b => b.eventId === eventId);
+    if (!v || !rec) return sendJSON(res, 404, { error: 'That version is no longer available' });
+    snapshot(rec, 'restore');
+    CONTENT.forEach(k => { if (v.data[k] !== undefined) rec[k] = v.data[k]; });
+    sendJSON(res, 200, { success: true });
+  },
   'GET /.netlify/functions/get-busy': (req, res, q) => {
     const { date, from, to } = q;
     const inRange = (d) => (from && to) ? (d >= from && d <= to) : d === date;
@@ -192,6 +220,7 @@ const routes = {
     const { eventId, bookingData, startDateTime, endDateTime } = body;
     const rec = bookings.find(b => b.eventId === eventId);
     if (!rec) return sendJSON(res, 404, { error: 'Not found' });
+    snapshot(rec, 'admin-edit');
     Object.assign(rec, bookingData);
     if (startDateTime) { const s = isoToET(startDateTime); rec.date = s.dateStr; rec.startMin = s.mins; }
     if (endDateTime) { const e = isoToET(endDateTime); rec.endMin = e.mins; }
@@ -209,6 +238,7 @@ const routes = {
     if ((rec.strategistEmail || '').trim().toLowerCase() !== target) {
       return sendJSON(res, 403, { error: 'This booking does not belong to that email' });
     }
+    snapshot(rec, 'strategist-edit');
     if (Array.isArray(packages)) rec.packages = packages;
     if (packageDetail) rec.packageDetail = packageDetail;
     if (notes != null) rec.notes = notes;

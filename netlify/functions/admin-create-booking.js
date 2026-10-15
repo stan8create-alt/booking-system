@@ -88,7 +88,7 @@ exports.handler = async (event) => {
         },
       },
     });
-    await writeBookingBlob(bookingsBlobStore(), ev.data.id, bookingData);
+    await writeBookingBlob(bookingsBlobStore(event), ev.data.id, bookingData, 'master-create');
     // Deliberately no ensureEditingBlocks(): a hand-placed squeeze-in shouldn't
     // trigger automatic Full Day Editing blocks on other days.
     return {

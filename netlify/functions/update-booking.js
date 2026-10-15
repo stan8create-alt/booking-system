@@ -1,7 +1,7 @@
 const { google } = require('googleapis');
 const {
   SOURCE_TAG, SOURCE_URL, SOURCE_TITLE,
-  bookingsBlobStore, writeBookingBlob,
+  bookingsBlobStore, writeBookingBlob, hydrateBooking,
 } = require('./_booking-utils');
 
 function checkAuth(event) {
@@ -41,6 +41,21 @@ exports.handler = async (event) => {
   auth.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
   const calendar = google.calendar({ version: 'v3', auth });
 
+  // Guard against wiping package detail: the admin client edits from its cached
+  // copy, which can be a stripped stub. If the server still has detail for a
+  // package that stays selected, keep it unless the client sent new detail.
+  delete bookingData._recoveredFromDescription;
+  try {
+    const existing = await calendar.events.get({ calendarId: 'primary', eventId });
+    const hydrated = await hydrateBooking(existing.data, bookingsBlobStore(event));
+    const oldDetail = (hydrated && hydrated.bookingData && hydrated.bookingData.packageDetail) || {};
+    const merged = { ...(bookingData.packageDetail || {}) };
+    for (const id of bookingData.packages || []) {
+      if (!merged[id] && oldDetail[id]) merged[id] = oldDetail[id];
+    }
+    bookingData.packageDetail = merged;
+  } catch (e) { console.error('[update-booking] could not merge existing detail:', e.message); }
+
   const patch = {
     summary: `📷 ${bookingData.store} — Content Shoot`,
     description: buildDescription(bookingData),
@@ -61,8 +76,8 @@ exports.handler = async (event) => {
   try {
     await calendar.events.patch({ calendarId: 'primary', eventId, requestBody: patch });
     // Mirror to blob — durable backup for the full bookingData incl. per-package detail.
-    const store = bookingsBlobStore();
-    await writeBookingBlob(store, eventId, bookingData);
+    const store = bookingsBlobStore(event);
+    await writeBookingBlob(store, eventId, bookingData, 'admin-edit');
     return { statusCode: 200, body: JSON.stringify({ success: true }) };
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };

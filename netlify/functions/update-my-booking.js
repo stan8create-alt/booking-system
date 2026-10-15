@@ -39,7 +39,7 @@ exports.handler = async (event) => {
   const auth = new google.auth.OAuth2(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
   auth.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
   const calendar = google.calendar({ version: 'v3', auth });
-  const store = bookingsBlobStore();
+  const store = bookingsBlobStore(event);
 
   try {
     // Fetch the existing event and HYDRATE — works even if extendedProperties
@@ -56,10 +56,21 @@ exports.handler = async (event) => {
     }
 
     // Merge ONLY package-related fields + script + notes. Everything else stays as-is.
+    // Never wipe: refuse to save zero packages over existing ones (admin-created
+    // bookings start empty and may legitimately stay that way), and keep any
+    // stored detail the client didn't re-send for a package that stays selected.
+    const oldDetail = bookingData.packageDetail || {};
+    if (Array.isArray(packages) && packages.length === 0 && !bookingData.adminCreated &&
+        ((bookingData.packages || []).length || Object.keys(oldDetail).length)) {
+      return { statusCode: 400, body: JSON.stringify({ error: 'Refusing to remove every content package. Keep at least one.' }) };
+    }
+    const nextPackages = Array.isArray(packages) ? packages : bookingData.packages;
+    const nextDetail = { ...(packageDetail || {}) };
+    for (const id of nextPackages || []) { if (!nextDetail[id] && oldDetail[id]) nextDetail[id] = oldDetail[id]; }
     const updated = {
       ...bookingData,
-      packages: Array.isArray(packages) ? packages : bookingData.packages,
-      packageDetail: packageDetail || bookingData.packageDetail || {},
+      packages: nextPackages,
+      packageDetail: nextDetail,
       scriptLink: scriptLink != null ? scriptLink : bookingData.scriptLink,
       notes: notes != null ? notes : bookingData.notes,
     };
@@ -88,7 +99,7 @@ exports.handler = async (event) => {
       },
     });
     // Mirror to blob — durable backup of full bookingData incl. per-package detail.
-    await writeBookingBlob(store, eventId, updated);
+    await writeBookingBlob(store, eventId, updated, 'strategist-edit');
     return { statusCode: 200, body: JSON.stringify({ success: true }) };
   } catch (err) {
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
