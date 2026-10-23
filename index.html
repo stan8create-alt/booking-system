@@ -3588,7 +3588,15 @@ async function handleAdminLogin(){
   try {
     const res = await fetch('/.netlify/functions/admin-auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
     const data = await res.json();
-    if(!res.ok) throw new Error(data.error || 'Invalid credentials');
+    if(!res.ok){
+      // Not the booking login: try the Ops Hub accounts and send them to /ops
+      if(res.status === 401){
+        const hub = await fetch('/.netlify/functions/ops-login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})}).catch(()=>null);
+        if(hub && hub.ok){ window.location.href = '/ops'; return; }
+        if(hub && hub.status === 429){ const h = await hub.json().catch(()=>({})); if(h.error) throw new Error(h.error); }
+      }
+      throw new Error(data.error || 'Invalid credentials');
+    }
     setAdminToken(data.token);
     document.getElementById('admin-login-view').style.display = 'none';
     _showAdminDashboard();

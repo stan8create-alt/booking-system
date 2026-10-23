@@ -5,3 +5,5 @@ node_modules/
 *.log
 .DS_Store
 .claude/
+local-dev/.ops-data/
+local-dev/.ops-outbox/

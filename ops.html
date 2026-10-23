@@ -1,0 +1,1483 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Zanchin Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script>
+  /* Theme + dark-mode accent colour, applied before first paint (the 'theme' key is shared with the booking site; 'ops_accent' is hub-only). */
+  (function () {
+    try {
+      var r = document.documentElement, dark = localStorage.getItem('theme') === 'dark', c = localStorage.getItem('ops_accent');
+      if (dark) r.setAttribute('data-theme', 'dark');
+      if (dark && /^#[0-9a-f]{6}$/i.test(c)) {
+        var n = parseInt(c.slice(1), 16), st = r.style;
+        st.setProperty('--accent', c); st.setProperty('--accent2', c); st.setProperty('--neon', c);
+        st.setProperty('--neon-glow', 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',.22)');
+      }
+    } catch (e) {}
+  })();
+</script>
+<style>
+/* Design tokens — copied from the booking site (DESIGN.md "The Studio Console") so both live side by side. */
+:root {
+  --bg:#eceef1; --surface:#e8eaed; --surface-raised:#f0f2f5; --white:#fff;
+  --accent:#1a1a1a; --accent2:#3a7bd5; --green:#22c55e; --red:#ef4444; --orange:#f59e0b;
+  --text:#1a1a1a; --text-muted:#4b5563; --border:rgba(255,255,255,0.85);
+  --shadow-out:5px 5px 12px rgba(170,176,190,.5),-3px -3px 8px rgba(255,255,255,.92);
+  --shadow-out-soft:5px 5px 12px rgba(170,176,190,.35),-3px -3px 8px rgba(255,255,255,.64);
+  --shadow-in:inset 3px 3px 7px rgba(170,176,190,.4),inset -2px -2px 6px rgba(255,255,255,.88);
+  --shadow-card:8px 8px 20px rgba(160,168,185,.4),-5px -5px 14px rgba(255,255,255,.95);
+  --radius-sm:10px; --radius:14px; --radius-xl:26px;
+  --neon:#3a7bd5; --neon-glow:rgba(58,123,213,.28);
+  --dropdown-bg:#fff; --dropdown-border:rgba(0,0,0,.08);
+  --modal-bg:var(--surface-raised);
+  --toggle-bg:#e2e5ea; --toggle-knob:#fff;
+  --hairline:rgba(128,128,128,.16);
+  --progress:#3a7bd5;
+}
+[data-theme="dark"] {
+  --bg:#0f1117; --surface:#1a1d27; --surface-raised:#1f2330; --white:#1f2330;
+  --accent:#FC6E20; --accent2:#FC6E20; --green:#39ff14; --red:#ff4d6d; --orange:#ffd700;
+  --text:#e8edf5; --text-muted:#9ca3af; --border:rgba(255,255,255,.07);
+  --shadow-out:5px 5px 16px rgba(0,0,0,.55),-2px -2px 6px rgba(255,255,255,.03);
+  --shadow-out-soft:5px 5px 16px rgba(0,0,0,.385),-2px -2px 6px rgba(255,255,255,.021);
+  --shadow-in:inset 3px 3px 10px rgba(0,0,0,.5),inset -2px -2px 4px rgba(255,255,255,.03);
+  --shadow-card:0 8px 32px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.04);
+  --neon:#FC6E20; --neon-glow:rgba(252,110,32,.22);
+  --dropdown-bg:#1f2330; --dropdown-border:rgba(255,255,255,.08);
+  --modal-bg:#1f2330;
+  --toggle-bg:#FC6E20; --toggle-knob:#0f1117;
+  --hairline:rgba(255,255,255,.08);
+  --progress:#5aa9ff;
+}
+
+[data-theme="dark"] { color-scheme:dark; }   /* dark scrollbars and form controls */
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; font-size:14px; min-height:100vh; overflow-x:hidden; transition:background .3s,color .3s; }
+.hidden { display:none !important; }
+button,input,select,textarea { font-family:'Inter',sans-serif; color:inherit; }
+a { color:var(--text); text-decoration:underline; text-decoration-color:var(--text-muted); text-underline-offset:3px; }
+a:hover { color:var(--neon); text-decoration-color:var(--neon); }
+@keyframes modalIn { from { opacity:0; transform:translateY(12px) scale(.97); } to { opacity:1; transform:none; } }
+@keyframes sectionReveal { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
+
+/* header + user pills (same as booking's header and rule pills) */
+.header { padding:44px 24px 26px; text-align:center; }
+.header-logo { width:56px; height:56px; background:var(--white); border-radius:18px; box-shadow:var(--shadow-out); display:inline-flex; align-items:center; justify-content:center; font-size:32px; line-height:1; padding-top:4px; margin-bottom:16px; transition:background .3s; }
+.header h1 { font-size:26px; font-weight:800; letter-spacing:-.5px; margin-bottom:5px; }
+.header-sub { font-size:13px; color:var(--text-muted); font-weight:500; }
+.rules-bar { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; padding:0 24px 26px; }
+.rule-pill { display:inline-flex; align-items:center; gap:6px; background:var(--white); border-radius:50px; padding:6px 13px; font-size:11px; font-weight:600; color:var(--text-muted); box-shadow:var(--shadow-out); border:0; transition:background .3s; }
+.rule-dot { width:6px; height:6px; border-radius:50%; background:var(--green); }
+button.rule-pill { cursor:pointer; }
+.rule-pill .who { color:var(--text); font-weight:700; }
+button.rule-pill:hover { color:var(--text); box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow); }
+button.rule-pill:focus-visible { outline:none; color:var(--text); box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow); }
+
+.container { max-width:1100px; margin:0 auto; padding:0 18px 100px; }
+.card { background:var(--surface-raised); border-radius:var(--radius-xl); box-shadow:var(--shadow-card); padding:26px 26px 22px; margin-bottom:18px; border:1px solid var(--border); transition:background .3s,box-shadow .3s; animation:sectionReveal .35s cubic-bezier(.22,.68,0,1.2) both; }
+.login-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:40px 20px; margin:0 -18px -100px; }
+.login-box { width:100%; max-width:340px; }
+.login-head { text-align:center; margin-bottom:32px; }
+.login-icon { font-size:36px; margin-bottom:10px; }
+.login-title { font-size:22px; font-weight:900; letter-spacing:-.4px; }
+.login-sub { font-size:13px; color:var(--text-muted); margin-top:4px; }
+.login-card { background:var(--surface-raised); border:1px solid var(--border); border-radius:var(--radius-xl); padding:28px; box-shadow:var(--shadow-card); transition:background .3s; }
+.lf { margin-bottom:14px; } .lf-last { margin-bottom:18px; }
+.lf label { display:block; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); margin-bottom:6px; }
+.lf input { padding:11px 13px; box-shadow:none; }
+.lf input:focus { box-shadow:none; border-color:var(--text-muted); }
+.login-err { color:#ef4444; font-size:13px; font-weight:600; min-height:18px; text-align:center; margin:0 0 14px; }
+.login-btn { width:100%; padding:13px; background:var(--accent); color:#fff; border:none; border-radius:var(--radius-sm); font-family:inherit; font-size:14px; font-weight:800; cursor:pointer; letter-spacing:.02em; }
+.login-btn:disabled { opacity:.6; cursor:default; }
+.login-back { text-align:center; margin-top:20px; }
+.login-back a { color:var(--text-muted); font-size:12px; font-weight:600; text-decoration:none; }
+.section-title { font-size:15px; font-weight:700; letter-spacing:-.2px; }
+
+/* fields: uppercase is reserved for field labels */
+.field { display:block; margin-bottom:14px; }
+.field > span { display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; letter-spacing:.06em; text-transform:uppercase; }
+input[type="text"],input[type="password"],input[type="search"],select,textarea {
+  width:100%; background:var(--surface); border:1px solid var(--border); color:var(--text); padding:12px 14px;
+  font-size:14px; font-weight:500; border-radius:var(--radius-sm); outline:none; box-shadow:var(--shadow-in);
+  transition:box-shadow .2s,border-color .2s,background .3s; -webkit-appearance:none; appearance:none;
+}
+input:focus,select:focus,textarea:focus { border-color:var(--neon); box-shadow:var(--shadow-in),0 0 0 3px var(--neon-glow); }
+select { cursor:pointer; padding-right:34px; background-image:linear-gradient(45deg,transparent 50%,var(--text-muted) 50%),linear-gradient(135deg,var(--text-muted) 50%,transparent 50%); background-position:calc(100% - 17px) 52%,calc(100% - 12px) 52%; background-size:5px 5px; background-repeat:no-repeat; }
+select option { background:var(--dropdown-bg); color:var(--text); }
+textarea { resize:vertical; min-height:80px; line-height:1.6; }
+input:disabled,textarea:disabled,select:disabled { opacity:.7; cursor:default; }
+.err { color:var(--red); font-size:13px; font-weight:600; min-height:20px; margin:0 0 10px; }
+
+/* buttons */
+.btn { display:inline-flex; justify-content:center; align-items:center; gap:8px; background:var(--accent); color:#fff; border:1px solid var(--accent);
+       padding:12px 14px; font-size:13px; font-weight:600; border-radius:9px; cursor:pointer; text-decoration:none; white-space:nowrap;
+       box-shadow:0 0 0 0 var(--neon-glow); transition:opacity .2s,transform .1s,box-shadow .3s; }
+.btn:hover { opacity:.88; box-shadow:0 0 0 5px var(--neon-glow); color:#fff; }
+.btn:focus-visible { outline:none; opacity:.88; box-shadow:0 0 0 5px var(--neon-glow); }
+.btn:active { transform:scale(.993); }
+.btn:disabled { opacity:.42; cursor:not-allowed; pointer-events:none; }
+.btn.block { width:100%; font-size:15px; font-weight:800; padding:12px 16px; }
+
+/* list controls: flat at rest, raised + blue ring on hover, Onyx fill when selected (never both) */
+
+.bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:18px; }
+.fbtn { display:inline-flex; align-items:center; gap:8px; padding:11px 14px; border-radius:9px; border:1px solid var(--border); background:var(--surface-raised);
+        color:var(--text-muted); font-size:13px; font-weight:600; cursor:pointer; transition:all .16s; white-space:nowrap; }
+.fbtn:hover,.fbtn:focus-visible { outline:none; color:var(--text); border-color:var(--neon); box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow); }
+.fbtn[aria-expanded="true"] { color:var(--text); }
+.fbtn svg { width:15px; height:15px; flex-shrink:0; }
+.fbtn .chev { transition:transform .2s ease; }
+.fbtn[aria-expanded="true"] .chev { transform:rotate(180deg); }
+.fcount { min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:var(--accent); color:#fff; font-size:11px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; }
+.fpanel { display:grid; grid-template-rows:0fr; transition:grid-template-rows .22s ease,margin .22s ease; }
+.fpanel.open { grid-template-rows:1fr; margin-bottom:16px; }
+.finner { overflow:hidden; min-height:0; }
+.fbox { padding:2px 0 18px; border-bottom:1px solid var(--hairline); }
+.frow { display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px 28px; }
+.frow + .frow { margin-top:16px; }
+.fgroup .flabel { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted); margin-bottom:7px; }
+/* each filter is one joined control: segments share a single border, so it reads as one thing */
+.fseg { display:inline-flex; border:1px solid var(--border); border-radius:9px; overflow:hidden; background:var(--surface-raised); }
+.fseg .fchip { padding:9px 14px; border:0; border-radius:0; background:transparent; color:var(--text-muted); font-size:13px; font-weight:600; cursor:pointer; transition:background .16s,color .16s; }
+.fseg .fchip + .fchip { border-left:1px solid var(--hairline); }
+.fseg .fchip:hover:not([aria-pressed="true"]),.fseg .fchip:focus-visible:not([aria-pressed="true"]) { outline:none; color:var(--text); background:var(--surface); box-shadow:inset 0 0 0 1.5px var(--neon); }
+.fseg .fchip[aria-pressed="true"] { background:var(--accent); color:#fff; }
+.fseg .fchip[aria-pressed="true"]:focus-visible { outline:none; box-shadow:inset 0 0 0 1.5px var(--neon); }
+/* people: avatar + name pills */
+.fpeople { display:flex; flex-wrap:wrap; gap:8px; }
+.fperson { display:inline-flex; align-items:center; gap:8px; padding:4px 14px 4px 4px; border-radius:999px; border:1px solid var(--border); background:var(--surface-raised);
+           color:var(--text-muted); font-size:13px; font-weight:600; cursor:pointer; transition:all .16s; }
+.fperson:hover:not([aria-pressed="true"]),.fperson:focus-visible:not([aria-pressed="true"]) { outline:none; color:var(--text); border-color:var(--neon); box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow); }
+.fperson[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:#fff; box-shadow:var(--shadow-out); }
+.fperson[aria-pressed="true"]:focus-visible { outline:none; box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow); }
+.fperson[aria-pressed="true"] .avatar { background:rgba(255,255,255,.2); border-color:transparent; color:#fff; box-shadow:none; }
+.frow .fclear { margin-left:auto; }
+.fsum { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:-6px 0 16px; }
+.tagchip { display:inline-flex; align-items:center; gap:6px; padding:5px 6px 5px 12px; border-radius:999px; border:1px solid var(--border); background:var(--surface-raised); font-size:12px; font-weight:600; }
+.tagchip button { width:18px; height:18px; border-radius:50%; border:0; background:transparent; color:var(--text-muted); cursor:pointer; font-size:14px; line-height:1; display:flex; align-items:center; justify-content:center; }
+.tagchip button:hover,.tagchip button:focus-visible { outline:none; color:var(--red); background:var(--surface); }
+.fsum .dp-link { padding:5px 8px; }
+.bar .search { flex:1 1 240px; min-width:200px; }
+
+/* table */
+.tablewrap { overflow-x:auto; margin:0 -26px -22px; padding:0 26px 6px; }
+table { width:100%; border-collapse:collapse; min-width:940px; }
+th { text-align:left; font-size:11.5px; font-weight:700; color:var(--text-muted); padding:10px 8px; border-bottom:1px solid var(--hairline); }
+td { padding:13px 8px; border-bottom:1px solid var(--hairline); vertical-align:middle; }
+tr:last-child td { border-bottom:0; }
+td.nw { white-space:nowrap; }
+table td:nth-child(3),table th:nth-child(3) { min-width:130px; }
+/* headers line up with where each column's content visually starts (icons / pill text), and Progress is centred under its header */
+table th:nth-child(5),table th:nth-child(6) { padding-left:12px; }
+table th:nth-child(7) { padding-left:19px; }
+table th:last-child,table td:last-child { text-align:center; padding-left:14px; padding-right:14px; }
+.ncell { display:inline-flex; align-items:center; gap:18px; }
+.ncell .badge { margin-left:0; width:72px; padding:3px 0; text-align:center; }   /* Regular / Urgent / ASAP share one width */
+.ncell .assign-chip { min-width:100px; }
+tr.row { cursor:pointer; transition:background .15s; }
+tr.row:hover td { background:var(--surface); }
+tr.row td:first-child { border-radius:9px 0 0 9px; font-weight:700; }
+tr.row td:last-child { border-radius:0 9px 9px 0; }
+tr.row.is-done td { opacity:.5; transition:opacity .15s,background .15s; }
+tr.row.is-done:hover td,tr.row.is-done:focus-within td { opacity:1; }
+.mirror { margin-top:10px; font-size:12.5px; color:var(--text-muted); display:flex; align-items:center; gap:8px; }
+.mirror:empty { display:none; }
+.mdot { width:7px; height:7px; border-radius:50%; background:var(--orange); flex:none; }
+.mdot.ok { background:var(--green); }
+tr.dline td { padding:10px 0; border:0; }
+.dline-in { display:flex; align-items:center; gap:12px; }
+.dline-in::before,.dline-in::after { content:""; flex:1; height:1px; background:var(--green); opacity:.7; }
+.dpill { padding:3px 12px; border-radius:999px; border:1px solid var(--green); color:var(--green); background:var(--surface-raised); font-size:11px; font-weight:700; letter-spacing:.02em; }
+.empty { padding:36px 16px; text-align:center; color:var(--text-muted); font-weight:500; }
+.count { color:var(--text-muted); font-size:11.5px; font-weight:500; margin-left:8px; }
+.warn { color:var(--orange); }
+/* circular progress: 4 steps x 25%. Blue while in progress, green with a check at 100% */
+.ring { position:relative; display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; flex-shrink:0; --ring-fg:var(--progress); }
+.ring > svg { width:100%; height:100%; transform:rotate(-90deg); }
+.ring-bg { stroke:var(--text); opacity:.14; }
+.ring-fg { stroke:var(--ring-fg); transition:stroke-dashoffset .5s ease,stroke .3s; }
+.ring.done { --ring-fg:var(--green); }
+.ring-n { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:var(--text); }
+.ring.done .ring-n { color:var(--green); }
+.ring-n svg { width:15px; height:15px; }
+.ring.lg { width:60px; height:60px; }
+.ring.lg .ring-n { font-size:17px; }
+.ring.lg .ring-n svg { width:26px; height:26px; }
+.badge { display:inline-block; font-size:10.5px; font-weight:600; letter-spacing:.05em; padding:2px 8px; border-radius:99px; border:1px solid var(--hairline); color:var(--text-muted); white-space:nowrap; margin-left:8px; }
+.badge.urgent { color:var(--orange); border-color:var(--orange); }
+.badge.asap { color:var(--red); border-color:var(--red); }
+
+/* deadline picker: round day buttons, Onyx fill for the chosen date, blue ring on hover */
+.datebtn { display:inline-flex; align-items:center; gap:8px; padding:0 14px; border-radius:999px; border:1px solid var(--border); background:var(--surface-raised);
+           color:var(--text); font-size:13px; font-weight:600; cursor:pointer; transition:all .16s; }
+.datebtn.none { color:var(--text-muted); font-weight:500; }
+.datebtn .dlabel { color:var(--text-muted); font-weight:500; }
+.datebtn strong { font-weight:700; }
+.datebtn:hover,.datebtn:focus-visible { outline:none; border-color:var(--neon); box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow); }
+.datebtn svg,.assign-chip svg.cal { width:15px; height:15px; flex-shrink:0; }
+.date-note { display:inline-flex; align-items:center; gap:8px; margin-left:10px; }
+.date-pop { position:fixed; z-index:40; width:304px; background:var(--dropdown-bg); border:1px solid var(--dropdown-border); border-radius:14px;
+            box-shadow:0 12px 36px rgba(0,0,0,.28); padding:12px; animation:modalIn .14s ease; }
+.dp-head { display:flex; align-items:center; justify-content:space-between; gap:6px; padding:2px 0 10px; }
+.dp-nav { width:32px; height:32px; border-radius:50%; border:0; background:transparent; color:var(--text); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.dp-nav:hover,.dp-nav:focus-visible { background:var(--surface); outline:none; }
+.dp-nav svg { width:16px; height:16px; }
+.dp-sel { display:flex; align-items:center; gap:2px; font-weight:700; }
+.dp-sel select { width:auto; background:transparent; border:0; box-shadow:none; padding:4px 6px; font-size:14px; font-weight:700; color:var(--text); cursor:pointer; border-radius:8px; background-image:none; }
+.dp-sel select:hover,.dp-sel select:focus { color:var(--neon); box-shadow:none; background:var(--surface); }
+.dp-week,.dp-grid { display:grid; grid-template-columns:repeat(7,1fr); }
+.dp-week span { text-align:center; font-size:12px; color:var(--text-muted); font-weight:600; padding:2px 0 6px; }
+.dp-day { aspect-ratio:1; margin:1px; border-radius:50%; border:1.5px solid transparent; background:transparent; color:var(--text); font-size:13px; font-weight:500; cursor:pointer; transition:border-color .12s; }
+.dp-day.out { color:var(--text-muted); opacity:.5; }
+.dp-day.today { border-color:var(--text-muted); }
+.dp-day:hover,.dp-day:focus-visible { outline:none; border-color:var(--neon); }
+.dp-day.sel { background:var(--accent); color:#fff; font-weight:700; border-color:transparent; opacity:1; }
+.dp-day.sel:hover,.dp-day.sel:focus-visible { border-color:var(--neon); }
+.dp-foot { display:flex; justify-content:space-between; margin-top:8px; padding-top:8px; border-top:1px solid var(--hairline); }
+.dp-link { background:none; border:0; color:var(--text-muted); font-size:12.5px; font-weight:600; cursor:pointer; padding:6px 8px; border-radius:8px; }
+.dp-link:hover,.dp-link:focus-visible { color:var(--text); background:var(--surface); outline:none; }
+
+/* ── quick-look: summary first, then slim video rows, then chat ── */
+.qh { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding-right:44px; margin-bottom:14px; }
+.qh h2 { margin:0 0 3px; }
+.qh .sub { margin:0; }
+.qh-who { flex-shrink:0; padding-top:1px; }
+.qmeta { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:0 0 10px; }
+.qlinks { margin:0 0 18px; }
+.qlinks .links { gap:8px; }
+.qlinks .pill,.datebtn { height:36px; padding:0 14px; border-radius:999px; font-size:13px; gap:7px; }
+.qlinks .pill { font-weight:700; }
+.qlinks .pill .ext { width:13px; height:13px; opacity:.6; }
+.qlinks .pill.add { font-weight:600; }
+.qcap { font-size:12.5px; color:var(--text-muted); font-weight:500; margin:0 0 10px; }
+.qcap strong { color:var(--text); font-size:13px; font-weight:700; }
+.steps { list-style:none; display:grid; grid-template-columns:repeat(4,1fr); margin:0 0 18px; --c:var(--progress); }
+.steps.done { --c:var(--green); }
+.step { position:relative; display:flex; flex-direction:column; align-items:center; text-align:center; gap:6px; padding:0 3px; }
+.step + .step::before { content:''; position:absolute; top:12px; left:-50%; width:100%; height:2px; background:var(--hairline); }
+.step.on + .step::before,.step.on + .step.on::before { background:var(--c); }
+.step.on::before { background:var(--c); }
+.node { position:relative; z-index:1; width:26px; height:26px; border-radius:50%; border:2px solid color-mix(in srgb,var(--text) 22%,transparent); background:var(--modal-bg); color:var(--text-muted);
+        display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; transition:all .3s; }
+.node svg { width:14px; height:14px; }
+.step.on .node { background:var(--c); border-color:var(--c); color:var(--modal-bg); }
+.step.next .node { border-color:var(--c); color:var(--c); }
+.slabel { font-size:12px; font-weight:600; color:var(--text-muted); line-height:1.25; }
+.step.on .slabel { color:var(--text); }
+.swhen { font-size:11px; color:var(--text-muted); font-weight:500; min-height:14px; }
+.qnote { margin:0 0 20px; }
+.qnote textarea { min-height:52px; }
+.qnote .saved { margin-top:2px; min-height:14px; }
+.ql section { margin-bottom:20px; }
+.ql .section-title { margin-bottom:8px; }
+
+.vrow { border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface-raised); margin-bottom:8px; transition:border-color .16s; }
+.vrow:hover { border-color:var(--neon); }
+.vrow > summary { display:flex; align-items:center; gap:10px; padding:11px 14px; cursor:pointer; list-style:none; }
+.vrow > summary::-webkit-details-marker { display:none; }
+.vrow > summary::after { content:'▾'; color:var(--text-muted); font-size:11px; }
+.vrow[open] > summary::after { content:'▴'; }
+.vmain { flex:1; min-width:0; }
+.vname { display:block; font-weight:700; font-size:14px; }
+.vsum { display:block; margin-top:1px; font-size:12px; font-weight:500; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.vsum.todo { font-style:italic; }
+.vrow .badge { margin-left:0; }
+.vrow .vbody { padding:12px 14px 12px; border-top:1px solid var(--hairline); }
+.vrow .field { margin-bottom:10px; }
+.vrow textarea { min-height:56px; }
+.vctl { display:grid; grid-template-columns:1fr 1fr; gap:10px 12px; margin:2px 0 12px; }   /* same two columns as the fields above, so Format lines up with Position */
+@media (max-width:500px) { .vctl { grid-template-columns:1fr; } }
+.vl { display:block; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted); margin-bottom:6px; }
+.fseg.sm .fchip { padding:6px 12px; font-size:12px; }
+.fchip:disabled { cursor:default; }
+.vfoot { display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:24px; }
+.vfoot .saved { margin:0; }
+.vfoot .btn { padding:6px 10px; font-size:12px; }
+
+/* headshots switch */
+.switchrow { position:relative; display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface-raised); cursor:pointer; transition:border-color .16s; }
+.switchrow:hover { border-color:var(--neon); }
+.switchrow input { position:absolute; opacity:0; pointer-events:none; }
+.sw { width:36px; height:20px; border-radius:99px; background:color-mix(in srgb,var(--text) 22%,transparent); position:relative; flex-shrink:0; transition:background .2s; }
+.sw::after { content:''; position:absolute; top:3px; left:3px; width:14px; height:14px; border-radius:50%; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.25); transition:transform .2s; }
+.switchrow input:checked + .sw { background:var(--accent); }
+.switchrow input:checked + .sw::after { transform:translateX(16px); }
+.switchrow input:focus-visible + .sw { box-shadow:0 0 0 3px var(--neon-glow); }
+.switchrow input:disabled ~ * { opacity:.8; }
+.swtext strong { display:block; font-size:14px; font-weight:700; }
+.swtext small { display:block; margin-top:1px; font-size:12px; color:var(--text-muted); font-weight:500; }
+.switchrow.ro { cursor:default; }
+.switchrow.ro:hover { border-color:var(--border); }
+
+/* pagination: flat page buttons, current page = Onyx fill (same selected rule as the filter tabs) */
+.pager { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:16px; padding-top:16px; border-top:1px solid var(--hairline); }
+.pager .info { color:var(--text-muted); font-size:12.5px; font-weight:500; }
+.pager .pages { display:flex; align-items:center; gap:4px; }
+.pg { min-width:38px; min-height:38px; padding:0 10px; display:inline-flex; align-items:center; justify-content:center; border-radius:9px; border:1px solid var(--border);
+      background:var(--surface-raised); color:var(--text-muted); font-size:13px; font-weight:600; cursor:pointer; transition:all .16s; }
+.pg:hover:not(:disabled):not([aria-current]),.pg:focus-visible:not([aria-current]) { outline:none; color:var(--text); border-color:var(--neon); box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow); }
+.pg[aria-current="page"] { background:var(--accent); border-color:var(--accent); color:#fff; box-shadow:var(--shadow-out); cursor:default; }
+.pg[aria-current="page"]:focus-visible { outline:none; box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow); }
+.pg:disabled { opacity:.35; cursor:not-allowed; }
+.pg svg { width:14px; height:14px; }
+.pg-gap { min-width:24px; text-align:center; color:var(--text-muted); font-weight:600; }
+#appView.paged .tablewrap { margin-bottom:0; padding-bottom:0; }
+
+/* quick-look slide-over */
+.ql-scrim { position:fixed; inset:0; z-index:15; background:rgba(0,0,0,.45); backdrop-filter:blur(6px); opacity:0; pointer-events:none; transition:opacity .18s ease; }
+.ql-scrim.open { opacity:1; pointer-events:auto; }
+.ql { position:fixed; top:0; right:0; bottom:0; width:min(560px,100%); z-index:16; background:var(--modal-bg); border-left:1px solid var(--border);
+      box-shadow:0 24px 60px rgba(0,0,0,.35); overflow-y:auto; overflow-x:hidden; transform:translateX(104%); transition:transform .22s ease,background .3s; padding:26px 26px 44px; }
+.ql.open { transform:none; }
+.ql h2 { font-size:16px; font-weight:800; letter-spacing:-.2px; margin:0 44px 3px 0; word-break:break-word; }
+.ql .sub { color:var(--text-muted); font-size:13px; font-weight:500; margin-bottom:22px; }
+.ql .close,.panel .x { position:absolute; top:22px; right:22px; width:32px; height:32px; background:var(--surface); border:1px solid var(--border); border-radius:9px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--text-muted); box-shadow:var(--shadow-out); transition:all .15s; }
+.ql .close:hover,.panel .x:hover { color:var(--text); border-color:var(--neon); }
+.ql section { margin-bottom:24px; }
+.ql .section-title { margin-bottom:10px; }
+/* link pills: flat at rest, raised + blue ring on hover; the dashed one adds a link */
+.links { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.pill { display:inline-flex; align-items:center; gap:6px; padding:8px 12px; font-size:12px; font-weight:600; border-radius:999px; cursor:pointer;
+        background:var(--surface-raised); border:1px solid var(--border); color:var(--text); text-decoration:none; transition:all .16s; }
+.pill:hover,.pill:focus-visible { outline:none; color:var(--text); border-color:var(--neon); box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow); }
+.pill.add { border-style:dashed; border-color:var(--text-muted); color:var(--text-muted); background:transparent; }
+.pill.add:hover,.pill.add:focus-visible { color:var(--text); border-color:var(--neon); background:var(--surface-raised); }
+.pill svg { flex-shrink:0; width:14px; height:14px; }
+.hs { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; margin-left:8px; border-radius:50%; border:1px solid var(--border); background:var(--surface-raised); color:var(--text-muted); vertical-align:middle; }
+.hs svg { width:12px; height:12px; }
+.pmeta { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:4px; }
+.pmeta .badge { margin-left:0; }
+.pmeta .count { margin:0; }
+.tlinks { display:inline-flex; align-items:center; gap:6px; }
+.pill.sm { height:30px; padding:0 11px; gap:5px; font-size:12px; font-weight:700; }
+.pill.sm .ext { width:12px; height:12px; opacity:.6; }
+.pill-wrap { display:inline-flex; align-items:center; position:relative; }
+.pill-wrap .pill { padding-right:12px; }
+.pill-wrap.has-x .pill { padding-right:30px; }
+.pill-x { position:absolute; right:6px; width:20px; height:20px; border-radius:50%; border:0; background:transparent; color:var(--text-muted); cursor:pointer; font-size:14px; line-height:1; display:flex; align-items:center; justify-content:center; }
+.pill-x:hover { color:var(--red); background:var(--surface); }
+.linkform { margin-top:12px; padding:14px; border-radius:var(--radius-sm); background:var(--surface); border:1px solid var(--border); }
+.linkform .field { margin-bottom:10px; }
+.linkform .row-actions { gap:8px; margin-top:4px; }
+.btn.ghost { background:var(--surface-raised); color:var(--text-muted); border-color:var(--border); }
+.btn.ghost:hover { color:var(--text); border-color:var(--neon); opacity:1; box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow); }
+.two { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media (max-width:500px) { .two { grid-template-columns:1fr; } }
+.saved { color:var(--text-muted); font-size:11.5px; font-weight:500; min-height:16px; margin-top:6px; }
+.row-actions { display:flex; justify-content:flex-end; margin-top:10px; }
+.avatar.xl { width:48px; height:48px; }
+/* notes: avatar on the left, name + time, then the text (same shape as the loading skeleton) */
+.note { display:flex; gap:14px; align-items:flex-start; margin-bottom:20px; }
+.note-av { flex-shrink:0; }
+.note-main { flex:1; min-width:0; padding-top:2px; }
+.note-head { display:flex; align-items:baseline; gap:8px; margin-bottom:4px; flex-wrap:wrap; }
+.note-name { font-weight:700; font-size:14px; }
+.note-when { color:var(--text-muted); font-size:11.5px; font-weight:500; }
+.note .body { white-space:pre-wrap; word-break:break-word; line-height:1.55; }
+.note.skeleton .avatar { background:color-mix(in srgb,var(--text) 9%,transparent); border-color:transparent; }
+.sk-line { display:block; height:12px; border-radius:999px; background:color-mix(in srgb,var(--text) 9%,transparent); }
+.note.skeleton .note-main { padding-top:10px; }
+.note.skeleton .sk-line + .sk-line { margin-top:12px; }
+.note.skeleton .sk-line:first-child { margin-bottom:18px; }
+.note.skeleton .count { display:block; margin:14px 0 0; }
+@keyframes skPulse { 50% { opacity:.45; } }
+.note.skeleton .avatar,.sk-line { animation:skPulse 1.8s ease-in-out infinite; }
+
+/* avatars (placeholder person icon, no photos): flat at rest, raised + blue ring on hover, Onyx fill when assigned */
+.avatar { display:inline-flex; flex-shrink:0; border-radius:50%; overflow:hidden; background:var(--surface); color:var(--text-muted); border:1px solid var(--border); transition:all .16s; }
+.avatar svg { width:100%; height:100%; display:block; }
+.avatar svg rect { fill:transparent; }
+.avatar.sm { width:24px; height:24px; }
+.avatar.md { width:44px; height:44px; }
+.avatar.on { background:var(--accent); border-color:var(--accent); color:#fff; box-shadow:var(--shadow-out); }
+.avatar.blank { background:transparent; border-style:dashed; border-color:var(--text-muted); }
+/* overlapping avatar group (several people can be on a project) */
+.stack { display:inline-flex; align-items:center; --ring:var(--surface-raised); }
+.stack > * + * { margin-left:-8px; }
+.stack .avatar,.stack .avatar.on { box-shadow:0 0 0 2px var(--ring); }
+.ql .stack { --ring:var(--modal-bg); }
+.assignee { position:relative; background:none; border:0; padding:0; border-radius:50%; cursor:pointer; display:inline-flex; }
+.assignee:hover,.assignee:focus-visible { z-index:2; outline:none; }
+.assignee:hover .avatar:not(.on),.assignee:focus-visible .avatar:not(.on) { color:var(--text); border-color:var(--neon); box-shadow:0 0 0 2px var(--ring),0 0 0 4px var(--neon-glow); }
+.assignee:focus-visible .avatar.on { box-shadow:0 0 0 2px var(--ring),0 0 0 4px var(--neon-glow); }
+.assignee[data-tip]::after { content:attr(data-tip); position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%); padding:5px 10px; border-radius:8px; white-space:nowrap;
+  background:var(--dropdown-bg); color:var(--text); border:1px solid var(--dropdown-border); box-shadow:0 8px 24px rgba(0,0,0,.22); font-size:12px; font-weight:600; opacity:0; pointer-events:none; transition:opacity .12s; z-index:5; }
+.assignee[data-tip]:hover::after,.assignee[data-tip]:focus-visible::after { opacity:1; }
+.assign-names { overflow:hidden; text-overflow:ellipsis; max-width:150px; }
+.assign-chip { display:inline-flex; align-items:center; gap:10px; padding:3px 11px 3px 3px; border-radius:999px; background:transparent; border:1px solid transparent; cursor:pointer; font-size:13px; font-weight:600; color:var(--text); transition:all .16s; white-space:nowrap; }
+.assign-chip.none { color:var(--text-muted); font-weight:500; }
+.assign-chip.static { cursor:default; }
+button.assign-chip:hover,button.assign-chip:focus-visible { outline:none; border-color:var(--neon); box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow); background:var(--surface-raised); }
+.assign-pop { position:fixed; z-index:30; min-width:200px; background:var(--dropdown-bg); border:1px solid var(--dropdown-border); border-radius:var(--radius-sm); box-shadow:0 8px 24px rgba(0,0,0,.22); padding:6px; animation:modalIn .14s ease; }
+.assign-pop button { display:flex; width:100%; align-items:center; gap:10px; padding:8px 10px; border:0; background:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; text-align:left; color:var(--text); }
+.assign-pop button:hover,.assign-pop button:focus-visible { background:var(--surface); outline:none; }
+.assign-pop .tick { margin-left:auto; color:var(--accent); font-weight:800; }
+.assign-pop .hint { padding:6px 10px 4px; font-size:11px; color:var(--text-muted); font-weight:500; }
+.assign-pop .sep { height:1px; background:var(--hairline); margin:4px 2px; }
+
+             cursor:pointer; font-size:13px; font-weight:600; color:var(--text-muted); transition:all .16s; }
+
+                     cursor:pointer; font-size:13px; font-weight:600; color:var(--text-muted); transition:all .16s; }
+.field > span em { text-transform:none; font-style:normal; letter-spacing:0; font-weight:500; }
+.btn.danger { color:var(--red); }
+.btn.danger:hover { border-color:var(--red); box-shadow:0 0 0 2px rgba(239,68,68,.2); }
+#qlVideoAdd { margin-top:4px; }
+
+
+/* new-project pop-up (the Project Ops page in a frame) */
+.overlay { position:fixed; inset:0; z-index:20; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.45); backdrop-filter:blur(6px); opacity:0; pointer-events:none; transition:opacity .18s ease; }
+.overlay.open { opacity:1; pointer-events:auto; }
+.panel { position:relative; width:min(492px,100%); height:min(560px,100%); border-radius:var(--radius-xl); overflow:hidden; background:var(--modal-bg); border:1px solid var(--border); transition:background .3s;
+         box-shadow:0 24px 60px rgba(0,0,0,.35); transform:translateY(14px) scale(.985); transition:transform .2s ease; }
+.overlay.open .panel { transform:none; }
+.panel iframe { width:100%; height:100%; border:0; display:block; }
+
+/* light / dark switch — identical to booking */
+/* theme dock: a circle that expands on hover into the dark-mode switch; in dark mode a column of accent colours opens upward */
+.tdock { position:fixed; left:24px; bottom:24px; z-index:10; }
+/* the pill grows sideways on hover, and upward (anchored to the bottom) when the colours open inside it */
+.tpill { display:flex; flex-direction:column; width:46px; border-radius:23px; background:var(--surface-raised); border:1px solid var(--border); box-shadow:var(--shadow-card);
+         overflow:hidden; transition:width .25s ease,border-color .2s,box-shadow .2s; }
+.tdock:hover .tpill,.tdock:focus-within .tpill,.tdock.palette .tpill { width:176px; }
+.tpill:hover { border-color:var(--neon); }
+.trow { display:flex; align-items:center; height:44px; flex:none; }
+.tcircle { width:44px; height:44px; flex:none; border:0; background:transparent; border-radius:50%; font-size:19px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
+.tcircle:focus-visible,.tswitch:focus-visible { outline:none; box-shadow:0 0 0 3px var(--neon-glow); }
+.tswitch { display:flex; align-items:center; gap:9px; height:44px; border:0; background:transparent; padding:0 16px 0 0; border-radius:0 999px 999px 0; cursor:pointer; white-space:nowrap;
+           font-size:12px; font-weight:700; color:var(--text-muted); }
+.tswitch:hover { color:var(--text); }
+.ttrack { width:36px; height:20px; border-radius:99px; background:color-mix(in srgb,var(--text) 22%,transparent); position:relative; flex-shrink:0; transition:background .3s; }
+.tknob { position:absolute; top:3px; left:3px; width:14px; height:14px; border-radius:50%; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.25); transition:transform .3s; }
+[data-theme="dark"] .ttrack { background:var(--accent); }
+[data-theme="dark"] .tknob { transform:translateX(16px); }
+.tpalette { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0 16px; height:0; opacity:0; overflow:hidden; transition:height .25s ease,opacity .2s ease; }
+.tdock.palette .tpalette { height:42px; opacity:1; }
+.tsw { --i:0; width:22px; height:22px; border-radius:50%; border:0; background:var(--c); cursor:pointer; padding:0; flex:none;
+       transform:scale(.6); opacity:0; transition:transform .22s cubic-bezier(.22,.68,0,1.2),opacity .18s ease,box-shadow .15s; transition-delay:calc(var(--i) * 25ms); }
+.tdock.palette .tsw { transform:none; opacity:1; transition-delay:calc(var(--i) * 30ms + 80ms); }
+.tsw:hover { transform:scale(1.15) !important; transition-delay:0s !important; }
+.tsw:focus-visible { outline:none; box-shadow:0 0 0 2px var(--surface-raised),0 0 0 4px var(--c); }
+.tsw[aria-checked="true"] { box-shadow:0 0 0 2px var(--surface-raised),0 0 0 4px var(--c); }
+
+@media (prefers-reduced-motion:reduce) {
+  .tpill,.tsw,.ttrack,.tknob { transition:none !important; }
+  .fpanel,.fbtn .chev { transition:none !important; }
+  .note.skeleton .avatar,.sk-line { animation:none !important; }
+  .ring-fg { transition:none !important; }
+  .card,.ql,.ql-scrim,.overlay,.panel { animation:none !important; transition:none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="header" id="hdr">
+  <div class="header-logo">🫩</div>
+  <h1>Zanchin Hub</h1>
+  <div class="header-sub">Project tracking · Private portal · Zanchin team only</div>
+</div>
+
+<div class="rules-bar hidden" id="userBar">
+  <span class="rule-pill"><span class="rule-dot"></span><span>Signed in as <strong id="whoName" class="who"></strong></span></span>
+  <button class="rule-pill" id="logoutBtn" type="button">Sign out</button>
+</div>
+
+<div class="container">
+  <section id="loginView" class="login-wrap hidden">
+    <div class="login-box">
+      <div class="login-head">
+        <div class="login-icon">&#128272;</div>
+        <div class="login-title">Admin Dashboard</div>
+        <div class="login-sub">Content Shoot Bookings</div>
+      </div>
+      <form id="loginForm" class="login-card" autocomplete="on">
+        <div class="lf"><label for="u">Username</label>
+          <input id="u" name="username" type="text" autocomplete="username" autocapitalize="none" placeholder="Enter username" required></div>
+        <div class="lf lf-last"><label for="p">Password</label>
+          <input id="p" name="password" type="password" autocomplete="current-password" placeholder="Enter password" required></div>
+        <p id="loginErr" class="login-err" role="alert"></p>
+        <button class="login-btn" id="loginBtn" type="submit">Sign In</button>
+      </form>
+      <div class="login-back"><a href="/">&#8592; Back to booking form</a></div>
+    </div>
+  </section>
+
+  <section id="appView" class="card hidden">
+    <div class="bar">
+      <input class="search" id="search" type="search" placeholder="Search number, dealership, project" aria-label="Search projects">
+      <button type="button" class="fbtn" id="fbtn" aria-expanded="false" aria-controls="fpanel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18M6 12h12M10 19h4"/></svg>
+        Filters<span class="fcount hidden" id="fcount"></span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <a class="btn hidden" id="newBtn" href="/ops-new">New project</a>
+    </div>
+    <div class="fsum hidden" id="fsum"></div>
+    <div class="fpanel" id="fpanel"><div class="finner" id="finner" inert><div class="fbox" id="fbox"></div></div></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th>#</th><th>Dealership</th><th>Project</th><th>Date</th><th>Needed by</th><th>Assigned to</th><th>Links</th><th>Progress</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div id="empty" class="empty hidden"></div>
+    </div>
+    <nav class="pager hidden" id="pager" aria-label="Pagination">
+      <span class="info" id="pagerInfo"></span>
+      <div class="pages" id="pagerPages"></div>
+    </nav>
+  </section>
+</div>
+
+<div id="qlScrim" class="ql-scrim"></div>
+<aside id="ql" class="ql" role="dialog" aria-modal="true" aria-label="Project quick look" aria-hidden="true">
+  <button class="close" id="qlClose" type="button" aria-label="Close">&times;</button>
+  <div id="qlBody"></div>
+</aside>
+
+<div id="overlay" class="overlay" aria-hidden="true">
+  <div class="panel" role="dialog" aria-modal="true" aria-label="New project">
+    <button class="x" id="panelClose" type="button" aria-label="Close">&times;</button>
+    <iframe id="panelFrame" title="New project"></iframe>
+  </div>
+</div>
+
+<div class="tdock" id="tdock">
+  <div class="tpill">
+    <div class="tpalette" id="tpalette" role="radiogroup" aria-label="Accent colour"></div>
+    <div class="trow">
+      <button class="tcircle" id="tcircle" type="button" aria-label="Theme">☀️</button>
+      <button class="tswitch" id="tswitch" type="button" role="switch" aria-checked="false" aria-label="Dark mode">
+        <span class="ttrack"><span class="tknob"></span></span><span>Dark mode</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let projects = [], users = [], me = null;
+
+async function api(path, opts) {
+  const r = await fetch('/.netlify/functions/' + path, { credentials: 'same-origin', ...opts });
+  let data = null; try { data = await r.json(); } catch {}
+  return { ok: r.ok, status: r.status, data };
+}
+
+function show(view) {
+  $('loginView').classList.toggle('hidden', view !== 'login');
+  $('appView').classList.toggle('hidden', view !== 'app');
+  $('userBar').classList.toggle('hidden', view !== 'app');
+  $('hdr').classList.toggle('hidden', view === 'login');
+}
+
+/* Light / dark — same switch and storage key as the booking site, so the choice carries across both. */
+const ACCENTS = [['#FC6E20', 'Orange'], ['#3B82F6', 'Blue'], ['#8B5CF6', 'Violet'], ['#F43F5E', 'Rose'], ['#059669', 'Emerald']];
+const ACCENT_KEYS = ['--accent', '--accent2', '--neon', '--neon-glow'];
+const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
+const getAccent = () => { let c = null; try { c = localStorage.getItem('ops_accent'); } catch (e) {} return ACCENTS.some(a => a[0] === c) ? c : ACCENTS[0][0]; };
+
+/* dark theme only: the chosen accent replaces the orange; light theme always uses Onyx */
+function paintAccent() {
+  const st = document.documentElement.style;
+  ACCENT_KEYS.forEach(k => st.removeProperty(k));
+  if (!isDark()) return;
+  const c = getAccent(), n = parseInt(c.slice(1), 16);
+  st.setProperty('--accent', c); st.setProperty('--accent2', c); st.setProperty('--neon', c);
+  st.setProperty('--neon-glow', `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},.22)`);
+}
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  $('tcircle').textContent = dark ? '🌙' : '☀️';
+  $('tswitch').setAttribute('aria-checked', String(dark));
+  paintAccent();
+  renderAccents();
+}
+function setPalette(open) { $('tdock').classList.toggle('palette', open && isDark()); }
+function setTheme(dark) {
+  applyTheme(dark);
+  try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
+  setPalette(dark);                  // switching to dark opens the colour column, switching back hides it
+}
+function renderAccents() {
+  const cur = getAccent();
+  $('tpalette').innerHTML = ACCENTS.map(([c, name], i) =>
+    `<button type="button" class="tsw" role="radio" aria-checked="${c === cur}" aria-label="${name}" title="${name}" data-c="${c}" style="--c:${c};--i:${i}"></button>`).join('');
+}
+$('tcircle').addEventListener('click', () => { if (!isDark()) setTheme(true); else setPalette(!$('tdock').classList.contains('palette')); });
+$('tswitch').addEventListener('click', () => setTheme(!isDark()));
+$('tpalette').addEventListener('click', (e) => {
+  const b = e.target.closest('.tsw'); if (!b) return;
+  try { localStorage.setItem('ops_accent', b.dataset.c); } catch (er) {}
+  paintAccent();
+  $('tpalette').querySelectorAll('.tsw').forEach(x => x.setAttribute('aria-checked', String(x === b)));   // update in place: re-drawing would make this click look like it came from outside the dock
+});
+document.addEventListener('click', (e) => { if (!e.target.closest('#tdock')) setPalette(false); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('tdock').classList.contains('palette')) { setPalette(false); e.stopImmediatePropagation(); } }, true);
+(function initTheme() {
+  let saved = 'light';
+  try { saved = localStorage.getItem('theme') || 'light'; } catch (e) {}
+  applyTheme(saved === 'dark');
+})();
+
+const assigneesOf = (p) => Array.isArray(p.assignees) ? p.assignees : (p.assignedTo ? [p.assignedTo] : []);
+
+/* Done normally means the final exports landed in Dropbox; admins can override it by hand
+   (manualDone true/false). */
+function isDone(p) { return p.manualDone === true || (p.manualDone !== false && !!p.finalUploadedAt); }
+
+function stageOf(p) {
+  if (isDone(p)) return 'done';
+  if (assigneesOf(p).length) return 'editing';
+  return 'todo';
+}
+
+function nameOf(username) { const u = users.find(x => x.username === username); return u ? u.name : (username || ''); }
+
+const AVATAR = '<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="0.63" y="0.36" width="15" height="15" rx="7.5"/><path d="M8.124 7.204a1.969 1.969 0 1 0 0-3.938 1.969 1.969 0 0 0 0 3.938Z" fill="currentColor"/><path d="M11.818 10.598c-1.519 2.043-4.397 2.465-6.441.956a4.4 4.4 0 0 1-.956-.956c-.131-.197-.15-.45-.047-.657l.141-.29a2.1 2.1 0 0 1 1.79-1.135h3.647c.75 0 1.434.431 1.772 1.106l.15.31c.094.215.085.469-.056.666Z" fill="currentColor"/></svg>';
+const avatar = (cls) => `<span class="avatar ${cls}" aria-hidden="true">${AVATAR}</span>`;
+
+const CAL = '<svg class="cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>';
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const pad2 = (n) => String(n).padStart(2, '0');
+const ymd = (y, m, d) => `${y}-${pad2(m + 1)}-${pad2(d)}`;
+const todayYmd = () => { const d = new Date(); return ymd(d.getFullYear(), d.getMonth(), d.getDate()); };
+function fmtDay(s, withYear) {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString([], withYear ? { month: 'short', day: 'numeric', year: 'numeric' } : { month: 'short', day: 'numeric' });
+}
+function daysUntil(s) {
+  const [y, m, d] = s.split('-').map(Number), t = new Date();
+  return Math.round((new Date(y, m - 1, d) - new Date(t.getFullYear(), t.getMonth(), t.getDate())) / 86400000);
+}
+/* urgency of a project = the highest among its videos (Regular / Urgent / ASAP), shown next to the deadline */
+const URG_LABEL = { regular: 'Regular', urgent: 'Urgent', asap: 'ASAP' };
+const urgChip = (u) => { const k = URG_LABEL[u] ? u : 'regular'; return `<span class="badge ${k}">${URG_LABEL[k]}</span>`; };
+function neededByCell(p) {
+  const text = p.neededBy ? fmtDay(p.neededBy) : '—';
+  const chip = (me && me.role === 'admin')
+    ? `<button type="button" class="assign-chip ${p.neededBy ? '' : 'none'}" data-datebtn data-n="${esc(p.number)}" aria-haspopup="dialog" aria-label="Needed by ${esc(p.neededBy ? fmtDay(p.neededBy, true) : 'not set')}. Change">${CAL}${esc(text)}</button>`
+    : `<span class="assign-chip static ${p.neededBy ? '' : 'none'}">${p.neededBy ? esc(text) : '—'}</span>`;
+  return `<span class="ncell">${chip}${urgChip(p.urgency)}</span>`;
+}
+function deadlineHtml(p) {
+  if (!isAdmin()) return `<span class="date-note">${p.neededBy ? 'Needed by <strong>' + esc(fmtDay(p.neededBy, true)) + '</strong>' : 'No deadline set'}</span>`;
+  const inner = p.neededBy ? `${CAL}<span class="dlabel">Needed by</span><strong>${esc(fmtDay(p.neededBy, true))}</strong>` : `${CAL}Set a deadline`;
+  return `<button type="button" class="datebtn ${p.neededBy ? '' : 'none'}" data-datebtn data-n="${esc(p.number)}" aria-haspopup="dialog">${inner}</button>`;
+}
+
+/* date-only calendar popover (Monday first) */
+let dp = null;   // { number, y, m }
+function closeDatePop() { const el = $('datePop'); if (el) el.remove(); dp = null; }
+function renderDatePop() {
+  const pop = $('datePop'), p = projects.find(x => x.number === dp.number); if (!pop || !p) return;
+  const sel = p.neededBy, today = todayYmd(), thisYear = new Date().getFullYear();
+  const y0 = Math.min(thisYear - 1, dp.y), y1 = Math.max(thisYear + 3, dp.y);
+  const offset = (new Date(dp.y, dp.m, 1).getDay() + 6) % 7;
+  let days = '';
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(dp.y, dp.m, 1 - offset + i), v = ymd(d.getFullYear(), d.getMonth(), d.getDate());
+    days += `<button type="button" class="dp-day ${d.getMonth() !== dp.m ? 'out' : ''} ${v === today ? 'today' : ''} ${v === sel ? 'sel' : ''}" data-date="${v}" aria-label="${esc(fmtDay(v, true))}" ${v === sel ? 'aria-pressed="true"' : ''}>${d.getDate()}</button>`;
+  }
+  pop.innerHTML = `
+    <div class="dp-head">
+      <button type="button" class="dp-nav" data-dir="-1" aria-label="Previous month">${CHEV_L}</button>
+      <div class="dp-sel">
+        <select id="dpMonth" aria-label="Month">${MONTHS.map((n, i) => `<option value="${i}" ${i === dp.m ? 'selected' : ''}>${n}</option>`).join('')}</select>
+        <span aria-hidden="true">/</span>
+        <select id="dpYear" aria-label="Year">${Array.from({ length: y1 - y0 + 1 }, (_, i) => y0 + i).map(y => `<option ${y === dp.y ? 'selected' : ''}>${y}</option>`).join('')}</select>
+      </div>
+      <button type="button" class="dp-nav" data-dir="1" aria-label="Next month">${CHEV_R}</button>
+    </div>
+    <div class="dp-week">${['Mo','Tu','We','Th','Fr','Sa','Su'].map(d => `<span>${d}</span>`).join('')}</div>
+    <div class="dp-grid">${days}</div>
+    <div class="dp-foot"><button type="button" class="dp-link" data-act="today">Today</button><button type="button" class="dp-link" data-act="clear" ${sel ? '' : 'disabled'}>Clear date</button></div>`;
+}
+function openDatePop(anchor) {
+  closeDatePop(); if (typeof closeAssignPop === 'function') closeAssignPop();
+  const p = projects.find(x => x.number === anchor.dataset.n); if (!p) return;
+  const [y, m] = (p.neededBy || todayYmd()).split('-').map(Number);
+  dp = { number: p.number, y, m: m - 1 };
+  const pop = document.createElement('div');
+  pop.id = 'datePop'; pop.className = 'date-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', 'Choose a date');
+  document.body.appendChild(pop); renderDatePop();
+  const r = anchor.getBoundingClientRect();
+  pop.style.top = Math.max(8, Math.min(r.bottom + 6, window.innerHeight - pop.offsetHeight - 8)) + 'px';
+  pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - pop.offsetWidth - 8)) + 'px';
+  const t = pop.querySelector('.dp-day.sel, .dp-day.today'); if (t) t.focus();
+}
+async function saveDeadline(number, date) {
+  const p = projects.find(x => x.number === number); if (!p) return;
+  const { ok, data } = await api('ops-deadline', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ number, date }) });
+  if (!ok) { alert((data && data.error) || 'Could not save the date'); return; }
+  p.neededBy = data.project.neededBy || null;
+  render();
+  if (qlNum === number && $('qlDeadline')) $('qlDeadline').innerHTML = deadlineHtml(p);
+}
+document.addEventListener('click', (e) => {
+  const pop = $('datePop');
+  if (pop && pop.contains(e.target)) {
+    const nav = e.target.closest('.dp-nav');
+    if (nav) { const d = new Date(dp.y, dp.m + Number(nav.dataset.dir), 1); dp.y = d.getFullYear(); dp.m = d.getMonth(); renderDatePop(); return; }
+    const day = e.target.closest('.dp-day');
+    if (day) { const n = dp.number; closeDatePop(); saveDeadline(n, day.dataset.date); return; }
+    const act = e.target.closest('.dp-link');
+    if (act && !act.disabled) { const n = dp.number; closeDatePop(); saveDeadline(n, act.dataset.act === 'today' ? todayYmd() : null); }
+    return;
+  }
+  const btn = e.target.closest('[data-datebtn]');
+  if (btn) { e.stopPropagation(); if (pop && dp && dp.number === btn.dataset.n) closeDatePop(); else openDatePop(btn); return; }
+  closeDatePop();
+}, true);
+document.addEventListener('change', (e) => {
+  if (!dp) return;
+  if (e.target.id === 'dpMonth') { dp.m = Number(e.target.value); renderDatePop(); }
+  if (e.target.id === 'dpYear') { dp.y = Number(e.target.value); renderDatePop(); }
+});
+window.addEventListener('scroll', (e) => { if (!(e.target.closest && e.target.closest('#datePop'))) closeDatePop(); }, true);
+window.addEventListener('resize', closeDatePop);
+
+function assignCell(p) {
+  const who = assigneesOf(p);
+  const names = who.map(nameOf);
+  const inner = who.length
+    ? `<span class="stack">${who.map(u => `<span title="${esc(nameOf(u))}">${avatar('sm on')}</span>`).join('')}</span><span class="assign-names">${esc(names.join(', '))}</span>`
+    : `${avatar('sm blank')}Unassigned`;
+  if (!(me && me.role === 'admin')) return `<span class="assign-chip static ${who.length ? '' : 'none'}">${inner}</span>`;
+  return `<button type="button" class="assign-chip ${who.length ? '' : 'none'}" data-n="${esc(p.number)}" aria-haspopup="menu" aria-label="Assigned to ${esc(names.join(', ') || 'nobody')}. Change">${inner}</button>`;
+}
+
+const STAGE_KEYS = ['folderCreatedAt', 'rawUploadedAt', 'rawDownloadedAt', 'finalUploadedAt'];
+const STAGE_LABELS = ['Folder created', 'Files uploaded', 'Files downloaded', 'Final exports uploaded'];
+const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
+function stepsDone(p) {
+  if (p.manualDone === true) return 4;
+  const n = STAGE_KEYS.filter(k => p[k]).length;
+  return p.manualDone === false ? Math.min(n, 3) : n;
+}
+/* A step shows as done when it has a date, or when the whole project was marked done by hand. */
+function stepOn(p, i) {
+  if (p.manualDone === true) return true;
+  return !!p[STAGE_KEYS[i]] && !(p.manualDone === false && i === 3);
+}
+const nextStep = (p) => { for (let i = 0; i < 4; i++) if (!stepOn(p, i)) return i; return -1; };
+
+function ring(p, size) {
+  const n = stepsDone(p), pct = n * 25;
+  const hint = n === 4 ? 'All steps done' : `${n} of 4 steps · next: ${STAGE_LABELS[nextStep(p)]}`;
+  return `<span class="ring ${size || ''} ${n === 4 ? 'done' : ''}" role="img" aria-label="${pct}% complete, ${n} of 4 steps" title="${esc(hint)}">
+    <svg viewBox="0 0 36 36" aria-hidden="true">
+      <circle class="ring-bg" cx="18" cy="18" r="16" fill="none" stroke-width="2.6"/>
+      <circle class="ring-fg" cx="18" cy="18" r="16" fill="none" stroke-width="2.6" stroke-linecap="round" pathLength="100" stroke-dasharray="100" stroke-dashoffset="${100 - pct}" style="opacity:${n ? 1 : 0}"/>
+    </svg>
+    <span class="ring-n">${n === 4 ? CHECK : n}</span></span>`;
+}
+
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+const EXT_ICON = '<svg class="ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>';
+const CAMERA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/></svg>';
+const tlink = (url, label) => url ? `<a class="pill sm" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(label)} folder (opens Dropbox)">${esc(label)}${EXT_ICON}</a>` : '';
+/* In the works: RAW + Exports pills. Done: one Delivery pill (done projects only need the final folder).
+   Delivery is also the fallback when a project has neither of the other two links. */
+function tableLinks(p) {
+  const delivery = tlink(p.deliveryLink, 'Delivery');
+  const pills = [tlink(p.rawLink, 'RAW'), tlink(p.exportsLink, 'Exports')].filter(Boolean);
+  if (isDone(p) && delivery) return delivery;
+  return pills.length ? pills.join('') : delivery;
+}
+function link(url, label) { return url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${label}</a>` : ''; }
+
+/* Filters: choices inside one group are OR, different groups are AND */
+const F = { status: new Set(), who: new Set(), urgency: new Set(), due: new Set() };
+/* "Dynamic" view: projects still in the works first, then a green "Done" line and the delivered ones, dimmed.
+   It is a view mode, not a filter, so it never counts as an active filter. On unless switched off. */
+let dynamic = true;
+try { dynamic = localStorage.getItem('ops_dynamic') !== '0'; } catch (e) {}
+function setDynamic(on) { dynamic = on; try { localStorage.setItem('ops_dynamic', on ? '1' : '0'); } catch (e) {} renderFilters(); render(); }
+function filterGroups() {
+  const admin = me && me.role === 'admin';
+  return [
+    { g: 'status', label: 'Status', opts: [...(admin ? [['todo', 'Unassigned']] : []), ['editing', 'In editing'], ['done', 'Delivered']] },
+    { g: 'urgency', label: 'Urgency', opts: [['regular', 'Regular'], ['urgent', 'Urgent'], ['asap', 'ASAP']] },
+    { g: 'due', label: 'Deadline', opts: [['none', 'No deadline']] },
+    admin ? { g: 'who', label: 'Assigned to', opts: users.map(u => [u.username, u.name]) } : null,
+  ].filter(Boolean);
+}
+const activeFilters = () => Object.values(F).reduce((n, set) => n + set.size, 0);
+
+function matchesFilters(p) {
+  if (F.status.size && !F.status.has(stageOf(p))) return false;
+  if (F.who.size) {
+    const have = assigneesOf(p);
+    if (![...F.who].some(w => have.includes(w))) return false;
+  }
+  if (F.urgency.size && !F.urgency.has(p.urgency || 'regular')) return false;
+  if (F.due.size && p.neededBy) return false;   // "No deadline"
+  return true;
+}
+
+function renderFilters() {
+  const groups = filterGroups(), n = activeFilters();
+  const top = groups.filter(gr => gr.g !== 'who'), who = groups.find(gr => gr.g === 'who');
+  const clear = `<button type="button" class="dp-link fclear" id="fclear" ${n ? '' : 'disabled'}>Clear all filters</button>`;
+  $('fbox').innerHTML =
+    `<div class="frow">${top.map(gr => `<div class="fgroup"><div class="flabel">${esc(gr.label)}</div>
+        <div class="fseg" role="group" aria-label="${esc(gr.label)}">${gr.opts.map(([v, l]) =>
+          `<button type="button" class="fchip" data-g="${gr.g}" data-v="${esc(v)}" aria-pressed="${F[gr.g].has(v)}">${esc(l)}</button>`).join('')}</div></div>`).join('')}
+      <div class="fgroup"><div class="flabel">View</div>
+        <div class="fseg" role="group" aria-label="View"><button type="button" class="fchip" id="dynChip" aria-pressed="${dynamic}" title="Projects still in the works first, delivered ones below a Done line">Dynamic</button></div></div>
+      ${who ? '' : clear}</div>`
+    + (who ? `<div class="frow"><div class="fgroup"><div class="flabel">Assigned to</div><div class="fpeople" role="group" aria-label="Assigned to">${who.opts.map(([v, l]) =>
+        `<button type="button" class="fperson" data-g="who" data-v="${esc(v)}" aria-pressed="${F.who.has(v)}">${avatar('sm')}<span>${esc(l)}</span></button>`).join('')}</div></div>${clear}</div>` : '');
+  $('fcount').textContent = n; $('fcount').classList.toggle('hidden', !n);
+  const open = $('fpanel').classList.contains('open');
+  const tags = groups.flatMap(gr => gr.opts.filter(([v]) => F[gr.g].has(v)).map(([v, l]) =>
+    `<span class="tagchip">${esc(l)}<button type="button" data-g="${gr.g}" data-v="${esc(v)}" aria-label="Remove filter ${esc(l)}">&times;</button></span>`));
+  $('fsum').innerHTML = tags.join('') + (tags.length ? '<button type="button" class="dp-link" id="fsumClear">Clear all</button>' : '');
+  $('fsum').classList.toggle('hidden', open || !tags.length);
+}
+function setFiltersOpen(open) {
+  $('fpanel').classList.toggle('open', open);
+  $('finner').inert = !open;
+  $('fbtn').setAttribute('aria-expanded', String(open));
+  renderFilters();
+}
+function toggleFilter(g, v) { F[g].has(v) ? F[g].delete(v) : F[g].add(v); page = 1; renderFilters(); render(); }
+function clearFilters() { Object.values(F).forEach(set => set.clear()); page = 1; renderFilters(); render(); }
+
+const PAGE_SIZE = 25;
+let page = 1;
+const CHEV_L = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
+const CHEV_R = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
+
+/* 1 … 4 5 6 … 12: always the first, last and current ±1, with gaps marked */
+function pageItems(cur, n) {
+  const keep = new Set([1, n, cur - 1, cur, cur + 1]);
+  if (cur <= 3) [2, 3, 4].forEach(x => keep.add(x));
+  if (cur >= n - 2) [n - 3, n - 2, n - 1].forEach(x => keep.add(x));
+  const nums = [...keep].filter(x => x >= 1 && x <= n).sort((a, b) => a - b);
+  const out = [];
+  nums.forEach((x, i) => { if (i && x - nums[i - 1] > 1) out.push('gap'); out.push(x); });
+  return out;
+}
+
+function renderPager(total, pages, from, to) {
+  const show = pages > 1;
+  $('pager').classList.toggle('hidden', !show);
+  $('appView').classList.toggle('paged', show);
+  if (!show) return;
+  $('pagerInfo').textContent = `Showing ${from}–${to} of ${total}`;
+  $('pagerPages').innerHTML =
+    `<button type="button" class="pg" data-page="${page - 1}" aria-label="Previous page" ${page === 1 ? 'disabled' : ''}>${CHEV_L}</button>` +
+    pageItems(page, pages).map(x => x === 'gap' ? '<span class="pg-gap" aria-hidden="true">…</span>'
+      : `<button type="button" class="pg" data-page="${x}" aria-label="Page ${x}" ${x === page ? 'aria-current="page"' : ''}>${x}</button>`).join('') +
+    `<button type="button" class="pg" data-page="${page + 1}" aria-label="Next page" ${page === pages ? 'disabled' : ''}>${CHEV_R}</button>`;
+}
+
+function render() {
+  const q = $('search').value.trim().toLowerCase();
+  const list = projects.filter(p =>
+    matchesFilters(p) &&
+    (!q || [p.number, p.dealership, p.name].join(' ').toLowerCase().includes(q)));
+  if (dynamic) { // stable: keeps the existing newest-first order inside each group
+    const isDone = (p) => stageOf(p) === 'done';
+    list.sort((a, b) => isDone(a) - isDone(b));
+  }
+  const total = list.length, pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  page = Math.min(Math.max(1, page), pages);
+  const from = total ? (page - 1) * PAGE_SIZE + 1 : 0, to = Math.min(page * PAGE_SIZE, total);
+  renderPager(total, pages, from, to);
+  const start = (page - 1) * PAGE_SIZE;
+  $('rows').innerHTML = list.slice(start, page * PAGE_SIZE).map((p, i) => {
+    const done = dynamic && stageOf(p) === 'done';
+    const split = done && (start + i) > 0 && stageOf(list[start + i - 1]) !== 'done';
+    return (split ? '<tr class="dline" aria-hidden="true"><td colspan="8"><div class="dline-in"><span class="dpill">Done</span></div></td></tr>' : '') + `
+    <tr class="row${done ? ' is-done' : ''}" data-n="${esc(p.number)}">
+      <td>${esc(p.number)}</td>
+      <td>${esc(p.dealership)}</td>
+      <td>${esc(p.name)}${p.headshots ? `<span class="hs" title="Headshots taken" aria-label="Headshots taken">${CAMERA}</span>` : ''}${(() => {
+        const tags = [(p.notes && p.notes.length) ? `<span class="count">${p.notes.length} note${p.notes.length > 1 ? 's' : ''}</span>` : ''].filter(Boolean);
+        return tags.length ? `<div class="pmeta">${tags.join('')}</div>` : '';
+      })()}</td>
+      <td class="nw">${esc(p.date ? fmtDay(p.date, p.date.slice(0, 4) !== String(new Date().getFullYear())) : '')}</td>
+      <td class="nw">${neededByCell(p)}</td>
+      <td>${assignCell(p)}</td>
+      <td class="nw"><span class="tlinks">${tableLinks(p) || '<span class="count" style="margin:0">—</span>'}</span></td>
+      <td>${ring(p)}</td>
+    </tr>`;
+  }).join('');
+  $('empty').classList.toggle('hidden', list.length > 0);
+  if (!list.length) $('empty').innerHTML = (activeFilters() || q) ? 'No projects match these filters.' : 'No projects yet.';
+}
+
+async function loadApp(user) {
+  me = user;
+  $('whoName').textContent = user.name;
+  $('newBtn').classList.toggle('hidden', user.role !== 'admin');
+  show('app');
+  const { ok, data } = await api('ops-projects');
+  projects = ok ? data.projects : [];
+  users = ok && data.users ? data.users : [];
+  lastSnapshot = ok ? JSON.stringify(data.projects) : '';
+  renderFilters();
+  render();
+  openFromLink();
+}
+
+/* Quietly pick up changes made elsewhere (new files detected in Dropbox, other people's edits) every 15s.
+   Only redraws when something changed, and only the progress steps of an open panel, so typing is never interrupted. */
+let lastSnapshot = '';
+setInterval(async () => {
+  if (document.hidden || !me || $('appView').classList.contains('hidden')) return;
+  const { ok, data } = await api('ops-projects');
+  if (!ok) return;
+  const snap = JSON.stringify(data.projects);
+  if (snap === lastSnapshot) return;
+  const first = lastSnapshot === '';
+  lastSnapshot = snap;
+  if (first) return;   // the initial load already drew this
+  projects = data.projects;
+  render();
+  const open = qlNum && projects.find(x => x.number === qlNum);
+  if (open && $('qlStepper')) $('qlStepper').innerHTML = stepperHtml(open);
+  if (open && $('qlMirror')) $('qlMirror').innerHTML = mirrorHtml(open);
+}, 15000);
+
+/* Email links look like /ops?project=0712: open that project once, then tidy the address. */
+function openFromLink() {
+  const n = new URLSearchParams(location.search).get('project');
+  if (!n) return;
+  history.replaceState(null, '', location.pathname);
+  if (projects.some(p => p.number === n)) openQL(n);
+}
+
+$('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  $('loginErr').textContent = ''; $('loginBtn').disabled = true; $('loginBtn').textContent = 'Signing in…';
+  const { ok, data } = await api('ops-login', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: $('u').value, password: $('p').value }),
+  });
+  $('loginBtn').disabled = false; $('loginBtn').textContent = 'Sign In';
+  if (!ok) { $('loginErr').textContent = (data && data.error) || 'Sign in failed'; return; }
+  $('p').value = '';
+  loadApp(data.user);
+});
+
+$('logoutBtn').addEventListener('click', async () => {
+  await api('ops-logout', { method: 'POST' });
+  projects = []; me = null; show('login'); $('u').focus();
+});
+
+/* ── Quick look ── */
+let qlNum = null, qlTimer = null, spokespeople = {};
+const STAGES = [['folderCreatedAt', 'Folder created'], ['rawUploadedAt', 'Files uploaded'],
+                ['rawDownloadedAt', 'Files downloaded'], ['finalUploadedAt', 'Final exports uploaded']];
+const fmtWhen = (t) => t ? new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—';
+const isAdmin = () => me && me.role === 'admin';
+
+const URG = [['regular', 'Regular'], ['urgent', 'Urgent'], ['asap', 'ASAP']];
+let qlVideoData = null, vTimers = {};   // null = still loading
+
+const FMT = [['9x16', '9x16'], ['16x9', '16x9'], ['both', 'Both']];
+const fmtOn = (cur, v) => cur === 'both' || cur === v;        // 'both' lights up all three buttons
+function fmtToggle(cur, v) {
+  if (v === 'both') return cur === 'both' ? '' : 'both';
+  const other = v === '9x16' ? '16x9' : '9x16';
+  if (cur === 'both') return other;      // Both is on: un-pick this one, keep the other
+  if (cur === v) return '';
+  if (cur === other) return 'both';      // the second format picked → Both
+  return v;
+}
+const urgSeg = (cur, ro) => `<div class="fseg sm" role="group" aria-label="Urgency">${URG.map(([v, l]) =>
+  `<button type="button" class="fchip" data-u="${v}" aria-pressed="${cur === v}" ${ro}>${l}</button>`).join('')}</div>`;
+const fmtSeg = (cur, ro) => `<div class="fseg sm" role="group" aria-label="Format">${FMT.map(([v, l]) =>
+  `<button type="button" class="fchip" data-fmt="${v}" aria-pressed="${fmtOn(cur, v)}" ${ro}>${l}</button>`).join('')}</div>`;
+const urgBadge = (u) => u && u !== 'regular' ? `<span class="badge ${u}">${u === 'asap' ? 'ASAP' : 'Urgent'}</span>` : '';
+const NOT_SET = 'Not set up yet';
+/* name and position live in one line ("Joshua Woodyatt, Service Manager"); older videos had them in two fields */
+const spokeLine = (v) => [v.spokesperson, v.position].map(x => String(x || '').trim()).filter(Boolean).join(', ');
+const spokeOptions = () => Object.entries(spokespeople).map(([n, pos]) => `<option value="${esc(pos ? n + ', ' + pos : n)}">`).join('');
+function vSummary(v) {
+  const parts = [spokeLine(v), v.format === 'both' ? 'Both formats' : v.format].filter(Boolean);
+  return parts.length ? parts.join(' · ') : NOT_SET;
+}
+
+let qlOpenId = null;   // card to open (a video that was just added)
+
+function videoCard(v) {
+  const ro = isAdmin() ? '' : 'disabled';
+  const manual = v.kind === 'manual', key = manual ? v.id : v.name, sum = vSummary(v);
+  return `<details class="vrow" data-video="${esc(key)}" data-kind="${manual ? 'manual' : 'dropbox'}" data-format="${esc(v.format)}" data-urgency="${esc(v.urgency || 'regular')}" ${key === qlOpenId ? 'open' : ''}>
+    <summary><span class="vmain"><span class="vname">${esc(v.name)}</span><span class="vsum ${sum === NOT_SET ? 'todo' : ''}">${esc(sum)}</span></span>
+      ${manual ? '<span class="badge">Manual</span>' : ''}<span class="vbadge">${urgBadge(v.urgency)}</span></summary>
+    <div class="vbody">
+      ${manual ? `<div class="two">
+          <label class="field"><span>Video name</span><input type="text" class="v-name" maxlength="80" autocomplete="off" value="${esc(v.name)}" ${ro}></label>
+          <label class="field"><span>Link to footage <em>(optional)</em></span><input type="text" class="v-link" maxlength="500" autocomplete="off" placeholder="https://www.dropbox.com/…" value="${esc(v.link)}" ${ro}></label>
+        </div>
+        ${v.link ? `<div class="open-footage"><a class="pill" href="${esc(v.link)}" target="_blank" rel="noopener noreferrer">Open footage</a></div>` : ''}` : ''}
+      <label class="field"><span>Spokesperson <em>(name and position)</em></span>
+        <input type="text" class="v-spoke" list="qlSpokeList" maxlength="200" autocomplete="off" placeholder="e.g. Joshua Woodyatt, Service Manager" value="${esc(spokeLine(v))}" ${ro}></label>
+      <div class="vctl"><div><span class="vl">Urgency</span>${urgSeg(v.urgency || 'regular', ro)}</div><div><span class="vl">Format</span>${fmtSeg(v.format, ro)}</div></div>
+      <label class="field"><span>Notes</span><textarea class="v-notes" maxlength="2000" ${ro}>${esc(v.notes)}</textarea></label>
+      <div class="vfoot"><span class="saved vsaved"></span>${manual && isAdmin() ? '<button class="btn ghost danger v-remove" type="button">Remove video</button>' : ''}</div>
+    </div></details>`;
+}
+
+function videosHtml() {
+  const d = qlVideoData;
+  if (!d) return '<div class="count" style="margin:0">Loading videos from Dropbox…</div>';
+  const hasFolders = d.videos.some(v => v.kind !== 'manual');
+  const note = d.error ? `<div class="count warn" style="margin:0 0 10px">${esc(d.error)}</div>`
+    : (!hasFolders ? '<div class="count" style="margin:0 0 10px">No video folders in RAW Files yet.</div>' : '');
+  const loose = d.looseFiles ? `<div class="count" style="margin:4px 0 10px">${d.looseFiles} loose file${d.looseFiles > 1 ? 's' : ''} in RAW Files (not inside a video folder).</div>` : '';
+  const datalist = `<datalist id="qlSpokeList">${spokeOptions()}</datalist>`;
+  const add = isAdmin() ? `<button class="pill add" id="qlVideoAdd" type="button">${PLUS}New video</button>` : '';
+  return note + d.videos.map(videoCard).join('') + datalist + loose + add;
+}
+
+function findVideo(card) {
+  const key = card.dataset.video, manual = card.dataset.kind === 'manual';
+  return qlVideoData && qlVideoData.videos.find(x => manual ? (x.kind === 'manual' && x.id === key) : (x.kind !== 'manual' && x.name === key));
+}
+
+function cardState(card) {
+  const v = findVideo(card);
+  const st = {
+    include: !v || v.include !== false, urgency: card.dataset.urgency || 'regular',
+    spokesperson: card.querySelector('.v-spoke').value.trim(), position: '',
+    format: card.dataset.format || '', notes: card.querySelector('.v-notes').value,
+  };
+  if (card.dataset.kind === 'manual') { st.name = card.querySelector('.v-name').value; st.link = card.querySelector('.v-link').value; }
+  return st;
+}
+
+function queueVideoSave(card) {
+  if (!isAdmin()) return;
+  const st = cardState(card), n = qlNum, key = card.dataset.video, manual = card.dataset.kind === 'manual';
+  const v = findVideo(card);
+  if (v) Object.assign(v, st);
+  if (manual && st.name.trim()) card.querySelector('.vname').textContent = st.name;
+  const sum = vSummary(st), sumEl = card.querySelector('.vsum');
+  sumEl.textContent = sum; sumEl.classList.toggle('todo', sum === NOT_SET);
+  card.querySelector('.vbadge').innerHTML = urgBadge(st.urgency);
+  card.querySelector('.vsaved').textContent = 'Saving…';
+  const tkey = (manual ? 'm:' : 'd:') + key;
+  clearTimeout(vTimers[tkey]);
+  vTimers[tkey] = setTimeout(async () => {
+    const req = manual ? ['ops-manual-video', { number: n, action: 'update', id: key, ...st }] : ['ops-update-video', { number: n, video: key, ...st }];
+    const { ok, data } = await api(req[0], { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(req[1]) });
+    const tag = card.querySelector('.vsaved'); if (!tag || qlNum !== n) return;
+    if (ok) {
+      const i = projects.findIndex(x => x.number === n); if (i > -1) projects[i] = { ...projects[i], urgency: data.project.urgency, videos: data.project.videos, manualVideos: data.project.manualVideos };
+      spokespeople = data.spokespeople || spokespeople;
+      const dl = $('qlSpokeList'); if (dl) dl.innerHTML = spokeOptions();
+      tag.textContent = 'Saved';
+    } else tag.textContent = (data && data.error) || 'Could not save';
+  }, 600);
+}
+
+async function addManualVideo(btn) {
+  btn.disabled = true;
+  const { ok, data } = await api('ops-manual-video', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ number: qlNum, action: 'add' }),
+  });
+  if (!ok) { btn.disabled = false; alert((data && data.error) || 'Could not add a video'); return; }
+  qlVideoData.videos.push({ ...data.video, kind: 'manual' });
+  const i = projects.findIndex(x => x.number === qlNum); if (i > -1) projects[i] = { ...projects[i], manualVideos: data.project.manualVideos };
+  qlOpenId = data.video.id;
+  $('qlVideos').innerHTML = videosHtml();
+  const card = $('qlVideos').querySelector(`details[data-video="${data.video.id}"]`);
+  if (card) { card.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); const nm = card.querySelector('.v-name'); nm.focus(); nm.select(); }
+}
+
+async function removeManualVideo(card) {
+  if (!confirm(`Remove "${card.querySelector('.vname').textContent}" from this project?`)) return;
+  const { ok, data } = await api('ops-manual-video', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ number: qlNum, action: 'remove', id: card.dataset.video }),
+  });
+  if (!ok) { alert((data && data.error) || 'Could not remove the video'); return; }
+  qlVideoData.videos = qlVideoData.videos.filter(x => !(x.kind === 'manual' && x.id === card.dataset.video));
+  const i = projects.findIndex(x => x.number === qlNum); if (i > -1) projects[i] = { ...projects[i], urgency: data.project.urgency, manualVideos: data.project.manualVideos };
+  $('qlVideos').innerHTML = videosHtml();
+}
+
+async function loadVideos(n) {
+  const r = await api('ops-videos?number=' + encodeURIComponent(n));
+  if (qlNum !== n) return;
+  if (!r.ok) { qlVideoData = { error: (r.data && r.data.error) || 'Could not load videos', videos: [] }; }
+  else {
+    qlVideoData = r.data; spokespeople = r.data.spokespeople || spokespeople;
+    const i = projects.findIndex(x => x.number === n); if (i > -1) projects[i] = r.data.project;
+  }
+  const busy = $('qlBody').contains(document.activeElement) && document.activeElement !== document.body;
+  if (!busy && r.ok) renderQL(r.data.project); else $('qlVideos').innerHTML = videosHtml();
+}
+
+const PLUS = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
+
+function assigneesHtml(p) { return assignCell(p); }   // same avatar chip as the table; admins click it to pick people
+
+function linksHtml(p) {
+  const EXT = '<svg class="ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>';
+  const pill = (url, label) => `<span class="pill-wrap"><a class="pill" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}${EXT}</a></span>`;
+  const built = [[p.rawLink, 'RAW files'], [p.exportsLink, 'Video exports'], [p.deliveryLink, 'Delivery folder']]
+    .filter(([u]) => u).map(([u, l]) => pill(u, l));
+  const extra = (p.extraLinks || []).map(l => `<span class="pill-wrap ${isAdmin() ? 'has-x' : ''}">
+      <a class="pill" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.label)}${EXT}</a>
+      ${isAdmin() ? `<button class="pill-x" type="button" data-id="${esc(l.id)}" aria-label="Remove link ${esc(l.label)}">&times;</button>` : ''}
+    </span>`);
+  const add = isAdmin() ? `<button class="pill add" id="qlLinkAdd" type="button">${PLUS}Link</button>` : '';
+  const none = !built.length && !extra.length && !add ? '<span class="count" style="margin:0">No links yet.</span>' : '';
+  return `<div class="links" id="qlLinks">${built.join('')}${extra.join('')}${add}${none}</div>
+    <div class="linkform hidden" id="qlLinkForm">
+      <label class="field"><span>Name</span><input type="text" id="qlLinkLabel" maxlength="40" placeholder="e.g. Client folder" autocomplete="off"></label>
+      <label class="field"><span>Link</span><input type="text" id="qlLinkUrl" maxlength="500" placeholder="https://…" autocomplete="off"></label>
+      <p class="err" id="qlLinkErr" role="alert"></p>
+      <div class="row-actions"><button class="btn ghost" id="qlLinkCancel" type="button">Cancel</button><button class="btn" id="qlLinkSave" type="button">Add link</button></div>
+    </div>`;
+}
+
+function notesHtml(p) {
+  const list = (p.notes || []).slice().reverse();
+  if (!list.length) return `<div class="note skeleton" role="status" aria-label="No notes yet">
+    <div class="note-av"><span class="avatar xl"></span></div>
+    <div class="note-main"><span class="sk-line" style="width:40%"></span>
+      <span class="sk-line"></span><span class="sk-line"></span><span class="sk-line" style="width:70%"></span>
+      <span class="count">No notes yet — add the first one below.</span></div></div>`;
+  return list.map(n => `<div class="note">
+    <div class="note-av">${avatar('xl')}</div>
+    <div class="note-main"><div class="note-head"><span class="note-name">${esc(n.name)}</span><span class="note-when">${esc(fmtWhen(n.at))}</span></div>
+      <div class="body">${esc(n.text)}</div></div></div>`).join('');
+}
+
+/* 4-step tracker: filled = done (blue, green once all four are), outlined = the next step */
+function stepperHtml(p) {
+  const n = stepsDone(p), next = nextStep(p);
+  return `<div class="qcap"><strong>${n * 25}%</strong> complete${n === 4 ? '' : ` · next: ${esc(STAGE_LABELS[next])}`}</div>
+    <ol class="steps ${n === 4 ? 'done' : ''}" aria-label="Progress: ${n} of 4 steps">${STAGE_KEYS.map((k, i) =>
+      `<li class="step ${stepOn(p, i) ? 'on' : ''} ${i === next ? 'next' : ''}"><span class="node">${stepOn(p, i) ? CHECK : i + 1}</span><span class="slabel">${STAGE_LABELS[i].replace('Final exports uploaded', 'Final exports')}</span><span class="swhen">${stepOn(p, i) && p[k] ? esc(new Date(p[k]).toLocaleDateString([], { month: 'short', day: 'numeric' })) : ''}</span></li>`).join('')}</ol>`;
+}
+
+/* Status of the local Zanchin 12 folders, built by the Mac helper on the machine of whoever created the project. */
+function mirrorHtml(p) {
+  const m = p.localMirror;
+  if (!m || m.status === 'n/a') return '';
+  const who = nameOf(m.machine) || 'the';
+  if (m.status === 'done') return `<span class="mdot ok"></span>Local folders created on ${esc(who)}'s Mac${m.lightroom === false ? ' · Lightroom template was not found' : ''}`;
+  return `<span class="mdot"></span>Local folders waiting for ${esc(who)}'s Mac${m.lastError ? ` · last try failed: ${esc(m.lastError)}` : ''}`;
+}
+
+function doneHint(p) {
+  if (p.manualDone === undefined) return 'Automatic: done once the final exports are in Dropbox';
+  return `Set by hand${isAdmin() ? ' · <button type="button" class="dp-link" id="qlAuto">Back to automatic</button>' : ''}`;
+}
+
+function renderQL(p) {
+  const ins = p.instructions || {};
+  const ro = isAdmin() ? '' : 'disabled';
+  $('qlBody').innerHTML = `
+    <div class="qh">
+      <div><h2>${esc(p.number)} · ${esc(p.dealership)}</h2><div class="sub">${esc(p.name)} · ${esc(p.date)}</div></div>
+      <div class="qh-who" id="qlAssignees">${assigneesHtml(p)}</div>
+    </div>
+
+    <div class="qmeta" id="qlDeadline">${deadlineHtml(p)}</div>
+
+    <div class="qlinks">${linksHtml(p)}</div>
+
+    <div id="qlStepper">${stepperHtml(p)}</div>
+
+    <div class="qnote">
+      <textarea id="qlInstr" maxlength="2000" aria-label="Notes for the editor" placeholder="Notes for the editor — anything that applies to the whole project" ${ro}>${esc(ins.notes)}</textarea>
+      <div class="saved" id="qlSaved"></div>
+    </div>
+
+    <section>
+      <h3 class="section-title">Videos</h3>
+      <div id="qlVideos">${videosHtml()}</div>
+    </section>
+
+    <section>
+      <h3 class="section-title">Headshots</h3>
+      <label class="switchrow ${isAdmin() ? '' : 'ro'}">
+        <input type="checkbox" id="qlHeadshots" ${p.headshots ? 'checked' : ''} ${isAdmin() ? '' : 'disabled'}><span class="sw" aria-hidden="true"></span>
+        <span class="swtext"><strong>Headshots were taken</strong><small>${p.headshots ? 'Stan is on this project for the headshots' : 'Ticking this assigns Stan automatically'}</small></span>
+      </label>
+    </section>
+
+    <section>
+      <h3 class="section-title">Chat</h3>
+      <div id="qlNotes">${notesHtml(p)}</div>
+      <label class="field" style="margin-top:10px"><span>Add a note</span>
+        <textarea id="qlNote" maxlength="2000" placeholder="Anything worth remembering about this project…"></textarea></label>
+      <div class="row-actions"><button class="btn" id="qlAddNote" type="button">Add note</button></div>
+    </section>
+
+    <section>
+      <h3 class="section-title">Status</h3>
+      <label class="switchrow ${isAdmin() ? '' : 'ro'}">
+        <input type="checkbox" id="qlDone" ${isDone(p) ? 'checked' : ''} ${isAdmin() ? '' : 'disabled'}><span class="sw" aria-hidden="true"></span>
+        <span class="swtext"><strong>Mark as done</strong><small id="qlDoneHint">${doneHint(p)}</small></span>
+      </label>
+      <div class="mirror" id="qlMirror">${mirrorHtml(p)}</div>
+    </section>`;
+}
+
+async function openQL(n) {
+  const p = projects.find(x => x.number === n); if (!p) return;
+  qlNum = n; qlVideoData = null;
+  renderQL(p);
+  $('ql').classList.add('open'); $('qlScrim').classList.add('open'); $('ql').setAttribute('aria-hidden', 'false');
+  $('ql').scrollTop = 0;
+  loadVideos(n);    // lists RAW Files on Dropbox; also returns the freshest copy of the project
+}
+function closeQL() {
+  qlNum = null; clearTimeout(qlTimer);
+  $('ql').classList.remove('open'); $('qlScrim').classList.remove('open'); $('ql').setAttribute('aria-hidden', 'true');
+  render();
+}
+
+function qlInstructions() {
+  const p = projects.find(x => x.number === qlNum) || {};
+  return { ...(p.instructions || {}), notes: $('qlInstr').value };
+}
+function qlQueueSave() {
+  if (!isAdmin()) return;
+  $('qlSaved').textContent = 'Saving…';
+  clearTimeout(qlTimer);
+  const n = qlNum;
+  qlTimer = setTimeout(async () => {
+    const { ok, data } = await api('ops-update-project', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ number: n, instructions: qlInstructions() }),
+    });
+    if (qlNum !== n || !$('qlSaved')) return;
+    if (ok) {
+      const i = projects.findIndex(x => x.number === n); if (i > -1) projects[i] = data.project;
+      spokespeople = data.spokespeople || spokespeople;
+      $('qlSaved').textContent = 'Saved';
+    } else $('qlSaved').textContent = (data && data.error) || 'Could not save';
+  }, 600);
+}
+
+$('rows').addEventListener('click', (e) => {
+  if (e.target.closest('select, a, button')) return;
+  const tr = e.target.closest('tr.row'); if (tr) openQL(tr.dataset.n);
+});
+$('qlClose').addEventListener('click', closeQL);
+$('qlScrim').addEventListener('click', closeQL);
+$('qlBody').addEventListener('input', (e) => {
+  if (e.target.id === 'qlInstr') qlQueueSave();
+  const card = e.target.closest('details.vrow'); if (card && e.target.matches('.v-spoke, .v-notes, .v-name, .v-link')) queueVideoSave(card);
+});
+async function setDone(value) {
+  const n = qlNum, p = projects.find(x => x.number === n); if (!p) return false;
+  const { ok, data } = await api('ops-complete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ number: n, done: value }) });
+  if (!ok) { alert((data && data.error) || 'Could not save'); return false; }
+  delete p.manualDone; delete p.manualDoneBy; delete p.manualDoneAt;
+  Object.assign(p, data.project);
+  render();
+  if (qlNum === n && $('qlStepper')) {
+    $('qlStepper').innerHTML = stepperHtml(p);
+    $('qlDone').checked = isDone(p);
+    $('qlDoneHint').innerHTML = doneHint(p);
+  }
+  return true;
+}
+$('qlBody').addEventListener('click', (e) => { if (e.target.id === 'qlAuto') setDone(null); });
+$('qlBody').addEventListener('change', async (e) => {
+  if (e.target.id === 'qlDone') {
+    const box = e.target; box.disabled = true;
+    const ok = await setDone(box.checked); box.disabled = false;
+    if (!ok) box.checked = !box.checked;
+    return;
+  }
+  if (e.target.id === 'qlHeadshots') {
+    const box = e.target, n = qlNum, p = projects.find(x => x.number === n); if (!p) return;
+    box.disabled = true;
+    const { ok, data } = await api('ops-headshots', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ number: n, taken: box.checked }) });
+    box.disabled = false;
+    if (!ok) { box.checked = !box.checked; alert((data && data.error) || 'Could not save'); return; }
+    Object.assign(p, data.project); delete p.assignedTo;
+    render();
+    if (qlNum === n) {
+      if ($('qlAssignees')) $('qlAssignees').innerHTML = assigneesHtml(p);
+      const sm = box.closest('.switchrow').querySelector('small'); if (sm) sm.textContent = p.headshots ? 'Stan is on this project for the headshots' : 'Ticking this assigns Stan automatically';
+    }
+    return;
+  }
+  const card = e.target.closest('details.vrow');
+  if (card) {
+    if (e.target.matches('.v-spoke')) queueVideoSave(card);
+  }
+});
+function linkFormOpen(open) {
+  $('qlLinkForm').classList.toggle('hidden', !open);
+  if (open) { $('qlLinkErr').textContent = ''; $('qlLinkLabel').value = ''; $('qlLinkUrl').value = ''; $('qlLinkLabel').focus(); }
+}
+async function linkCall(payload) {
+  return api('ops-links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ number: qlNum, ...payload }) });
+}
+function linkApplied(project) {
+  const i = projects.findIndex(x => x.number === qlNum); if (i > -1) projects[i] = { ...projects[i], extraLinks: project.extraLinks };
+  const wasOpen = !$('qlLinkForm').classList.contains('hidden');
+  $('qlLinks').parentElement.innerHTML = linksHtml(projects[i] || project);
+  if (wasOpen) linkFormOpen(false);
+}
+$('qlBody').addEventListener('click', async (e) => {
+  const ub = e.target.closest('.fchip[data-u]');
+  if (ub && !ub.disabled) {
+    const card = ub.closest('details.vrow');
+    card.dataset.urgency = ub.dataset.u;
+    card.querySelectorAll('.fchip[data-u]').forEach(b => b.setAttribute('aria-pressed', String(b === ub)));
+    queueVideoSave(card); return;
+  }
+  const fb = e.target.closest('.fchip[data-fmt]');
+  if (fb && !fb.disabled) {
+    const card = fb.closest('details.vrow');
+    card.dataset.format = fmtToggle(card.dataset.format || '', fb.dataset.fmt);
+    card.querySelectorAll('.fchip[data-fmt]').forEach(b => b.setAttribute('aria-pressed', String(fmtOn(card.dataset.format, b.dataset.fmt))));
+    queueVideoSave(card); return;
+  }
+  if (e.target.closest('#qlVideoAdd')) { addManualVideo(e.target.closest('#qlVideoAdd')); return; }
+  if (e.target.closest('.v-remove')) { removeManualVideo(e.target.closest('details.vrow')); return; }
+  const who = e.target.closest('.assignee');
+  if (who) { const p = projects.find(x => x.number === qlNum); if (p) assignTo(qlNum, toggleIn(assigneesOf(p), who.dataset.user)); return; }
+  if (e.target.closest('#qlLinkAdd')) { linkFormOpen($('qlLinkForm').classList.contains('hidden')); return; }
+  if (e.target.id === 'qlLinkCancel') { linkFormOpen(false); return; }
+  if (e.target.id === 'qlLinkSave') {
+    e.target.disabled = true;
+    const { ok, data } = await linkCall({ action: 'add', label: $('qlLinkLabel').value, url: $('qlLinkUrl').value });
+    if (!ok) { $('qlLinkErr').textContent = (data && data.error) || 'Could not add the link'; e.target.disabled = false; return; }
+    linkApplied(data.project); return;
+  }
+  const x = e.target.closest('.pill-x');
+  if (x) { const { ok, data } = await linkCall({ action: 'remove', id: x.dataset.id }); if (ok) linkApplied(data.project); return; }
+  if (e.target.id !== 'qlAddNote') return;
+  const text = $('qlNote').value.trim(); if (!text) return;
+  e.target.disabled = true;
+  const { ok, data } = await api('ops-add-note', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ number: qlNum, text }),
+  });
+  e.target.disabled = false;
+  if (!ok) { alert((data && data.error) || 'Could not add the note'); return; }
+  const i = projects.findIndex(x => x.number === qlNum); if (i > -1) projects[i] = data.project;
+  $('qlNotes').innerHTML = notesHtml(data.project); $('qlNote').value = '';
+});
+$('qlBody').addEventListener('keydown', (e) => {
+  if (e.target.closest('#qlLinkForm')) {
+    if (e.key === 'Enter') { e.preventDefault(); $('qlLinkSave').click(); }
+    if (e.key === 'Escape') { e.stopPropagation(); linkFormOpen(false); $('qlLinkAdd').focus(); }
+  }
+  if (e.target.id === 'qlNote' && e.key === 'Enter' && (e.metaKey || e.ctrlKey)) $('qlAddNote').click();
+});
+
+/* ── New project pop-up ── */
+function openNew() {
+  $('panelFrame').src = '/ops-new?embed=1';   // fresh load each time: latest number, empty fields
+  $('overlay').classList.add('open'); $('overlay').setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+function closeNew() {
+  $('overlay').classList.remove('open'); $('overlay').setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  setTimeout(() => { if (!$('overlay').classList.contains('open')) $('panelFrame').src = 'about:blank'; }, 250);
+}
+$('newBtn').addEventListener('click', (e) => { e.preventDefault(); openNew(); });
+$('panelClose').addEventListener('click', closeNew);
+$('overlay').addEventListener('click', (e) => { if (e.target === $('overlay')) closeNew(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if ($('datePop')) { closeDatePop(); return; }
+  if ($('assignPop')) { closeAssignPop(); return; }
+  if ($('overlay').classList.contains('open')) closeNew(); else if (qlNum) closeQL(); else if ($('fpanel').classList.contains('open')) setFiltersOpen(false);
+});
+window.addEventListener('message', async (e) => {
+  if (e.origin !== location.origin) return;
+  if (e.data && e.data.type === 'ops-close') closeNew();
+  if (e.data && e.data.type === 'ops-resize' && $('overlay').classList.contains('open')) $('overlay').querySelector('.panel').style.height = Math.min(e.data.h + 2, window.innerHeight - 40) + 'px';
+  if (e.data && e.data.type === 'ops-created') {
+    const r = await api('ops-projects'); if (r.ok) { projects = r.data.projects; users = r.data.users || users; render(); }
+  }
+});
+
+async function assignTo(number, list) {
+  const p = projects.find(x => x.number === number); if (!p) return;
+  const { ok, data } = await api('ops-assign', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ number, assignees: list }),
+  });
+  if (!ok) { alert((data && data.error) || 'Could not assign'); return; }
+  Object.assign(p, data.project); delete p.assignedTo;
+  render();
+  if (qlNum === number && $('qlAssignees')) $('qlAssignees').innerHTML = assigneesHtml(p);
+  if ($('assignPop') && $('assignPop').dataset.n === number) fillAssignPop(p);
+}
+const toggleIn = (list, u) => list.includes(u) ? list.filter(x => x !== u) : list.concat(u);
+
+/* quick assign from the table: avatar chip → small picker */
+function closeAssignPop() { const el = $('assignPop'); if (el) el.remove(); }
+function fillAssignPop(p) {
+  const pop = $('assignPop'); if (!pop) return;
+  const who = assigneesOf(p);
+  pop.innerHTML = users.map(u => `<button type="button" role="menuitemcheckbox" aria-checked="${who.includes(u.username)}" data-user="${esc(u.username)}">${avatar('sm' + (who.includes(u.username) ? ' on' : ''))}${esc(u.name)}${who.includes(u.username) ? '<span class="tick">✓</span>' : ''}</button>`).join('')
+    + `<div class="sep"></div><button type="button" role="menuitem" data-user="" ${who.length ? '' : 'disabled'}>${avatar('sm blank')}Clear all</button>`
+    + `<div class="hint">Pick one or more people</div>`;
+}
+function openAssignPop(btn) {
+  closeAssignPop();
+  const p = projects.find(x => x.number === btn.dataset.n); if (!p) return;
+  const pop = document.createElement('div');
+  pop.id = 'assignPop'; pop.className = 'assign-pop'; pop.setAttribute('role', 'menu'); pop.dataset.n = p.number;
+  document.body.appendChild(pop);
+  fillAssignPop(p);
+  const r = btn.getBoundingClientRect();
+  pop.style.top = Math.min(r.bottom + 6, window.innerHeight - pop.offsetHeight - 8) + 'px';
+  pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - pop.offsetWidth - 8)) + 'px';
+  const first = pop.querySelector('button'); if (first) first.focus();
+}
+document.addEventListener('click', (e) => {
+  const item = e.target.closest('#assignPop button');
+  if (item) {                                   // the picker stays open so several people can be ticked in a row
+    const pop = $('assignPop'), p = projects.find(x => x.number === pop.dataset.n); if (!p || item.disabled) return;
+    assignTo(p.number, item.dataset.user ? toggleIn(assigneesOf(p), item.dataset.user) : []); return;
+  }
+  const chip = e.target.closest('button.assign-chip[data-n]');
+  if (chip) { e.stopPropagation(); if ($('assignPop') && $('assignPop').dataset.n === chip.dataset.n) closeAssignPop(); else openAssignPop(chip); return; }
+  closeAssignPop();
+});
+window.addEventListener('scroll', closeAssignPop, true);
+window.addEventListener('resize', closeAssignPop);
+
+$('search').addEventListener('input', () => { page = 1; render(); });
+$('pager').addEventListener('click', (e) => {
+  const b = e.target.closest('.pg[data-page]'); if (!b || b.disabled || b.hasAttribute('aria-current')) return;
+  page = Number(b.dataset.page); render();
+  window.scrollTo({ top: Math.max(0, $('appView').getBoundingClientRect().top + window.scrollY - 16), behavior: 'smooth' });
+});
+$('fbtn').addEventListener('click', () => setFiltersOpen(!$('fpanel').classList.contains('open')));
+$('fbox').addEventListener('click', (e) => {
+  if (e.target.closest('#dynChip')) { setDynamic(!dynamic); return; }
+  const c = e.target.closest('.fchip, .fperson'); if (c) { toggleFilter(c.dataset.g, c.dataset.v); return; }
+  if (e.target.id === 'fclear') clearFilters();
+});
+$('fsum').addEventListener('click', (e) => {
+  const x = e.target.closest('.tagchip button'); if (x) { toggleFilter(x.dataset.g, x.dataset.v); return; }
+  if (e.target.id === 'fsumClear') clearFilters();
+});
+
+(async () => {
+  const { ok, data } = await api('ops-me');
+  if (ok) loadApp(data.user); else { show('login'); $('u').focus(); }
+})();
+</script>
+</body>
+</html>

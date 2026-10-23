@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Zanchin Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script>
+  // Same light/dark choice and dark-mode accent colour as the Hub (shared via localStorage), live while the pop-up is open.
+  (function () {
+    var KEYS = ['--accent', '--accent2', '--neon', '--neon-glow'];
+    function apply() {
+      try {
+        var r = document.documentElement, dark = localStorage.getItem('theme') === 'dark', c = localStorage.getItem('ops_accent');
+        r.setAttribute('data-theme', dark ? 'dark' : 'light');
+        KEYS.forEach(function (k) { r.style.removeProperty(k); });
+        if (dark && /^#[0-9a-f]{6}$/i.test(c)) {
+          var n = parseInt(c.slice(1), 16);
+          r.style.setProperty('--accent', c); r.style.setProperty('--accent2', c); r.style.setProperty('--neon', c);
+          r.style.setProperty('--neon-glow', 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',.22)');
+        }
+      } catch (e) {}
+    }
+    apply(); window.addEventListener('storage', apply);
+  })();
+</script>
+<style>
+/* Design tokens — same as the Hub and the booking site ("The Studio Console"). */
+:root {
+  --bg:#eceef1; --surface:#e8eaed; --surface-raised:#f0f2f5; --white:#fff;
+  --accent:#1a1a1a; --green:#22c55e; --red:#ef4444; --orange:#f59e0b;
+  --text:#1a1a1a; --text-muted:#4b5563; --border:rgba(255,255,255,0.85);
+  --shadow-out:5px 5px 12px rgba(170,176,190,.5),-3px -3px 8px rgba(255,255,255,.92);
+  --shadow-in:inset 3px 3px 7px rgba(170,176,190,.4),inset -2px -2px 6px rgba(255,255,255,.88);
+  --shadow-card:8px 8px 20px rgba(160,168,185,.4),-5px -5px 14px rgba(255,255,255,.95);
+  --radius-sm:10px; --radius-xl:26px;
+  --neon:#3a7bd5; --neon-glow:rgba(58,123,213,.28);
+  --dropdown-bg:#fff; --dropdown-border:rgba(0,0,0,.08);
+  --hairline:rgba(128,128,128,.16);
+  --ok-text:#16a34a; --bad-text:#dc2626;
+}
+[data-theme="dark"] {
+  --bg:#0f1117; --surface:#1a1d27; --surface-raised:#1f2330; --white:#1f2330;
+  --accent:#FC6E20; --green:#39ff14; --red:#ff4d6d; --orange:#ffd700;
+  --text:#e8edf5; --text-muted:#9ca3af; --border:rgba(255,255,255,.07);
+  --shadow-out:5px 5px 16px rgba(0,0,0,.55),-2px -2px 6px rgba(255,255,255,.03);
+  --shadow-in:inset 3px 3px 10px rgba(0,0,0,.5),inset -2px -2px 4px rgba(255,255,255,.03);
+  --shadow-card:0 8px 32px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.04);
+  --neon:#FC6E20; --neon-glow:rgba(252,110,32,.22);
+  --dropdown-bg:#1f2330; --dropdown-border:rgba(255,255,255,.08);
+  --hairline:rgba(255,255,255,.08);
+  --ok-text:#39ff14; --bad-text:#ff4d6d;
+}
+
+[data-theme="dark"] { color-scheme:dark; }
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html,body { height:100%; }
+body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; font-size:14px; transition:background .3s,color .3s; }
+button,input { font-family:'Inter',sans-serif; color:inherit; }
+.page { padding:34px 30px 40px; max-width:820px; margin:0 auto; }
+
+/* header */
+.header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:24px; }
+h1 { font-size:20px; font-weight:800; letter-spacing:-.4px; }
+.subtitle { color:var(--text-muted); font-size:13px; font-weight:500; margin-top:4px; }
+a.back { display:inline-block; margin-bottom:10px; color:var(--text-muted); font-size:13px; font-weight:600; text-decoration:underline; text-underline-offset:3px; }
+a.back:hover { color:var(--neon); }
+
+/* status pills — same as the Hub's user pills */
+.status-stack { display:flex; flex-direction:column; gap:8px; flex:none; }
+.pill { display:flex; align-items:center; gap:8px; min-width:150px; background:var(--white); border-radius:50px; padding:7px 14px; font-size:11px; font-weight:600; color:var(--text-muted); box-shadow:var(--shadow-out); white-space:nowrap; transition:background .3s; }
+.pill .dot { width:6px; height:6px; border-radius:50%; background:var(--text-muted); opacity:.5; flex:none; transition:background .2s; }
+.pill .pname { flex:1; }
+.pill .pstate { font-weight:700; color:var(--text-muted); }
+.pill.ok .dot { background:var(--green); opacity:1; }
+.pill.bad .dot { background:var(--red); opacity:1; }
+.pill.ok .pstate { color:var(--ok-text); }
+.pill.bad .pstate { color:var(--bad-text); }
+
+/* form */
+.card { background:var(--surface-raised); border-radius:var(--radius-xl); box-shadow:var(--shadow-card); border:1px solid var(--border); padding:26px 26px 24px; transition:background .3s; }
+.field-label { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted); margin:0 0 6px; }
+.group + .group { margin-top:14px; }
+.group.tight { margin-top:14px; }
+.row { display:flex; gap:14px; align-items:flex-start; }
+.col { display:flex; flex-direction:column; }
+.col-number { flex:0 0 150px; }
+.col-deal { flex:1 1 auto; }
+
+input.field { width:100%; background:var(--surface); border:1px solid var(--border); color:var(--text); padding:12px 14px; font-size:14px; font-weight:500;
+              border-radius:var(--radius-sm); outline:none; box-shadow:var(--shadow-in); transition:box-shadow .2s,border-color .2s,background .3s; }
+input.field::placeholder { color:var(--text-muted); opacity:.8; }
+input.field:focus { border-color:var(--neon); box-shadow:var(--shadow-in),0 0 0 3px var(--neon-glow); }
+input.field.readonly { font-weight:700; letter-spacing:.02em; }
+
+/* dealership suggestions (same as the booking combobox list) */
+.combo { position:relative; }
+.menu { position:absolute; left:0; right:0; top:calc(100% + 6px); background:var(--dropdown-bg); border:1px solid var(--dropdown-border); border-radius:var(--radius-sm);
+        box-shadow:0 8px 24px rgba(0,0,0,.22); z-index:50; max-height:252px; overflow-y:auto; display:none; }
+.menu.open { display:block; }
+.opt { padding:10px 14px; font-size:13.5px; font-weight:500; cursor:pointer; transition:background .12s; }
+.opt:hover,.opt.active { background:var(--surface); }
+
+/* buttons: Create is the one primary action (Onyx); the others are list controls */
+.buttons { display:flex; flex-wrap:wrap; gap:10px; margin-top:22px; }
+button { padding:12px 18px; font-size:13px; font-weight:600; border-radius:9px; cursor:pointer; border:1px solid var(--border); transition:all .16s; }
+button.primary { background:var(--accent); border-color:var(--accent); color:#fff; box-shadow:0 0 0 0 var(--neon-glow); transition:opacity .2s,transform .1s,box-shadow .3s; }
+button.primary:hover { opacity:.88; box-shadow:0 0 0 5px var(--neon-glow); }
+button.primary:focus-visible { outline:none; opacity:.88; box-shadow:0 0 0 5px var(--neon-glow); }
+button.primary:active { transform:scale(.993); }
+button.primary:disabled { opacity:.42; cursor:not-allowed; pointer-events:none; }
+button.secondary { background:var(--surface-raised); color:var(--text-muted); }
+button.secondary:hover,button.secondary:focus-visible { outline:none; color:var(--text); border-color:var(--neon); box-shadow:var(--shadow-out),0 0 0 2px var(--neon-glow); }
+
+/* where it saves */
+.settings { margin-top:14px; background:var(--surface); border-radius:var(--radius-sm); box-shadow:var(--shadow-in); border:1px solid var(--border); padding:12px 16px; }
+.srow { display:flex; align-items:center; gap:12px; min-height:26px; }
+.slabel { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted); flex:0 0 100px; }
+.sval { flex:1; font-size:13px; font-weight:600; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sval.muted { color:var(--text-muted); font-weight:500; }
+.sval.warn { color:var(--orange); }
+.sval.good { color:var(--ok-text); }
+[data-theme="light"] .sval.warn,:root:not([data-theme="dark"]) .sval.warn { color:#b45309; }
+
+/* log */
+.log-header { font-size:15px; font-weight:700; letter-spacing:-.2px; margin:24px 0 10px; }
+.log { background:var(--surface); box-shadow:var(--shadow-in); border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px 16px;
+       font-family:"SF Mono",Menlo,Monaco,monospace; font-size:12.5px; line-height:1.65; white-space:pre-wrap; word-break:break-word; min-height:170px; max-height:300px; overflow-y:auto; color:var(--text); }
+.log .ok { color:var(--ok-text); }
+.log .err { color:var(--bad-text); }
+
+/* inside the pop-up: the pop-up supplies the surface, so the form sits directly on it */
+html.embed body { background:transparent; }
+html.embed .page { padding:28px 28px 30px; }
+html.embed .header { padding-right:46px; }       /* room for the close button */
+html.embed .card { background:transparent; box-shadow:none; border:0; padding:0; }
+html.embed a.back { display:none; }
+/* narrow pop-up: pills sit in a row under the title, buttons stay on one line */
+html.embed .header { flex-direction:column; gap:12px; margin-bottom:20px; }
+html.embed .status-stack { flex-direction:row; flex-wrap:wrap; gap:8px; }
+html.embed .pill { min-width:0; gap:10px; padding:6px 12px; }
+html.embed .pill .pname { flex:none; }
+html.embed .col-number { flex:0 0 128px; }
+html.embed .field-label { white-space:nowrap; }
+html.embed .buttons { gap:8px; }
+html.embed button { padding:12px 15px; }
+
+@media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
+@media (max-width:560px) { html:not(.embed) .row { flex-direction:column; } html:not(.embed) .col-number { flex:none; width:100%; } html:not(.embed) .header { flex-direction:column; } }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <div>
+        <a class="back" href="/ops">&larr; All projects</a>
+        <h1>Zanchin Hub</h1>
+        <div class="subtitle">Project setup, Dropbox upload, and monday logging.</div>
+      </div>
+      <div class="status-stack">
+        <div class="pill" id="dropPill">
+          <span class="dot"></span><span class="pname">Dropbox</span><span class="pstate">—</span>
+        </div>
+        <div class="pill" id="netPill">
+          <span class="dot"></span><span class="pname">Internet</span><span class="pstate">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div class="col col-number">
+          <div class="field-label">Project number</div>
+          <input id="number" class="field readonly" readonly>
+        </div>
+        <div class="col col-deal">
+          <div class="field-label">Dealership</div>
+          <div class="combo">
+            <input id="dealership" class="field" autocomplete="off"
+                   placeholder="Start typing a dealership…">
+            <div id="menu" class="menu"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group tight">
+        <div class="field-label">Project name</div>
+        <input id="project" class="field" placeholder="e.g. Welcome video">
+      </div>
+
+      <div class="buttons">
+        <button id="create" class="primary">Create Project</button>
+        <button id="refresh" class="secondary">Refresh number</button>
+        <button id="clear" class="secondary">Clear</button>
+      </div>
+    </div>
+
+    <div class="settings">
+      <div class="srow">
+        <span class="slabel">Saving to</span>
+        <span id="saveTarget" class="sval">—</span>
+      </div>
+    </div>
+
+    <div class="log-header"><span>Log</span></div>
+    <div id="log" class="log"></div>
+  </div>
+
+<script>
+  let DEALERSHIPS = [];
+  let activeIdx = -1;
+
+  // When shown inside the /ops pop-up (an iframe), tell the parent about close/create events.
+  const EMBED = new URLSearchParams(location.search).has("embed");
+  if (EMBED) document.documentElement.classList.add("embed");
+  const toParent = (type) => { if (EMBED && parent !== window) parent.postMessage({ type: type }, location.origin); };
+  // Tell the pop-up how tall the form is so the window fits it (no big empty area).
+  if (EMBED && typeof ResizeObserver !== "undefined") {
+    const pg = document.querySelector(".page");
+    new ResizeObserver(() => parent.postMessage({ type: "ops-resize", h: Math.ceil(pg.getBoundingClientRect().height) }, location.origin)).observe(pg);
+  }
+  // Esc closes the pop-up, unless the dealership suggestions are open (Esc then only closes those).
+  document.addEventListener("keydown", (e) => {
+    if (EMBED && e.key === "Escape" && !menuEl.classList.contains("open")) toParent("ops-close");
+  }, true);
+
+  const $ = (id) => document.getElementById(id);
+  const logEl = $("log"), menuEl = $("menu");
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+  async function api(path, opts) {
+    const r = await fetch("/.netlify/functions/" + path, { credentials: "same-origin", ...opts });
+    let data = null; try { data = await r.json(); } catch (e) {}
+    return { ok: r.ok, status: r.status, data };
+  }
+
+  function addLog(msg, cls) {
+    const span = document.createElement("span");
+    if (cls) span.className = cls;
+    span.textContent = msg + "\n";
+    logEl.appendChild(span);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  function clearLog() { logEl.textContent = ""; }
+
+  // ----- dealership autocomplete (same behaviour as the desktop app) -----
+  function filtered(typed) {
+    const t = typed.trim().toLowerCase();
+    if (!t) return DEALERSHIPS.slice();
+    const starts = DEALERSHIPS.filter(v => v.toLowerCase().startsWith(t));
+    const contains = DEALERSHIPS.filter(v => v.toLowerCase().includes(t) && !starts.includes(v));
+    return starts.concat(contains);
+  }
+  function openMenu(items) {
+    menuEl.innerHTML = "";
+    items.forEach((it, i) => {
+      const d = document.createElement("div");
+      d.className = "opt"; d.textContent = it;
+      d.addEventListener("mousedown", (e) => { e.preventDefault(); choose(it); });
+      menuEl.appendChild(d);
+    });
+    activeIdx = -1;
+    menuEl.classList.add("open");
+  }
+  function closeMenu() { menuEl.classList.remove("open"); activeIdx = -1; }
+  function choose(v) { $("dealership").value = v; closeMenu(); }
+  function highlight() {
+    [...menuEl.children].forEach((c, i) => c.classList.toggle("active", i === activeIdx));
+    if (activeIdx >= 0) menuEl.children[activeIdx].scrollIntoView({block: "nearest"});
+  }
+
+  const deal = $("dealership");
+  deal.addEventListener("input", () => {
+    const typed = deal.value;
+    if (!typed.trim()) { closeMenu(); return; }
+    const items = filtered(typed);
+    if (items.length === 1 && items[0].toLowerCase() === typed.trim().toLowerCase()) {
+      closeMenu(); return;
+    }
+    items.length ? openMenu(items) : closeMenu();
+  });
+  deal.addEventListener("keydown", (e) => {
+    const open = menuEl.classList.contains("open");
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (!open) { openMenu(filtered(deal.value)); return; }
+      activeIdx = Math.min(activeIdx + 1, menuEl.children.length - 1); highlight();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0); highlight();
+    } else if (e.key === "Enter") {
+      if (open && activeIdx >= 0) { e.preventDefault(); choose(menuEl.children[activeIdx].textContent); }
+    } else if (e.key === "Escape") { closeMenu(); }
+  });
+  deal.addEventListener("blur", () => setTimeout(closeMenu, 120));
+
+  // ----- actions -----
+  function setRunning(on) {
+    $("create").disabled = on;
+  }
+
+  async function refreshNumber() {
+    const { ok, status, data } = await api("ops-number");
+    if (status === 401 || status === 403) { location.href = "/ops"; return "—"; }
+    setStatus(ok && data && data.dropbox, data && data.saveTarget);
+    return ok && data ? data.number : "—";
+  }
+
+  $("create").addEventListener("click", async () => {
+    const dealership = deal.value.trim();
+    const project = $("project").value.trim();
+    if (!dealership || !project) { alert("Please enter a dealership and project name."); return; }
+    setRunning(true);
+    clearLog();
+    addLog("Starting project creation…");
+    const { ok, status, data } = await api("ops-create-project", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dealership: dealership, projectName: project }),
+    });
+    if (status === 401 || status === 403) { location.href = "/ops"; return; }
+    if (!ok && !(data && data.result)) { setRunning(false); addLog("ERROR: " + ((data && data.error) || "Unknown error"), "err"); return; }
+    for (const line of (data.log || (data.result && data.result.log) || [])) { addLog(line); await sleep(220); }
+    window.onResult(data.result);
+  });
+  $("refresh").addEventListener("click", async () => {
+    $("number").value = await refreshNumber();
+  });
+  $("clear").addEventListener("click", async () => {
+    deal.value = ""; $("project").value = ""; clearLog(); closeMenu();
+    $("number").value = await refreshNumber();
+  });
+
+  window.onResult = function (r) {
+    setRunning(false);
+    if (!r || !r.ok) { addLog("ERROR: " + (r && r.message || "Unknown error"), "err"); return; }
+    addLog("");
+    if (r.dryRun) addLog("Preview only — nothing was created and no number was used.", "err");
+    else addLog("Done.", "ok");
+    if (r.match_note) addLog(r.match_note);
+    addLog("Brand: " + r.brand);
+    addLog("Dealership: " + r.dealership);
+    addLog("Folder: " + r.folder);
+    addLog("Location: " + r.location);
+    if (r.dryRun) {
+      addLog("Dropbox: not wired yet");
+      addLog("monday.com: not wired yet");
+    } else {
+      addLog("Dropbox: " + (r.dropbox_ok ? "OK" : "Failed"), r.dropbox_ok ? "ok" : "err");
+      if (r.dropbox_link) addLog("Dropbox Link: " + r.dropbox_link);
+      addLog("monday.com: " + (r.monday_ok ? "OK" : "Failed"), r.monday_ok ? "ok" : "err");
+      if (r.monday_error) addLog("monday error: " + r.monday_error, "err");
+      addLog("Zanchin 12 / Lightroom: queued for the Mac helper");
+    }
+    refreshNumber().then(n => $("number").value = n);
+    if (!r.dryRun) toParent("ops-created");
+  };
+
+  // ----- connection status -----
+  function setPill(id, ok, state) {
+    const p = $(id);
+    p.classList.toggle("ok", ok);
+    p.classList.toggle("bad", !ok);
+    p.querySelector(".pstate").textContent = state;
+  }
+  function setStatus(dropboxOk, target) {
+    setPill("dropPill", !!dropboxOk, dropboxOk ? "Online" : "Offline");
+    const tgt = $("saveTarget");
+    tgt.textContent = dropboxOk ? ("Dropbox " + (target || "")) : "⚠ Dropbox not reachable";
+    tgt.className = "sval " + (dropboxOk ? "good" : "warn");
+    setPill("netPill", navigator.onLine, navigator.onLine ? "ON" : "OFF");
+  }
+  window.addEventListener("online", () => setPill("netPill", true, "ON"));
+  window.addEventListener("offline", () => setPill("netPill", false, "OFF"));
+
+  // ----- init -----
+  async function init() {
+    const me = await api("ops-me");
+    if (!me.ok || me.data.user.role !== "admin") { location.href = "/ops"; return; }
+    const d = await api("ops-dealerships");
+    if (d.ok) DEALERSHIPS = d.data.dealerships;
+    $("number").value = await refreshNumber();
+    if (EMBED) deal.focus();
+    setInterval(refreshNumber, 30000);   // keeps the status pills fresh; the number box only changes on Refresh/Clear/Create
+  }
+  init();
+</script>
+</body>
+</html>
