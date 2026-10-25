@@ -386,6 +386,12 @@ tr.dline td { padding:10px 0; border:0; }
 .note.skeleton .sk-line:first-child { margin-bottom:18px; }
 .note.skeleton .count { display:block; margin:14px 0 0; }
 @keyframes skPulse { 50% { opacity:.45; } }
+@keyframes spin { to { transform:rotate(360deg); } }
+.spinner { width:20px; height:20px; flex:none; border-radius:50%; border:2.5px solid var(--border); border-top-color:var(--neon); animation:spin .8s linear infinite; }
+.loading,.boot { display:flex; align-items:center; justify-content:center; gap:12px; color:var(--text-muted); font-size:14px; font-weight:500; }
+.loading { padding:64px 0; }
+.boot { padding:80px 0; }
+tr.loadrow td { padding:0; border:0; }
 .note.skeleton .avatar,.sk-line { animation:skPulse 1.8s ease-in-out infinite; }
 
 /* avatars (placeholder person icon, no photos): flat at rest, raised + blue ring on hover, Onyx fill when assigned */
@@ -468,6 +474,7 @@ button.assign-chip:hover,button.assign-chip:focus-visible { outline:none; border
   .tpill,.tsw,.ttrack,.tknob { transition:none !important; }
   .fpanel,.fbtn .chev { transition:none !important; }
   .note.skeleton .avatar,.sk-line { animation:none !important; }
+  .spinner { animation-duration:2.4s; }
   .ring-fg { transition:none !important; }
   .card,.ql,.ql-scrim,.overlay,.panel { animation:none !important; transition:none !important; }
 }
@@ -487,6 +494,7 @@ button.assign-chip:hover,button.assign-chip:focus-visible { outline:none; border
 </div>
 
 <div class="container">
+  <div class="boot" id="boot" role="status" aria-live="polite"><span class="spinner" aria-hidden="true"></span>Loading…</div>
   <section id="loginView" class="login-wrap hidden">
     <div class="login-box">
       <div class="login-head">
@@ -562,6 +570,7 @@ button.assign-chip:hover,button.assign-chip:focus-visible { outline:none; border
 <script>
 const $ = (id) => document.getElementById(id);
 let projects = [], users = [], me = null;
+let loading = false;   // true while the project list is being fetched for the first time
 
 async function api(path, opts) {
   const r = await fetch('/.netlify/functions/' + path, { credentials: 'same-origin', ...opts });
@@ -570,6 +579,7 @@ async function api(path, opts) {
 }
 
 function show(view) {
+  $('boot').classList.add('hidden');
   $('loginView').classList.toggle('hidden', view !== 'login');
   $('appView').classList.toggle('hidden', view !== 'app');
   $('userBar').classList.toggle('hidden', view !== 'app');
@@ -881,6 +891,11 @@ function renderPager(total, pages, from, to) {
 }
 
 function render() {
+  if (loading) {
+    $('rows').innerHTML = '<tr class="loadrow"><td colspan="8"><div class="loading" role="status"><span class="spinner" aria-hidden="true"></span>Loading projects…</div></td></tr>';
+    $('empty').classList.add('hidden'); $('pager').classList.add('hidden'); $('appView').classList.remove('paged');
+    return;
+  }
   const q = $('search').value.trim().toLowerCase();
   const list = projects.filter(p =>
     matchesFilters(p) &&
@@ -921,7 +936,9 @@ async function loadApp(user) {
   $('whoName').textContent = user.name;
   $('newBtn').classList.toggle('hidden', user.role !== 'admin');
   show('app');
+  loading = true; render();
   const { ok, data } = await api('ops-projects');
+  loading = false;
   projects = ok ? data.projects : [];
   users = ok && data.users ? data.users : [];
   lastSnapshot = ok ? JSON.stringify(data.projects) : '';
