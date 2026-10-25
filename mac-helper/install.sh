@@ -18,7 +18,12 @@ LOG="$HOME/Library/Logs/Zanchin Hub Helper.log"
 
 PY="$(command -v python3 || true)"
 if [ -z "$PY" ] || ! "$PY" -c 'import sys; assert sys.version_info >= (3, 8)' 2>/dev/null; then
-  echo "Python 3.8 or newer is needed. Install it from python.org, then run this again."; exit 1
+  echo "This Mac needs Apple's free developer tools (they include Python 3 and everything the helper uses)."
+  echo "A window should have just opened asking to install them. Click Install, wait until it finishes"
+  echo "(about 5-15 minutes), then run this installer again."
+  echo "(Already have developer tools? Then install Python 3 from python.org instead and run this again.)"
+  xcode-select --install 2>/dev/null || true
+  exit 1
 fi
 
 mkdir -p "$SUPPORT" "$HOME/Library/LaunchAgents" "$HOME/Library/Logs"
@@ -54,6 +59,30 @@ PLISTEOF
 launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
 launchctl bootstrap "gui/$(id -u)" "$PLIST"
 launchctl kickstart -k "gui/$(id -u)/$LABEL" 2>/dev/null || true
+
+# --- menu bar icon (optional: needs the Swift compiler that comes with Xcode / Command Line Tools) ---
+MENU_LABEL="ca.zanchin.hub-helper-menu"
+MENU_PLIST="$HOME/Library/LaunchAgents/$MENU_LABEL.plist"
+MENU_SRC="$(cd "$(dirname "$0")" && pwd)/ZanchinHelperMenu.swift"
+if command -v swiftc >/dev/null 2>&1 && swiftc -O -swift-version 5 "$MENU_SRC" -o "$SUPPORT/ZanchinHelperMenu" 2>"$SUPPORT/menu-build.log"; then
+  cat > "$MENU_PLIST" <<MENUEOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>$MENU_LABEL</string>
+  <key>ProgramArguments</key><array><string>$SUPPORT/ZanchinHelperMenu</string></array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ProcessType</key><string>Interactive</string>
+</dict></plist>
+MENUEOF
+  launchctl bootout "gui/$(id -u)/$MENU_LABEL" 2>/dev/null || true
+  launchctl bootstrap "gui/$(id -u)" "$MENU_PLIST"
+  launchctl kickstart -k "gui/$(id -u)/$MENU_LABEL" 2>/dev/null || true
+  echo "Menu bar icon installed (look for the drive icon with a coloured dot, next to the battery)."
+else
+  echo "Note: the menu bar icon was skipped (no Swift compiler found). The helper itself works fine without it."
+fi
 
 echo "Installed. The helper is running and will start at every login."
 echo "Log: $LOG   (crashes, if any: Zanchin Hub Helper.errors.log)"

@@ -120,6 +120,7 @@ const handlers = {
   'ops-complete': require('../netlify/functions/ops-complete').handler,
   'ops-detect': require('../netlify/functions/ops-detect').handler,
   'ops-helper': require('../netlify/functions/ops-helper').handler,
+  'ops-mail-test': require('../netlify/functions/ops-mail-test').handler,
   'ops-number': require('../netlify/functions/ops-number').handler,
 };
 
