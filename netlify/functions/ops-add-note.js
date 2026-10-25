@@ -1,7 +1,10 @@
 /* Add a note to a project's thread. Admins can note any project; the editor only
-   projects assigned to them. */
+   projects assigned to them. Everyone else on the project is emailed the note (see
+   noteRecipients); mail never blocks saving it. */
 const crypto = require('crypto');
 const U = require('./_ops-utils');
+const Mail = require('./_ops-mail');
+const Email = require('./_ops-email');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return U.json(405, { error: 'Method Not Allowed' });
@@ -26,5 +29,13 @@ exports.handler = async (event) => {
     id: crypto.randomUUID(), by: session.username, name: session.name, at: Date.now(), text,
   }).slice(-200);
   await store.setJSON(`projects/${number}`, project);
+
+  if (Mail.mode() !== 'off') {
+    for (const username of Email.noteRecipients(project, session.username)) {
+      const r = Mail.resolveRecipient(username);
+      const res = await Mail.send({ username, kind: 'note', ...Email.noteEmail({ project, authorName: session.name, text, recipientName: r ? r.name : username }) });
+      if (!res.sent) console.log('[ops-add-note] not emailed', username, res.reason);
+    }
+  }
   return U.json(200, { project });
 };

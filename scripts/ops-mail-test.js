@@ -1,5 +1,6 @@
 /* Sends a test email through the live hub, to prove email works.
    Usage: node scripts/ops-mail-test.js <hub_url> <username>   (asks for the password, hidden)
+   Everyone at once: add --everyone (a personalised test to each person).
    Optional second check: node scripts/ops-mail-test.js <hub_url> <username> --detect
    also shows when the 5-minute file check last ran. */
 const readline = require('readline');
@@ -17,6 +18,13 @@ function askHidden(q) {
   const cookie = (login.headers.get('set-cookie') || '').split(';')[0];
   const call = async (fn, body) => { const r = await fetch(`${base}/.netlify/functions/${fn}`, { method: 'POST', headers: { cookie, 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }); return { ok: r.ok, status: r.status, data: await r.json().catch(() => ({})) }; };
 
+  if (process.argv.includes('--everyone')) {
+    const e = await call('ops-mail-test', { everyone: true });
+    if (!e.ok) { console.log('The hub does not have the email test yet (HTTP ' + e.status + ').'); return; }
+    console.log(`Test emails (${e.data.mode} mode):`);
+    (e.data.results || []).forEach(r => console.log(`  ${r.user}: ${r.sent ? 'SENT to ' + r.to : 'NOT sent (' + r.reason + ')'}`));
+    return;
+  }
   const m = await call('ops-mail-test');
   if (!m.ok) { console.log('The hub does not have the email test yet (HTTP ' + m.status + '). Has the latest version been deployed?'); }
   else if (m.data.sent) console.log(`Email SENT in ${m.data.mode} mode, to ${m.data.to}. Check that inbox (and Spam).`);
