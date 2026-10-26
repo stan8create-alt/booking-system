@@ -105,7 +105,7 @@ function setStoreOverride(s) { storeOverride = s; }
 function opsStore(event) {
   if (storeOverride) return storeOverride;
   try {
-    if (event) connectLambda(event);
+    if (event) { try { connectLambda(event); } catch (e) { console.warn('[ops] no Lambda blobs context, using the default one:', e.message); } }
     return getStore(OPS_STORE_NAME);
   } catch (e) {
     console.error('[ops] store unavailable:', e.message);

@@ -4,6 +4,9 @@
 [functions]
   node_bundler = "esbuild"
 
+[functions."ops-detect-scheduled"]
+  schedule = "*/5 * * * *"
+
 [[redirects]]
   from = "/ops"
   to = "/ops.html"

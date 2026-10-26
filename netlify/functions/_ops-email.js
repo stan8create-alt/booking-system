@@ -53,6 +53,7 @@ function assignedEmail({ project: p, videos, recipientName, byName }) {
   if (needed) t.push(`Needed by: ${needed}`);
   if (urgency) t.push(`Urgency: ${urgency}`);
   t.push(`Footage: ${p.rawUploadedAt ? 'uploaded and ready to download' : 'not uploaded yet (you will get an email when it is)'}`);
+  if (p.rawUploadedAt && p.rawLink) t.push(`RAW files: ${p.rawLink}`);
   t.push('', videos.length ? `Videos to edit (${videos.length}):` : 'No videos are set up on this project yet.');
   videos.forEach((v, i) => {
     t.push('', `${i + 1}. ${v.name}${v.urgency && v.urgency !== 'regular' ? `  [${URGENCY[v.urgency]}]` : ''}`);
@@ -67,6 +68,7 @@ function assignedEmail({ project: p, videos, recipientName, byName }) {
   h.push(`<h2 style="margin:18px 0 4px;font-size:18px">${esc(title)}</h2>`);
   if (needed || urgency) h.push(`<p style="margin:0;color:#555">${[needed && `Needed by <strong>${esc(needed)}</strong>`, urgency && `Urgency <strong>${esc(urgency)}</strong>`].filter(Boolean).join(' · ')}</p>`);
   h.push(`<p style="margin:6px 0 0;color:#555">Footage: <strong>${p.rawUploadedAt ? 'uploaded and ready to download' : 'not uploaded yet'}</strong>${p.rawUploadedAt ? '' : ' (you will get an email when it is)'}</p>`);
+  if (p.rawUploadedAt && p.rawLink) h.push(`<p style="margin:6px 0 0"><a href="${esc(p.rawLink)}">Open the RAW files</a></p>`);
   h.push(`<h3 style="margin:22px 0 8px;font-size:15px">${videos.length ? `Videos to edit (${videos.length})` : 'No videos are set up on this project yet.'}</h3>`);
   videos.forEach((v, i) => {
     const lines = videoLines(v);
@@ -114,7 +116,9 @@ function noteRecipients(project, authorUsername) {
 /* Who hears that the footage landed: the people on the project. Stan is skipped when he is only on it
    because the "headshots were taken" switch added him. */
 function footageRecipients(project) {
-  return U.assigneesOf(project).filter(name => !(name === 'stan' && project.headshotsAddedStan));
+  const admins = U.loadUsers().filter(u => u.role === 'admin').map(u => u.username);   // Stan and Andrew always know
+  const assigned = U.assigneesOf(project);                                              // an editor only when it is theirs
+  return [...new Set([...admins, ...assigned])];
 }
 
 /* A new chat note on a project. */
