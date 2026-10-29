@@ -1,5 +1,5 @@
 /* Admin only: look in Dropbox now for new files on in-progress projects.
-   Body: { number? } (one project, or all that aren't delivered), or { status: true } to only report
+   Body: { number? } (one project, or the newest that aren't delivered), { auto: true } (same, skipped if a check ran in the last minute), or { status: true } to only report
    when the scheduled check last ran. Returns the numbers that changed and that last run. */
 const U = require('./_ops-utils');
 const Detect = require('./_ops-detect');
@@ -16,5 +16,6 @@ exports.handler = async (event) => {
   if (!store) return U.json(503, { error: 'Storage unavailable' });
   const lastRun = await store.get('settings/detect-last-run', { type: 'json' }).catch(() => null);
   if (body.status === true) return U.json(200, { lastRun });
-  return U.json(200, { changed: await Detect.checkAll(store, number), lastRun });
+  const r = await Detect.runAndRecord(store, { number, minGapMs: body.auto === true ? 60000 : 0 });   // auto: the hub opening, at most once a minute
+  return U.json(200, { changed: r.changed, skipped: !!r.skipped, lastRun: r.lastRun });
 };

@@ -100,13 +100,43 @@ function requireSession(event, roles) {
 }
 
 /* ── storage ── */
+/* Every save or delete of a project record also moves one tiny "last changed" marker (settings/rev).
+   Anything that would otherwise re-read every project (the helper's pending list, the hub's refresh,
+   the Dropbox check) can compare that marker first and skip the work when nothing changed. */
+const REV_KEY = 'settings/rev';
+function withRev(store) {
+  if (!store) return store;
+  const bump = () => store.setJSON(REV_KEY, { rev: Date.now().toString(36) + Math.random().toString(36).slice(2, 6) });
+  return new Proxy(store, {
+    get(target, prop) {
+      if (prop === 'setJSON') return async (key, value, opts) => { await target.setJSON(key, value, opts); if (String(key).startsWith('projects/')) await bump(); };
+      if (prop === 'delete') return async (key, ...rest) => { await target.delete(key, ...rest); if (String(key).startsWith('projects/')) await bump(); };
+      const v = target[prop];
+      return typeof v === 'function' ? v.bind(target) : v;
+    },
+  });
+}
+async function getRev(store) {
+  const r = await store.get(REV_KEY, { type: 'json' }).catch(() => null);
+  return (r && r.rev) || '0';
+}
+/* Runs compute() only when a project changed since it last ran; otherwise returns the saved answer. */
+async function cached(store, name, compute) {
+  const rev = await getRev(store);      // read before computing, so a change during the scan is picked up next time
+  const c = await store.get(`cache/${name}`, { type: 'json' }).catch(() => null);
+  if (c && c.rev === rev) return c.value;
+  const value = await compute();
+  await store.setJSON(`cache/${name}`, { rev, value }).catch(() => {});
+  return value;
+}
+
 let storeOverride = null; // local-dev only: lets local-dev/ops-server.js swap in a file-backed store
-function setStoreOverride(s) { storeOverride = s; }
+function setStoreOverride(s) { storeOverride = withRev(s); }
 function opsStore(event) {
   if (storeOverride) return storeOverride;
   try {
     if (event) { try { connectLambda(event); } catch (e) { console.warn('[ops] no Lambda blobs context, using the default one:', e.message); } }
-    return getStore(OPS_STORE_NAME);
+    return withRev(getStore(OPS_STORE_NAME));
   } catch (e) {
     console.error('[ops] store unavailable:', e.message);
     return null;
@@ -179,5 +209,5 @@ function json(statusCode, body, extraHeaders) {
 module.exports = {
   loadUsers, hashPassword, verifyPassword, secret,
   makeSessionCookie, clearSessionCookie, getSession, requireSession, assigneesOf, urgencyOf,
-  opsStore, setStoreOverride, isLockedOut, recordFailure, clearFailures, clientIp, json,
+  opsStore, setStoreOverride, getRev, cached, isLockedOut, recordFailure, clearFailures, clientIp, json,
 };

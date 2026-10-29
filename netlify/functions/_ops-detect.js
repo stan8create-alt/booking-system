@@ -1,9 +1,10 @@
-/* Automatic progress from Dropbox. For a project that is not delivered yet it looks
+/* Automatic progress from Dropbox. Run by the Dropbox webhook, a slow backup timer, and when an admin opens the hub. For a project that is not delivered yet it looks
    for real files in "RAW Files" (step 2: files uploaded) and "Video Exports"
    (step 4: final exports uploaded; step 3 can't be seen by Dropbox, so it is filled in
    with step 4). The first time files land in RAW Files, the people on the project get a
    "footage is ready" email; the first time the final exports appear, Stan and Andrew get the
    "delivered" email. Flags only ever turn on here; nothing is switched back off. */
+const U = require('./_ops-utils');
 const D = require('./_ops-dropbox');
 const Mail = require('./_ops-mail');
 const Email = require('./_ops-email');
@@ -55,13 +56,24 @@ async function checkProject(store, project) {
   return { changed, project };
 }
 
-/* Checks every project that isn't delivered yet (or just one). Returns the numbers that changed. */
+const OPEN_LIMIT = 15;   // only the newest not-yet-delivered projects are looked at
+
+/* Checks the newest projects that aren't delivered yet (or just one). Returns the numbers that changed. */
 async function checkAll(store, onlyNumber) {
-  const { blobs } = await store.list({ prefix: 'projects/' });
+  let numbers;
+  if (onlyNumber) numbers = [onlyNumber];
+  else numbers = await U.cached(store, 'open-projects', async () => {     // the list is rebuilt only when a project changed
+    const { blobs } = await store.list({ prefix: 'projects/' });
+    const open = [];
+    for (const b of blobs) {
+      const p = await store.get(b.key, { type: 'json' });
+      if (p && p.dropboxPath && !p.finalUploadedAt) open.push(p.number);
+    }
+    return open.sort((a, b) => String(b).localeCompare(String(a))).slice(0, OPEN_LIMIT);
+  });
   const out = [];
-  for (const b of blobs) {
-    if (onlyNumber && b.key !== `projects/${onlyNumber}`) continue;
-    const p = await store.get(b.key, { type: 'json' });
+  for (const n of numbers) {
+    const p = await store.get(`projects/${n}`, { type: 'json' });
     if (!p || p.finalUploadedAt) continue;
     try { if ((await checkProject(store, p)).changed) out.push(p.number); }
     catch (e) { console.error('[ops-detect]', p.number, e.message); }
@@ -69,4 +81,19 @@ async function checkAll(store, onlyNumber) {
   return out;
 }
 
-module.exports = { checkProject, checkAll };
+/* One check that also records when it ran (shown by ops-detect { status: true }). With minGapMs it
+   skips when a check ran that recently, so bursts of Dropbox notifications don't pile up. */
+async function runAndRecord(store, { number = null, minGapMs = 0, error = null } = {}) {
+  if (minGapMs) {
+    const last = await store.get('settings/detect-last-run', { type: 'json' }).catch(() => null);
+    if (last && Date.now() - last.at < minGapMs) return { changed: [], skipped: true, lastRun: last };
+  }
+  let changed = [], err = error;
+  try { changed = await checkAll(store, number); }
+  catch (e) { err = e.message; console.error('[ops-detect]', e.message); }
+  const lastRun = { at: Date.now(), changed, error: err };
+  try { await store.setJSON('settings/detect-last-run', lastRun); } catch { /* not worth failing the run */ }
+  return { changed, lastRun };
+}
+
+module.exports = { checkProject, checkAll, runAndRecord };

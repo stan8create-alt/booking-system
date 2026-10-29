@@ -941,30 +941,39 @@ async function loadApp(user) {
   loading = false;
   projects = ok ? data.projects : [];
   users = ok && data.users ? data.users : [];
-  lastSnapshot = ok ? JSON.stringify(data.projects) : '';
+  lastRev = ok ? data.rev : null;
   renderFilters();
   render();
   openFromLink();
+  if (me.role === 'admin') checkDropboxOnOpen();
 }
 
-/* Quietly pick up changes made elsewhere (new files detected in Dropbox, other people's edits) every 15s.
-   Only redraws when something changed, and only the progress steps of an open panel, so typing is never interrupted. */
-let lastSnapshot = '';
-setInterval(async () => {
-  if (document.hidden || !me || $('appView').classList.contains('hidden')) return;
-  const { ok, data } = await api('ops-projects');
-  if (!ok) return;
-  const snap = JSON.stringify(data.projects);
-  if (snap === lastSnapshot) return;
-  const first = lastSnapshot === '';
-  lastSnapshot = snap;
-  if (first) return;   // the initial load already drew this
+/* An admin opening the hub asks the server to look in Dropbox once (it skips if it just did), then reloads if anything arrived. */
+async function checkDropboxOnOpen() {
+  const r = await api('ops-detect', { method: 'POST', body: JSON.stringify({ auto: true }) });
+  if (r.ok && r.data && r.data.changed && r.data.changed.length) await refreshProjects();
+}
+
+/* Quietly pick up changes made elsewhere (new files detected in Dropbox, other people's edits).
+   Every 30s while the tab is visible it only asks "has anything changed?" (one tiny read on the server);
+   the full list is loaded only when it has. Only redraws what changed, and only the progress steps of an
+   open panel, so typing is never interrupted. A signed-out tab stops asking and goes back to the sign-in. */
+let lastRev = null;
+async function refreshProjects() {
+  const { ok, status, data } = await api('ops-projects' + (lastRev ? '?since=' + encodeURIComponent(lastRev) : ''));
+  if (status === 401) { me = null; show('login'); return; }
+  if (!ok || data.unchanged) return;
+  lastRev = data.rev;
   projects = data.projects;
   render();
   const open = qlNum && projects.find(x => x.number === qlNum);
   if (open && $('qlStepper')) $('qlStepper').innerHTML = stepperHtml(open);
   if (open && $('qlMirror')) $('qlMirror').innerHTML = mirrorHtml(open);
-}, 15000);
+}
+setInterval(() => {
+  if (document.hidden || !me || $('appView').classList.contains('hidden')) return;
+  refreshProjects();
+}, 30000);
 
 /* Email links look like /ops?project=0712: open that project once, then tidy the address. */
 function openFromLink() {
@@ -1422,7 +1431,7 @@ window.addEventListener('message', async (e) => {
   if (e.data && e.data.type === 'ops-close') closeNew();
   if (e.data && e.data.type === 'ops-resize' && $('overlay').classList.contains('open')) $('overlay').querySelector('.panel').style.height = Math.min(e.data.h + 2, window.innerHeight - 40) + 'px';
   if (e.data && e.data.type === 'ops-created') {
-    const r = await api('ops-projects'); if (r.ok) { projects = r.data.projects; users = r.data.users || users; render(); }
+    const r = await api('ops-projects'); if (r.ok) { projects = r.data.projects; lastRev = r.data.rev; users = r.data.users || users; render(); }
   }
 });
 

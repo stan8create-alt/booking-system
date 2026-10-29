@@ -34,15 +34,17 @@ exports.handler = async (event) => {
   if (!store) return U.json(503, { error: 'Storage unavailable' });
 
   if (body.action === 'pending') {
-    const { blobs } = await store.list({ prefix: 'projects/' });
-    const out = [];
-    for (const b of blobs) {
-      const p = await store.get(b.key, { type: 'json' });
-      if (p && p.localMirror && p.localMirror.status === 'pending' && p.localMirror.machine === machine) {
-        out.push({ number: p.number, folder: p.folder });
+    // every machine's pending jobs, rebuilt only when a project has changed since the last scan
+    const all = await U.cached(store, 'pending-mirror', async () => {
+      const { blobs } = await store.list({ prefix: 'projects/' });
+      const found = [];
+      for (const b of blobs) {
+        const p = await store.get(b.key, { type: 'json' });
+        if (p && p.localMirror && p.localMirror.status === 'pending') found.push({ number: p.number, folder: p.folder, machine: p.localMirror.machine });
       }
-    }
-    return U.json(200, { machine, pending: out });
+      return found;
+    });
+    return U.json(200, { machine, pending: all.filter(p => p.machine === machine).map(({ number, folder }) => ({ number, folder })) });
   }
 
   if (body.action === 'done' || body.action === 'failed') {
