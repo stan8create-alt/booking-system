@@ -297,6 +297,11 @@ tr.dline td { padding:10px 0; border:0; }
 .vfoot { display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:24px; }
 .vfoot .saved { margin:0; }
 .vfoot .btn { padding:6px 10px; font-size:12px; }
+.vhidden { margin:12px 0 0; font-size:12px; color:var(--text-muted); }
+.vhidden > summary { cursor:pointer; font-weight:600; }
+.vhid { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 2px; }
+.vhid .vname { font-size:13px; font-weight:600; }
+.vhid .btn { padding:5px 10px; font-size:12px; }
 
 /* headshots switch */
 .switchrow { position:relative; display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface-raised); cursor:pointer; transition:border-color .16s; }
@@ -1066,20 +1071,24 @@ function videoCard(v) {
         <input type="text" class="v-spoke" list="qlSpokeList" maxlength="200" autocomplete="off" placeholder="e.g. Joshua Woodyatt, Service Manager" value="${esc(spokeLine(v))}" ${ro}></label>
       <div class="vctl"><div><span class="vl">Urgency</span>${urgSeg(v.urgency || 'regular', ro)}</div><div><span class="vl">Format</span>${fmtSeg(v.format, ro)}</div></div>
       <label class="field"><span>Notes</span><textarea class="v-notes" maxlength="2000" ${ro}>${esc(v.notes)}</textarea></label>
-      <div class="vfoot"><span class="saved vsaved"></span>${manual && isAdmin() ? '<button class="btn ghost danger v-remove" type="button">Remove video</button>' : ''}</div>
+      <div class="vfoot"><span class="saved vsaved"></span>${isAdmin() ? (manual ? '<button class="btn ghost danger v-remove" type="button">Remove video</button>' : '<button class="btn ghost v-hide" type="button" title="Hides it from this list and the editor emails. Nothing is deleted in Dropbox.">Hide from list</button>') : ''}</div>
     </div></details>`;
 }
 
 function videosHtml() {
   const d = qlVideoData;
   if (!d) return '<div class="count" style="margin:0">Loading videos from Dropbox…</div>';
-  const hasFolders = d.videos.some(v => v.kind !== 'manual');
+  const isHidden = (v) => v.kind !== 'manual' && v.include === false;   // manual videos have their own Remove button
+  const shown = d.videos.filter(v => !isHidden(v)), hidden = d.videos.filter(isHidden);
+  const hasFolders = shown.some(v => v.kind !== 'manual');
   const note = d.error ? `<div class="count warn" style="margin:0 0 10px">${esc(d.error)}</div>`
     : (!hasFolders ? '<div class="count" style="margin:0 0 10px">No video folders in RAW Files yet.</div>' : '');
   const loose = d.looseFiles ? `<div class="count" style="margin:4px 0 10px">${d.looseFiles} loose file${d.looseFiles > 1 ? 's' : ''} in RAW Files (not inside a video folder).</div>` : '';
   const datalist = `<datalist id="qlSpokeList">${spokeOptions()}</datalist>`;
   const add = isAdmin() ? `<button class="pill add" id="qlVideoAdd" type="button">${PLUS}New video</button>` : '';
-  return note + d.videos.map(videoCard).join('') + datalist + loose + add;
+  const hid = isAdmin() && hidden.length ? `<details class="vhidden"><summary>${hidden.length} hidden from this list</summary>
+    ${hidden.map(v => `<div class="vhid" data-video="${esc(v.name)}"><span class="vname">${esc(v.name)}</span><button class="btn ghost v-unhide" type="button">Show again</button></div>`).join('')}</details>` : '';
+  return note + shown.map(videoCard).join('') + datalist + loose + add + hid;
 }
 
 function findVideo(card) {
@@ -1121,6 +1130,24 @@ function queueVideoSave(card) {
       tag.textContent = 'Saved';
     } else tag.textContent = (data && data.error) || 'Could not save';
   }, 600);
+}
+
+/* Hide (include = false) or show again a Dropbox video folder. Nothing in Dropbox changes; the video just
+   stops being listed here and in the editor emails, and stays hidden even if the folder is still there. */
+async function setVideoIncluded(name, include) {
+  const v = qlVideoData && qlVideoData.videos.find(x => x.kind !== 'manual' && x.name === name);
+  if (!v) return;
+  const n = qlNum, before = v.include;
+  v.include = include;
+  $('qlVideos').innerHTML = videosHtml();
+  const { ok, data } = await api('ops-update-video', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ number: n, video: name, include, urgency: v.urgency || 'regular', spokesperson: spokeLine(v), position: '', format: v.format || '', notes: v.notes || '' }),
+  });
+  if (qlNum !== n) return;
+  if (!ok) { v.include = before; $('qlVideos').innerHTML = videosHtml(); alert((data && data.error) || 'Could not save that change'); return; }
+  const i = projects.findIndex(x => x.number === n);
+  if (i > -1) projects[i] = { ...projects[i], urgency: data.project.urgency, videos: data.project.videos, manualVideos: data.project.manualVideos };
 }
 
 async function addManualVideo(btn) {
@@ -1388,6 +1415,8 @@ $('qlBody').addEventListener('click', async (e) => {
   }
   if (e.target.closest('#qlVideoAdd')) { addManualVideo(e.target.closest('#qlVideoAdd')); return; }
   if (e.target.closest('.v-remove')) { removeManualVideo(e.target.closest('details.vrow')); return; }
+  if (e.target.closest('.v-hide')) { setVideoIncluded(e.target.closest('details.vrow').dataset.video, false); return; }
+  if (e.target.closest('.v-unhide')) { setVideoIncluded(e.target.closest('.vhid').dataset.video, true); return; }
   const who = e.target.closest('.assignee');
   if (who) { const p = projects.find(x => x.number === qlNum); if (p) assignTo(qlNum, toggleIn(assigneesOf(p), who.dataset.user)); return; }
   if (e.target.closest('#qlLinkAdd')) { linkFormOpen($('qlLinkForm').classList.contains('hidden')); return; }
