@@ -380,7 +380,16 @@ html.embed button { padding:12px 15px; }
     if (d.ok) DEALERSHIPS = d.data.dealerships;
     $("number").value = await refreshNumber();
     if (EMBED) deal.focus();
-    setInterval(refreshNumber, 30000);   // keeps the status pills fresh; the number box only changes on Refresh/Clear/Create
+    // keeps the status pills fresh; the number box only changes on Refresh/Clear/Create.
+    // Only while this page is visible: on coming back into view, then every 5 minutes.
+    let lastPillAt = Date.now();
+    const pillCheck = (gap) => {
+      if (document.hidden || Date.now() - lastPillAt < gap) return;
+      lastPillAt = Date.now();
+      refreshNumber();
+    };
+    document.addEventListener("visibilitychange", () => pillCheck(30000));
+    setInterval(() => pillCheck(295000), 300000);
   }
   init();
 </script>

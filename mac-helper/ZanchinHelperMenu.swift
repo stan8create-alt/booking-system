@@ -45,9 +45,12 @@ final class App: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func current() -> (Level, String, [String: Any]) {
         guard let st = readJSON(statusPath) else { return (.bad, "Helper has not started yet", [:]) }
-        let checked = st["checked_at"] as? Double ?? 0
-        let poll = (readJSON(configPath)?["poll_seconds"] as? Double) ?? 60
-        if Date().timeIntervalSince1970 - checked > max(180, poll * 3) { return (.bad, "Helper is not running", st) }
+        // newer helpers write "heartbeat_at" every 30s even between hub checks; older ones only "checked_at"
+        let beat = st["heartbeat_at"] as? Double
+        let alive = beat ?? (st["checked_at"] as? Double ?? 0)
+        let poll = (readJSON(configPath)?["poll_seconds"] as? Double) ?? 600
+        let limit = beat != nil ? 180.0 : max(180, poll * 3)
+        if Date().timeIntervalSince1970 - alive > limit { return (.bad, "Helper is not running", st) }
         let msg = st["message"] as? String ?? ""
         switch st["state"] as? String ?? "" {
         case "ok": return (.good, msg.isEmpty ? "Running" : msg, st)
