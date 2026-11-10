@@ -12,7 +12,7 @@ Only the Python 3 standard library is used (nothing to install).
 Config: ~/Library/Application Support/Zanchin Hub Helper/config.json
   {"hub_url": "https://...", "token": "<this machine's token>"}
   optional: "volumes_dir" ("/Volumes"), "volume_name_glob" ("Zanchin 12*"),
-            "marker" ("0000_DO_NOT_TOUCH"), "poll_seconds" (60)
+            "marker" ("0000_DO_NOT_TOUCH"), "poll_seconds" (600)
 
 Run once and exit:  python3 zanchin_helper.py --once
 Check this Mac:      python3 zanchin_helper.py --selftest
@@ -40,8 +40,9 @@ DEFAULTS = {
     "volumes_dir": "/Volumes",
     "volume_name_glob": "Zanchin 12*",
     "marker": "0000_DO_NOT_TOUCH",      # system folder that proves it's the right drive
-    "poll_seconds": 60,
+    "poll_seconds": 600,                # asks the hub every 10 minutes; "Check now" or plugging in a drive checks at once
 }
+HEARTBEAT_SECONDS = 30                  # local only (no network): tells the menu bar app the helper is alive
 LR_TEMPLATE_BASE = "Zanchin LR Template"
 LOCAL_FOLDERS = ["01 Project File", "02 Footage", "03 Audio", "04 GPX", os.path.join("05 Stills", "RAW")]
 DELIVERY_FOLDERS = ["Photo Exports", "Project File", "RAW Files", "Video Exports"]
@@ -65,7 +66,18 @@ _status = {"state": "starting", "message": "Starting…", "checked_at": 0, "pend
 def set_status(state, message, **extra):
     """Writes what the menu bar app shows: state is ok | drive_offline | hub_unreachable | auth_error | error."""
     _status.update(extra)
-    _status.update({"state": state, "message": message, "checked_at": time.time()})
+    now = time.time()
+    _status.update({"state": state, "message": message, "checked_at": now, "heartbeat_at": now})
+    write_status()
+
+
+def heartbeat():
+    """Between checks: says "still alive" without changing what the menu bar shows for the last check."""
+    _status["heartbeat_at"] = time.time()
+    write_status()
+
+
+def write_status():
     try:
         tmp = STATUS_PATH + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
@@ -104,6 +116,14 @@ def find_drive_root(cfg):
         except OSError:
             continue    # stale mount
     return None
+
+
+def volume_names(cfg):
+    """Names of everything mounted under /Volumes (one cheap directory listing, no network)."""
+    try:
+        return set(os.listdir(cfg["volumes_dir"]))
+    except OSError:
+        return set()
 
 
 def ssl_context():
@@ -259,12 +279,18 @@ def main():
             set_status("hub_unreachable", "Can't reach the hub (internet?)")
         if once:
             return
-        # wait for the next poll, but wake early if the menu bar app asks for "Check now"
+        # wait for the next poll. Wakes early if the menu bar app asks for "Check now", or when a new
+        # drive is plugged in, so the slow poll never holds up a project that was waiting for the drive.
         waited = 0
         limit = max(15, int(cfg["poll_seconds"]))
+        volumes_before = volume_names(cfg)
         while waited < limit and not os.path.exists(TRIGGER_PATH):
             time.sleep(1)
             waited += 1
+            if waited % HEARTBEAT_SECONDS == 0:
+                heartbeat()
+                if volume_names(cfg) - volumes_before:
+                    break
         try:
             os.remove(TRIGGER_PATH)
         except OSError:

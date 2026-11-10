@@ -955,9 +955,11 @@ async function checkDropboxOnOpen() {
 }
 
 /* Quietly pick up changes made elsewhere (new files detected in Dropbox, other people's edits).
-   Every 30s while the tab is visible it only asks "has anything changed?" (one tiny read on the server);
-   the full list is loaded only when it has. Only redraws what changed, and only the progress steps of an
-   open panel, so typing is never interrupted. A signed-out tab stops asking and goes back to the sign-in. */
+   Nothing runs in the background while the hub is closed or in a hidden tab. When the tab is opened or
+   comes back into focus it asks once "has anything changed?" (one tiny read on the server), and while it
+   stays visible it asks again every 5 minutes. The full list is loaded only when something changed. Only
+   redraws what changed, and only the progress steps of an open panel, so typing is never interrupted. A
+   signed-out tab stops asking and goes back to the sign-in. */
 let lastRev = null;
 async function refreshProjects() {
   const { ok, status, data } = await api('ops-projects' + (lastRev ? '?since=' + encodeURIComponent(lastRev) : ''));
@@ -970,10 +972,21 @@ async function refreshProjects() {
   if (open && $('qlStepper')) $('qlStepper').innerHTML = stepperHtml(open);
   if (open && $('qlMirror')) $('qlMirror').innerHTML = mirrorHtml(open);
 }
-setInterval(() => {
+const REFRESH_EVERY_MS = 5 * 60 * 1000;   // while a tab stays open and visible
+const REFRESH_MIN_GAP_MS = 30 * 1000;     // opening/focusing in quick succession counts as one check
+let lastRefreshAt = Date.now();           // loadApp() has just loaded the list
+function refreshIfVisible(force) {
   if (document.hidden || !me || $('appView').classList.contains('hidden')) return;
+  const since = Date.now() - lastRefreshAt;
+  if (since < (force ? REFRESH_EVERY_MS - 5000 : REFRESH_MIN_GAP_MS)) return;
+  lastRefreshAt = Date.now();
   refreshProjects();
-}, 30000);
+  // an admin coming back after a while away also gets the same Dropbox look as on opening (the server skips it if it just ran)
+  if (!force && me.role === 'admin' && since >= REFRESH_EVERY_MS) checkDropboxOnOpen();
+}
+document.addEventListener('visibilitychange', () => refreshIfVisible(false));
+window.addEventListener('focus', () => refreshIfVisible(false));
+setInterval(() => refreshIfVisible(true), REFRESH_EVERY_MS);
 
 /* Email links look like /ops?project=0712: open that project once, then tidy the address. */
 function openFromLink() {
