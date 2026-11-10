@@ -28,12 +28,13 @@ exports.handler = async (event) => {
     entries = await D.listFolder(`${project.dropboxPath}/RAW Files`);
   } catch (e) {
     console.error('[ops-videos]', e.message);
-    return U.json(200, { project, spokespeople, videos: manual, looseFiles: 0, error: 'Could not read RAW Files from Dropbox' });
+    return U.json(200, { project, spokespeople, videos: session.role === 'editor' ? manual.filter(v => v.include !== false) : manual, looseFiles: 0, error: 'Could not read RAW Files from Dropbox' });
   }
 
   const names = entries.filter(e => e['.tag'] === 'folder').map(e => e.name)
     .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
   const saved = project.videos || {};
-  const videos = names.map(name => ({ name, ...DEFAULT_VIDEO, ...(saved[name] || {}), kind: 'dropbox' })).concat(manual);
+  let videos = names.map(name => ({ name, ...DEFAULT_VIDEO, ...(saved[name] || {}), kind: 'dropbox' })).concat(manual);
+  if (session.role === 'editor') videos = videos.filter(v => v.include !== false);   // hidden videos are admin-only knowledge
   return U.json(200, { project, spokespeople, videos, looseFiles: entries.filter(e => e['.tag'] === 'file').length });
 };
