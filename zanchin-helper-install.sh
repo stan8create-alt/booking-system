@@ -79,7 +79,8 @@ Only the Python 3 standard library is used (nothing to install).
 Config: ~/Library/Application Support/Zanchin Hub Helper/config.json
   {"hub_url": "https://...", "token": "<this machine's token>"}
   optional: "volumes_dir" ("/Volumes"), "volume_name_glob" ("Zanchin 12*"),
-            "marker" ("0000_DO_NOT_TOUCH"), "poll_seconds" (600)
+            "marker" ("0000_DO_NOT_TOUCH"), "poll_seconds" (600),
+            "skip_weekends" (true: no hub checks on Saturday and Sunday by this Mac's clock; "Check now" still works)
 
 Run once and exit:  python3 zanchin_helper.py --once
 Check this Mac:      python3 zanchin_helper.py --selftest
@@ -183,6 +184,16 @@ def find_drive_root(cfg):
         except OSError:
             continue    # stale mount
     return None
+
+
+def _weekday():
+    return time.localtime().tm_wday      # Monday is 0, Saturday 5, Sunday 6 (this Mac's own clock)
+
+
+def weekend_pause(cfg):
+    """Nobody works at the weekend, so on Saturday and Sunday the helper does not ask the hub at all.
+    Set "skip_weekends": false in config.json to turn this off."""
+    return bool(cfg.get("skip_weekends", True)) and _weekday() >= 5
 
 
 def volume_names(cfg):
@@ -334,16 +345,27 @@ def main():
         _status.update({k: old.get(k) for k in ("last_number", "last_at")})
     except (OSError, ValueError):
         pass
+    forced = False      # "Check now" pressed: check even at the weekend
+    paused_logged = False
     while True:
-        try:
-            run_once(cfg)
-        except urllib.error.HTTPError as e:
-            log("Hub said {} {}".format(e.code, "(check the token)" if e.code == 401 else ""))
-            set_status("auth_error" if e.code == 401 else "hub_unreachable",
-                       "The hub rejected this Mac's token" if e.code == 401 else "The hub returned an error ({})".format(e.code))
-        except Exception as e:
-            log("Could not reach the hub: {}".format(e))
-            set_status("hub_unreachable", "Can't reach the hub (internet?)")
+        if weekend_pause(cfg) and not forced and not once:
+            if not paused_logged:
+                log("Weekend: not asking the hub until Monday (Check now still works).")
+                paused_logged = True
+            # keeps the time of the last real check; only the message changes, and nothing leaves this Mac
+            _status.update({"state": "ok", "message": "Paused for the weekend. Checks resume on Monday."})
+            heartbeat()
+        else:
+            paused_logged = False
+            try:
+                run_once(cfg)
+            except urllib.error.HTTPError as e:
+                log("Hub said {} {}".format(e.code, "(check the token)" if e.code == 401 else ""))
+                set_status("auth_error" if e.code == 401 else "hub_unreachable",
+                           "The hub rejected this Mac's token" if e.code == 401 else "The hub returned an error ({})".format(e.code))
+            except Exception as e:
+                log("Could not reach the hub: {}".format(e))
+                set_status("hub_unreachable", "Can't reach the hub (internet?)")
         if once:
             return
         # wait for the next poll. Wakes early if the menu bar app asks for "Check now", or when a new
@@ -358,6 +380,7 @@ def main():
                 heartbeat()
                 if volume_names(cfg) - volumes_before:
                     break
+        forced = os.path.exists(TRIGGER_PATH)
         try:
             os.remove(TRIGGER_PATH)
         except OSError:

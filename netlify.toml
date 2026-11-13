@@ -5,7 +5,8 @@
   node_bundler = "esbuild"
 
 [functions."ops-detect-scheduled"]
-  schedule = "0 */2 * * *"
+  # every 2 hours, Monday to Friday only (nobody works at the weekend). Netlify cron runs on UTC days.
+  schedule = "0 */2 * * 1-5"
 
 [[redirects]]
   from = "/ops"
