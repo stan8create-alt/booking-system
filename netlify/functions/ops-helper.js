@@ -55,7 +55,12 @@ exports.handler = async (event) => {
     if (body.action === 'done') {
       p.localMirror = { status: 'done', machine, path: String(body.path || '').slice(0, 300), doneAt: Date.now(), lightroom: body.lightroom !== false };
     } else {
-      p.localMirror = { ...p.localMirror, lastError: String(body.error || 'Failed').slice(0, 200), lastTryAt: Date.now() };
+      const lastError = String(body.error || 'Failed').slice(0, 200);
+      /* A helper that keeps failing the same way reports it on every check. Saving a project moves the "something changed"
+         marker, which throws away the saved answers and makes every other call re-read every project, so a repeat of
+         the error already on record (within 30 minutes) is acknowledged without saving anything. */
+      if (p.localMirror.lastError === lastError && Date.now() - (p.localMirror.lastTryAt || 0) < 30 * 60 * 1000) return U.json(200, { ok: true });
+      p.localMirror = { ...p.localMirror, lastError, lastTryAt: Date.now() };
     }
     await store.setJSON(`projects/${number}`, p);
     return U.json(200, { ok: true });
