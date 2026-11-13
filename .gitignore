@@ -12,3 +12,5 @@ andrew-package.zip
 chris-login.txt
 andrew-drive-folder/
 andrew-drive-folder.zip
+__pycache__/
+*.pyc
