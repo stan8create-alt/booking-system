@@ -4,6 +4,10 @@ const {
   bookingsBlobStore, writeBookingBlob, isEmailAuthorized, ensureEditingBlocks,
 } = require('./_booking-utils');
 
+/* Who gets the invite email + calendar invitation when a regular booking is made. Master (admin-created)
+   bookings have their own list in admin-create-booking.js and are deliberately not affected by this one. */
+const BOOKING_INVITEES = ['stan@8create.ca', 'andrewkotovych@gmail.com', 'bellatraficante@gmail.com'];
+
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
 
@@ -32,7 +36,7 @@ exports.handler = async (event) => {
         description,
         start: { dateTime: startDateTime, timeZone: 'America/Toronto' },
         end: { dateTime: endDateTime, timeZone: 'America/Toronto' },
-        attendees: [{ email: 'stan@8create.ca' }, { email: 'andrewkotovych@gmail.com' }],
+        attendees: BOOKING_INVITEES.map(email => ({ email })),
         // Durable secondary identifier — survives GCal UI edits much better than
         // extendedProperties.private (which guest accept-sync can strip).
         source: { title: SOURCE_TITLE, url: SOURCE_URL },
